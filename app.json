@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Louagi",
+    "slug": "louagi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#031634"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.louagi.app",
+      "icon": "./assets/icon.png"
+    },
+    "android": {
+      "package": "com.louagi.app",
+      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#C8102E"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      "expo-localization"
+    ],
+    "newArchEnabled": true
+  }
+}
