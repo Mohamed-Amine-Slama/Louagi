@@ -47,3 +47,11 @@ export function peekDevOtp() {
 export async function logout(refreshToken) {
   return httpPost('/auth/logout', { refreshToken });
 }
+
+export async function enrollBiometric({ userId }) {
+  return httpPost('/auth/biometric/enroll', { userId });
+}
+
+export async function biometricLogin(ticket) {
+  return httpPost('/auth/biometric/login', { ticket });
+}

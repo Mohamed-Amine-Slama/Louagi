@@ -72,7 +72,22 @@
     "checklist": "قائمة التحقق",
     "checklistId": "تم تحميل بطاقة التعريف",
     "checklistLicense": "تم تحميل رخصة السياقة",
-    "checklistVehicle": "تم تحميل صورة السيارة"
+    "checklistVehicle": "تم تحميل صورة السيارة",
+    "biometricSignInTitle": "مرحبا بعودتك يا {{name}}",
+    "biometricSignInTitleAnon": "مرحبا بعودتك",
+    "biometricSignInBody": "أكد ببصمتك للمتابعة.",
+    "biometricSignInBodyFace": "أكد عبر Face ID للمتابعة.",
+    "useFingerprint": "استخدم البصمة",
+    "useFaceId": "استخدم Face ID",
+    "usePhonePassword": "استخدم الهاتف وكلمة المرور",
+    "biometricPromptLogin": "تسجيل الدخول إلى لواج",
+    "biometricPromptEnroll": "أكد لتفعيل الدخول الحيوي",
+    "biometricFailed": "فشل التحقق. أعد المحاولة أو استخدم كلمة المرور.",
+    "biometricCredentialExpired": "انتهت صلاحية الربط الحيوي. سجل دخولا واحدا بكلمة المرور لإعادة التفعيل.",
+    "biometricNotAvailable": "مستشعر حيوي غير متوفر في هذا الجهاز.",
+    "biometricNotEnrolled": "لا توجد بصمة مسجلة في إعدادات الجهاز.",
+    "biometricEnabledToast": "تم تفعيل الدخول الحيوي",
+    "biometricDisabledToast": "تم إيقاف الدخول الحيوي"
   },
   "landing": {
     "heroTitle": "تنقل في تونس،\nمقعدا تلو الآخر.",
@@ -93,7 +108,9 @@
     "driverCtaTitle": "تسوق لواج؟",
     "driverCtaBody": "تسجيل سريع، إدارة من الهاتف، تسديد أسبوعي.",
     "becomeDriver": "كن سائقا",
-    "chooseCity": "اختر المدينة"
+    "chooseCity": "اختر المدينة",
+    "searchCity": "ابحث عن مدينة",
+    "noCitiesMatch": "لا توجد مدينة مطابقة"
   },
   "search": {
     "filters": "المرشحات",

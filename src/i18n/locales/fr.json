@@ -72,7 +72,22 @@
     "checklist": "Checklist",
     "checklistId": "Pièce d'identité chargée",
     "checklistLicense": "Permis de conduire chargé",
-    "checklistVehicle": "Photo du véhicule chargée"
+    "checklistVehicle": "Photo du véhicule chargée",
+    "biometricSignInTitle": "Bon retour, {{name}}",
+    "biometricSignInTitleAnon": "Bon retour",
+    "biometricSignInBody": "Confirmez avec votre empreinte pour continuer.",
+    "biometricSignInBodyFace": "Confirmez avec Face ID pour continuer.",
+    "useFingerprint": "Utiliser l'empreinte",
+    "useFaceId": "Utiliser Face ID",
+    "usePhonePassword": "Utiliser téléphone et mot de passe",
+    "biometricPromptLogin": "Se connecter à Louagi",
+    "biometricPromptEnroll": "Confirmez pour activer la connexion biométrique",
+    "biometricFailed": "La vérification a échoué. Réessayez ou utilisez votre mot de passe.",
+    "biometricCredentialExpired": "Le lien biométrique a expiré. Connectez-vous une fois avec votre mot de passe.",
+    "biometricNotAvailable": "Capteur biométrique indisponible sur cet appareil.",
+    "biometricNotEnrolled": "Aucune empreinte enregistrée sur l'appareil.",
+    "biometricEnabledToast": "Connexion biométrique activée",
+    "biometricDisabledToast": "Connexion biométrique désactivée"
   },
   "landing": {
     "heroTitle": "Voyagez en Tunisie,\nplace par place.",
@@ -93,7 +108,9 @@
     "driverCtaTitle": "Vous conduisez un louage ?",
     "driverCtaBody": "Inscription rapide, gestion mobile, paiement hebdomadaire.",
     "becomeDriver": "Devenir chauffeur",
-    "chooseCity": "Choisir une ville"
+    "chooseCity": "Choisir une ville",
+    "searchCity": "Rechercher une ville",
+    "noCitiesMatch": "Aucune ville ne correspond"
   },
   "search": {
     "filters": "Filtres",

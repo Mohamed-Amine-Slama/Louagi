@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { View } from 'react-native';
+import { View, Switch } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -14,10 +14,18 @@ import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
 import { Stack, Row, Section } from '../../components/Section';
 
-import { driversApi } from '../../api';
+import { driversApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
+import {
+  getBiometricCapability,
+  promptBiometric,
+  saveBiometricCredential,
+  clearBiometricCredential,
+  hasBiometricCredential,
+  BIOMETRIC_KIND,
+} from '../../security/biometric';
 
 function expiryWarning(iso) {
   if (!iso) return null;
@@ -38,6 +46,9 @@ export default function DriverProfile() {
   const [seats, setSeats] = useState('');
   const [payout, setPayout] = useState('');
   const [busy, setBusy] = useState(false);
+  const [biometric, setBiometric] = useState(false);
+  const [biometricCap, setBiometricCap] = useState({ available: false, kind: BIOMETRIC_KIND.NONE, enrolled: false });
+  const [biometricBusy, setBiometricBusy] = useState(false);
 
   const load = useCallback(async () => {
     const p = await driversApi.getDriverProfile({ actor: user });
@@ -53,6 +64,53 @@ export default function DriverProfile() {
       load();
     }, [load])
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [cap, enrolled] = await Promise.all([getBiometricCapability(), hasBiometricCredential()]);
+      if (cancelled) return;
+      setBiometricCap(cap);
+      setBiometric(!!enrolled);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const onToggleBiometric = async (next) => {
+    if (biometricBusy) return;
+    if (!biometricCap.available) {
+      const reason = !biometricCap.enrolled && biometricCap.kind !== BIOMETRIC_KIND.NONE
+        ? 'No fingerprint enrolled in your device settings.'
+        : 'Biometric sensor not available on this device.';
+      toast.show(reason, 'error');
+      return;
+    }
+    setBiometricBusy(true);
+    try {
+      if (next) {
+        const promptKind = biometricCap.kind === BIOMETRIC_KIND.FACE ? 'Face ID' : 'fingerprint';
+        const auth = await promptBiometric({ promptMessage: `Confirm to enable ${promptKind} sign-in` });
+        if (!auth.success) {
+          toast.show("Biometric check didn't succeed", 'error');
+          return;
+        }
+        const res = await authApi.enrollBiometric({ userId: user.id });
+        if (!res.ok) {
+          toast.show(res.error || 'Could not enable biometric sign-in', 'error');
+          return;
+        }
+        await saveBiometricCredential({ userId: user.id, userName: user.name, ticket: res.ticket });
+        setBiometric(true);
+        toast.show('Biometric sign-in enabled', 'success');
+      } else {
+        await clearBiometricCredential();
+        setBiometric(false);
+        toast.show('Biometric sign-in turned off', 'info');
+      }
+    } finally {
+      setBiometricBusy(false);
+    }
+  };
 
   if (!profile) return <Screen />;
 
@@ -151,6 +209,43 @@ export default function DriverProfile() {
             iconLeft="account-balance"
           />
           <Button label="Save payout details" onPress={savePayout} loading={busy} />
+        </Card>
+      </Section>
+
+      <Section title="Security">
+        <Card>
+          <Row gap={spacing.md} align="center">
+            <View
+              style={{
+                width: 40, height: 40, borderRadius: 20,
+                backgroundColor: colors.surfaceContainer,
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons
+                name={biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}
+                size={20}
+                color={colors.primary}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="labelMd">Biometric sign-in</Text>
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                {!biometricCap.available
+                  ? (biometricCap.kind === BIOMETRIC_KIND.NONE
+                    ? 'Biometric sensor not available on this device'
+                    : 'No fingerprint enrolled in your device settings')
+                  : biometric
+                    ? `Linked — next login uses your ${biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}`
+                    : 'Scan once to skip phone & password next time'}
+              </Text>
+            </View>
+            <Switch
+              value={biometric}
+              onValueChange={onToggleBiometric}
+              disabled={biometricBusy || !biometricCap.available}
+            />
+          </Row>
         </Card>
       </Section>
 

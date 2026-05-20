@@ -17,10 +17,18 @@ import { Stack, Row, Section } from '../../components/Section';
 import { Stepper } from '../../components/Stepper';
 import { ScreenHeader } from '../../components/Header';
 
-import { usersApi, reservationsApi } from '../../api';
+import { usersApi, reservationsApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius, shadows } from '../../theme';
+import {
+  getBiometricCapability,
+  promptBiometric,
+  saveBiometricCredential,
+  clearBiometricCredential,
+  hasBiometricCredential,
+  BIOMETRIC_KIND,
+} from '../../security/biometric';
 
 const LANGUAGES = [
   { code: 'fr', label: 'Français' },
@@ -46,7 +54,9 @@ export default function PassengerProfile() {
   const [sms, setSms] = useState(true);
   const [push, setPush] = useState(true);
   const [marketing, setMarketing] = useState(false);
-  const [biometric, setBiometric] = useState(true);
+  const [biometric, setBiometric] = useState(false);
+  const [biometricCap, setBiometricCap] = useState({ available: false, kind: BIOMETRIC_KIND.NONE, enrolled: false });
+  const [biometricBusy, setBiometricBusy] = useState(false);
   const [defaultSeats, setDefaultSeats] = useState(1);
   const [language, setLanguage] = useState('fr');
 
@@ -95,6 +105,53 @@ export default function PassengerProfile() {
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [cap, enrolled] = await Promise.all([getBiometricCapability(), hasBiometricCredential()]);
+      if (cancelled) return;
+      setBiometricCap(cap);
+      setBiometric(!!enrolled);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const onToggleBiometric = async (next) => {
+    if (biometricBusy) return;
+    if (!biometricCap.available) {
+      const reason = !biometricCap.enrolled && biometricCap.kind !== BIOMETRIC_KIND.NONE
+        ? 'No fingerprint enrolled in your device settings.'
+        : 'Biometric sensor not available on this device.';
+      toast.show(reason, 'error');
+      return;
+    }
+    setBiometricBusy(true);
+    try {
+      if (next) {
+        const promptKind = biometricCap.kind === BIOMETRIC_KIND.FACE ? 'Face ID' : 'fingerprint';
+        const auth = await promptBiometric({ promptMessage: `Confirm to enable ${promptKind} sign-in` });
+        if (!auth.success) {
+          toast.show("Biometric check didn't succeed", 'error');
+          return;
+        }
+        const res = await authApi.enrollBiometric({ userId: user.id });
+        if (!res.ok) {
+          toast.show(res.error || 'Could not enable biometric sign-in', 'error');
+          return;
+        }
+        await saveBiometricCredential({ userId: user.id, userName: profile?.full_name || user.name, ticket: res.ticket });
+        setBiometric(true);
+        toast.show('Biometric sign-in enabled', 'success');
+      } else {
+        await clearBiometricCredential();
+        setBiometric(false);
+        toast.show('Biometric sign-in turned off', 'info');
+      }
+    } finally {
+      setBiometricBusy(false);
+    }
+  };
 
   if (loadError) {
     return (
@@ -281,10 +338,24 @@ export default function PassengerProfile() {
             ) : null}
             <Divider />
             <SettingRow
-              icon="fingerprint"
+              icon={biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}
               title="Biometric sign-in"
-              subtitle="Use Face ID / fingerprint after first login"
-              right={<Switch value={biometric} onValueChange={setBiometric} />}
+              subtitle={
+                !biometricCap.available
+                  ? (biometricCap.kind === BIOMETRIC_KIND.NONE
+                    ? 'Biometric sensor not available on this device'
+                    : 'No fingerprint enrolled in your device settings')
+                  : biometric
+                    ? `Linked — next login uses your ${biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}`
+                    : `Scan once to skip phone & password next time`
+              }
+              right={
+                <Switch
+                  value={biometric}
+                  onValueChange={onToggleBiometric}
+                  disabled={biometricBusy || !biometricCap.available}
+                />
+              }
             />
             <Divider />
             <SettingRow

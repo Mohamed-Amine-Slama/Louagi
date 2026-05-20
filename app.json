@@ -14,7 +14,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.louagi.app",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to sign in to Louagi without your phone and password."
+      }
     },
     "android": {
       "package": "com.louagi.app",
@@ -32,7 +35,13 @@
     "plugins": [
       "expo-secure-store",
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Use Face ID to sign in to Louagi without your phone and password."
+        }
+      ]
     ],
     "newArchEnabled": true
   }

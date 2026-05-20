@@ -18,3 +18,5 @@ export const resendOtp = (...args) => impl.resendOtp(...args);
 export const refresh = (...args) => impl.refresh(...args);
 export const peekDevOtp = (...args) => impl.peekDevOtp(...args);
 export const logout = (...args) => impl.logout(...args);
+export const enrollBiometric = (...args) => impl.enrollBiometric(...args);
+export const biometricLogin = (...args) => impl.biometricLogin(...args);

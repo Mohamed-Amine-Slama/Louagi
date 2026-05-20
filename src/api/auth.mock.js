@@ -197,3 +197,57 @@ export async function logout() {
   // so its signature stays symmetric with auth.real.js.
   return { ok: true };
 }
+
+export async function enrollBiometric({ userId }) {
+  await sleep(80);
+  const user = db.users.find((u) => u.id === userId);
+  if (!user || !user.is_active) return { ok: false, error: 'User not found' };
+  // Long-lived biometric ticket. The `kind: 'biometric'` claim lets
+  // biometricLogin distinguish it from a regular refresh token.
+  const ticket = await signRefreshToken({ sub: user.id, role: user.role, kind: 'biometric' });
+  appendAudit({
+    actorId: user.id,
+    actorRole: user.role,
+    action: 'biometric.enrolled',
+    targetEntity: 'user',
+    targetId: user.id,
+  });
+  return { ok: true, ticket };
+}
+
+export async function biometricLogin(ticket) {
+  await sleep(120);
+  const claims = await verifyToken(ticket);
+  if (!claims || claims.kind !== 'biometric') {
+    return { ok: false, error: 'Biometric credential is no longer valid. Sign in with your phone and password.' };
+  }
+  const user = db.users.find((u) => u.id === claims.sub);
+  if (!user || !user.is_active) {
+    return { ok: false, error: 'Account unavailable' };
+  }
+  const driver = findDriverByUserId(user.id);
+  const sessionClaims = {
+    sub: user.id,
+    role: user.role,
+    name: user.full_name,
+    driverStatus: driver?.status ?? null,
+  };
+  const accessToken = await signAccessToken(sessionClaims);
+  const refreshToken = await signRefreshToken({ sub: user.id, role: user.role });
+  // Rotate the biometric ticket so daily users never hit the 14-day TTL.
+  const nextTicket = await signRefreshToken({ sub: user.id, role: user.role, kind: 'biometric' });
+  appendAudit({
+    actorId: user.id,
+    actorRole: user.role,
+    action: 'login.biometric',
+    targetEntity: 'user',
+    targetId: user.id,
+  });
+  return {
+    ok: true,
+    accessToken,
+    refreshToken,
+    ticket: nextTicket,
+    user: { id: user.id, name: user.full_name, role: user.role, driverStatus: sessionClaims.driverStatus },
+  };
+}

@@ -72,7 +72,22 @@
     "checklist": "Checklist",
     "checklistId": "National ID uploaded",
     "checklistLicense": "Driver's license uploaded",
-    "checklistVehicle": "Vehicle photo uploaded"
+    "checklistVehicle": "Vehicle photo uploaded",
+    "biometricSignInTitle": "Welcome back, {{name}}",
+    "biometricSignInTitleAnon": "Welcome back",
+    "biometricSignInBody": "Confirm with your fingerprint to continue.",
+    "biometricSignInBodyFace": "Confirm with Face ID to continue.",
+    "useFingerprint": "Use fingerprint",
+    "useFaceId": "Use Face ID",
+    "usePhonePassword": "Use phone & password",
+    "biometricPromptLogin": "Sign in to Louagi",
+    "biometricPromptEnroll": "Confirm to enable biometric sign-in",
+    "biometricFailed": "Biometric check didn't succeed. Try again or use your password.",
+    "biometricCredentialExpired": "Biometric link expired. Sign in once with your password to re-enable it.",
+    "biometricNotAvailable": "Biometric sensor not available on this device.",
+    "biometricNotEnrolled": "No fingerprint enrolled in your device settings.",
+    "biometricEnabledToast": "Biometric sign-in enabled",
+    "biometricDisabledToast": "Biometric sign-in turned off"
   },
   "landing": {
     "heroTitle": "Travel Tunisia,\nseat by seat.",
@@ -93,7 +108,9 @@
     "driverCtaTitle": "Drive a louage?",
     "driverCtaBody": "Onboard in minutes, manage rides on the go, get paid weekly.",
     "becomeDriver": "Become a driver",
-    "chooseCity": "Choose city"
+    "chooseCity": "Choose city",
+    "searchCity": "Search a city",
+    "noCitiesMatch": "No cities match"
   },
   "search": {
     "filters": "Filters",

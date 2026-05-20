@@ -17,14 +17,36 @@ export async function listRoutes() {
   return db.routes.slice();
 }
 
+export const TUNISIA_CITIES = [
+  'Ariana',
+  'Béja',
+  'Ben Arous',
+  'Bizerte',
+  'Gabès',
+  'Gafsa',
+  'Jendouba',
+  'Kairouan',
+  'Kasserine',
+  'Kébili',
+  'Kef',
+  'Mahdia',
+  'Manouba',
+  'Médenine',
+  'Monastir',
+  'Nabeul',
+  'Sfax',
+  'Sidi Bouzid',
+  'Siliana',
+  'Sousse',
+  'Tataouine',
+  'Tozeur',
+  'Tunis',
+  'Zaghouan',
+];
+
 export async function listCities() {
   await sleep(40);
-  const set = new Set();
-  db.routes.forEach((r) => {
-    set.add(r.origin_city);
-    set.add(r.destination_city);
-  });
-  return Array.from(set).sort();
+  return TUNISIA_CITIES.slice();
 }
 
 export async function searchRides({ origin, destination, date, seats = 1, filters = {}, sort = 'departure' }) {
