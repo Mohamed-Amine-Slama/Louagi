@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -15,6 +16,7 @@ import { Stack, Row } from '../../components/Section';
 import { adminApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { spacing } from '../../theme';
+import { formatDateTime } from '../../i18n/format';
 
 function actionVariant(action) {
   if (action.startsWith('login') || action.startsWith('register')) return 'info';
@@ -26,6 +28,7 @@ function actionVariant(action) {
 
 export default function AdminAudit() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user } = useAuth();
   const [q, setQ] = useState('');
   const [rows, setRows] = useState([]);
@@ -45,21 +48,21 @@ export default function AdminAudit() {
 
   return (
     <Screen>
-      <ScreenHeader title="Audit log" subtitle="Immutable — append-only" />
+      <ScreenHeader title={t('admin:auditLog')} subtitle={t('admin:auditLogSubtitle')} />
       <Banner
         variant="info"
-        title="Tamper-resistant"
-        body="No edit or delete endpoints exist. Old entries are never overwritten."
+        title={t('admin:tamperResistantTitle')}
+        body={t('admin:tamperResistantBody')}
       />
       <Input
-        label="Filter by action type"
+        label={t('admin:filterByAction')}
         value={q}
         onChangeText={setQ}
         iconLeft="search"
-        placeholder="e.g. ride.cancelled, login.success"
+        placeholder={t('admin:filterByActionPlaceholder')}
       />
       <Text variant="labelSm" color={colors.onSurfaceVariant}>
-        Showing {rows.length} of {total} entries
+        {t('admin:showingOf', { shown: rows.length, total })}
       </Text>
       {rows.map((e) => (
         <Card key={e.id}>
@@ -67,10 +70,10 @@ export default function AdminAudit() {
             <Stack gap={2} style={{ flex: 1 }}>
               <Text variant="labelMd">{e.action_type}</Text>
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                {e.actor_role} · {e.actor_id?.slice(0, 8) ?? 'anon'} · {e.ip_address}
+                {e.actor_role} · {e.actor_id?.slice(0, 8) ?? t('admin:anonActor')} · {e.ip_address}
               </Text>
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                {new Date(e.created_at).toLocaleString()}
+                {formatDateTime(e.created_at)}
               </Text>
               {e.metadata ? (
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>

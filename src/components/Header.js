@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from './Text';
 import { useTheme } from '../context/ThemeContext';
+import { useLocale } from '../context/LocaleContext';
 import { spacing } from '../theme';
 import { HeaderQuickToggles } from './HeaderQuickToggles';
 
@@ -18,10 +19,12 @@ export function ScreenHeader({
 }) {
   const nav = useNavigation();
   const { colors } = useTheme();
+  const { isRTL, t } = useLocale();
   const dark = variant === 'primary';
   const bg = dark ? colors.primary : colors.surface;
   const fg = dark ? colors.onPrimary : colors.onSurface;
   const subFg = dark ? colors.onPrimaryContainer : colors.onSurfaceVariant;
+  const backIcon = isRTL ? 'arrow-forward' : 'arrow-back';
   return (
     <View
       style={{
@@ -37,6 +40,8 @@ export function ScreenHeader({
       {showBack ? (
         <Pressable
           onPress={() => nav.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel={t('common:back')}
           style={{
             width: 40,
             height: 40,
@@ -46,7 +51,7 @@ export function ScreenHeader({
             justifyContent: 'center',
           }}
         >
-          <MaterialIcons name="arrow-back" size={22} color={fg} />
+          <MaterialIcons name={backIcon} size={22} color={fg} />
         </Pressable>
       ) : null}
       <View style={{ flex: 1 }}>

@@ -3,6 +3,8 @@ import { acquireSeatLock, releaseSeatLock } from '../security/seatLock';
 import { appendAudit } from '../security/audit';
 import { randomBytesHex } from '../security/crypto';
 import { can } from '../security/rbac';
+import { useMocks } from '../config';
+import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -18,6 +20,7 @@ async function callPaymentGateway({ amount, method }) {
 }
 
 export async function createReservation({ actor, rideId, seats, paymentMethod = 'card', idempotencyKey }) {
+  if (!useMocks) return gql('CreateReservation', { rideId, seats, paymentMethod, idempotencyKey });
   if (!can(actor?.role, 'rides:book')) return { ok: false, error: 'Forbidden' };
   if (!idempotencyKey) idempotencyKey = randomBytesHex(10);
 
@@ -117,6 +120,7 @@ export async function createReservation({ actor, rideId, seats, paymentMethod = 
 }
 
 export async function listReservations({ actor, status }) {
+  if (!useMocks) return gqlList('ListReservations', { status });
   await sleep(80);
   if (!actor) return [];
   return db.reservations
@@ -134,6 +138,10 @@ export async function listReservations({ actor, status }) {
 }
 
 export async function getReservation({ actor, id }) {
+  if (!useMocks) {
+    const result = await gql('GetReservation', { id });
+    return result?.reservation ? result : null;
+  }
   await sleep(60);
   const res = db.reservations.find((r) => r.id === id);
   if (!res) return null;
@@ -147,6 +155,7 @@ export async function getReservation({ actor, id }) {
 }
 
 export async function cancelReservation({ actor, id }) {
+  if (!useMocks) return gql('CancelReservation', { id });
   await sleep(120);
   const res = db.reservations.find((r) => r.id === id);
   if (!res) return { ok: false, error: 'Not found' };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useLocale } from '../context/LocaleContext';
 import { View, TextInput, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Text } from './Text';
@@ -102,12 +103,13 @@ export function Input({
   );
 }
 
-export function PhoneInput({ value, onChangeText, error }) {
+export function PhoneInput({ value, onChangeText, error, label, placeholder }) {
   const { colors } = useTheme();
+  const { t } = useLocale();
   return (
     <View style={{ gap: spacing.xs }}>
       <Text variant="labelSm" color={colors.onSurfaceVariant}>
-        Phone Number
+        {label || t('auth:phoneNumber')}
       </Text>
       <View
         style={{
@@ -158,7 +160,7 @@ export function PhoneInput({ value, onChangeText, error }) {
         <TextInput
           value={value}
           onChangeText={onChangeText}
-          placeholder="XX XXX XXX"
+          placeholder={placeholder || t('auth:phonePlaceholder')}
           placeholderTextColor={colors.outline}
           keyboardType="phone-pad"
           style={{

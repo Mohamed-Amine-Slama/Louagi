@@ -9,47 +9,51 @@ import {
 } from './mockDb';
 import { appendAudit } from '../security/audit';
 import { can } from '../security/rbac';
+import { useMocks } from '../config';
+import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+function emptyAnalytics(period = 'week') {
+  return {
+    period,
+    today: 0,
+    week: 0,
+    month: 0,
+    history: [],
+    historyStart: null,
+    tripsThisPeriod: 0,
+    tripsPrevPeriod: 0,
+    seatsSold: 0,
+    seatsPrev: 0,
+    seatsCapacity: 0,
+    seatsCapacityPrev: 0,
+    occupancyPct: 0,
+    occupancyPrevPct: 0,
+    avgFare: 0,
+    avgFarePrev: 0,
+    earningsPrev: 0,
+    cancelRatePct: 0,
+    topRoute: null,
+    rating: null,
+    tripsCompleted: 0,
+  };
+}
+
 export async function listRoutes() {
+  if (!useMocks) return gqlList('ListRoutes');
   await sleep(80);
   return db.routes.slice();
 }
 
-export const TUNISIA_CITIES = [
-  'Ariana',
-  'Béja',
-  'Ben Arous',
-  'Bizerte',
-  'Gabès',
-  'Gafsa',
-  'Jendouba',
-  'Kairouan',
-  'Kasserine',
-  'Kébili',
-  'Kef',
-  'Mahdia',
-  'Manouba',
-  'Médenine',
-  'Monastir',
-  'Nabeul',
-  'Sfax',
-  'Sidi Bouzid',
-  'Siliana',
-  'Sousse',
-  'Tataouine',
-  'Tozeur',
-  'Tunis',
-  'Zaghouan',
-];
-
 export async function listCities() {
+  if (!useMocks) return gqlList('ListCities');
   await sleep(40);
-  return TUNISIA_CITIES.slice();
+  return [...new Set(db.routes.flatMap((r) => [r.origin_city, r.destination_city]))].sort();
 }
 
 export async function searchRides({ origin, destination, date, seats = 1, filters = {}, sort = 'departure' }) {
+  if (!useMocks) return gqlList('SearchRides', { origin, destination, date, seats, filters, sort });
   await sleep(180);
   const startOfDay = date ? new Date(date) : null;
   if (startOfDay) startOfDay.setHours(0, 0, 0, 0);
@@ -110,6 +114,10 @@ export async function searchRides({ origin, destination, date, seats = 1, filter
 }
 
 export async function getRideDetail(rideId) {
+  if (!useMocks) {
+    const result = await gql('GetRideDetail', { rideId });
+    return result?.id ? result : null;
+  }
   await sleep(80);
   const ride = findRideById(rideId);
   if (!ride) return null;
@@ -141,6 +149,7 @@ export async function getRideDetail(rideId) {
 }
 
 export async function createRide({ actor, routeId, departureTime, pricePerSeat, availableSeats }) {
+  if (!useMocks) return gql('CreateRide', { routeId, departureTime, pricePerSeat, availableSeats });
   await sleep(180);
   if (!can(actor?.role, 'rides:create')) return { ok: false, error: 'Forbidden' };
   const driver = findDriverByUserId(actor.id);
@@ -181,6 +190,7 @@ export async function createRide({ actor, routeId, departureTime, pricePerSeat, 
 }
 
 export async function updateRideStatus({ actor, rideId, status }) {
+  if (!useMocks) return gql('UpdateRideStatus', { rideId, status });
   await sleep(120);
   const ride = findRideById(rideId);
   if (!ride) return { ok: false, error: 'Not found' };
@@ -203,6 +213,7 @@ export async function updateRideStatus({ actor, rideId, status }) {
 }
 
 export async function cancelRide({ actor, rideId, reason }) {
+  if (!useMocks) return gql('CancelRide', { rideId, reason });
   await sleep(160);
   const ride = findRideById(rideId);
   if (!ride) return { ok: false, error: 'Not found' };
@@ -237,6 +248,7 @@ export async function cancelRide({ actor, rideId, reason }) {
 }
 
 export async function driverRides({ actor, status }) {
+  if (!useMocks) return gqlList('DriverRides', { status });
   await sleep(90);
   const driver = findDriverByUserId(actor.id);
   if (!driver) return [];
@@ -251,6 +263,7 @@ export async function driverRides({ actor, status }) {
 }
 
 export async function ridePassengers({ actor, rideId }) {
+  if (!useMocks) return gqlList('RidePassengers', { rideId });
   await sleep(80);
   const ride = findRideById(rideId);
   if (!ride) return [];
@@ -265,31 +278,13 @@ export async function ridePassengers({ actor, rideId }) {
 }
 
 export async function driverEarnings({ actor, period = 'week' } = {}) {
+  if (!useMocks) {
+    const result = await gql('DriverEarnings', { period });
+    return result?.history ? result : emptyAnalytics(period);
+  }
   await sleep(70);
   const driver = findDriverByUserId(actor.id);
-  const empty = {
-    period,
-    today: 0,
-    week: 0,
-    month: 0,
-    history: [],
-    historyStart: null,
-    tripsThisPeriod: 0,
-    tripsPrevPeriod: 0,
-    seatsSold: 0,
-    seatsPrev: 0,
-    seatsCapacity: 0,
-    seatsCapacityPrev: 0,
-    occupancyPct: 0,
-    occupancyPrevPct: 0,
-    avgFare: 0,
-    avgFarePrev: 0,
-    earningsPrev: 0,
-    cancelRatePct: 0,
-    topRoute: null,
-    rating: null,
-    tripsCompleted: 0,
-  };
+  const empty = emptyAnalytics(period);
   if (!driver) return empty;
 
   const now = Date.now();
@@ -419,6 +414,7 @@ export async function driverEarnings({ actor, period = 'week' } = {}) {
 }
 
 export async function adminListRides({ filters = {} } = {}) {
+  if (!useMocks) return gqlList('AdminListRides', { filters });
   await sleep(120);
   let rows = db.rides.slice();
   if (filters.status) rows = rows.filter((r) => r.status === filters.status);

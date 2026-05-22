@@ -6,8 +6,22 @@ const family = {
   extraBold: 'PlusJakartaSans_800ExtraBold',
 };
 
+const familyAr = {
+  regular: 'Cairo_400Regular',
+  medium: 'Cairo_500Medium',
+  semiBold: 'Cairo_600SemiBold',
+  bold: 'Cairo_700Bold',
+  extraBold: 'Cairo_700Bold',
+};
+
+export function getFontFamily(locale, weight) {
+  const map = locale === 'ar' ? familyAr : family;
+  return map[weight] || map.regular;
+}
+
 export const typography = {
   family,
+  familyAr,
   displayLg: {
     fontFamily: family.bold,
     fontSize: 40,

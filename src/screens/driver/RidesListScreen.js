@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
@@ -15,9 +16,18 @@ import { Tabs } from '../../components/Tabs';
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { spacing } from '../../theme';
+import { formatDateTime } from '../../i18n/format';
+
+const EMPTY_TITLE_KEY = {
+  scheduled: 'driver:noTabRidesScheduled',
+  in_progress: 'driver:noTabRidesLive',
+  completed: 'driver:noTabRidesDone',
+  cancelled: 'driver:noTabRidesCancelled',
+};
 
 export default function DriverRides() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user } = useAuth();
   const nav = useNavigation();
   const [tab, setTab] = useState('scheduled');
@@ -35,23 +45,23 @@ export default function DriverRides() {
 
   return (
     <Screen>
-      <ScreenHeader title="My rides" />
+      <ScreenHeader title={t('driver:ridesTitle')} />
       <Tabs
         value={tab}
         onChange={setTab}
         tabs={[
-          { key: 'scheduled', label: 'Scheduled' },
-          { key: 'in_progress', label: 'Live' },
-          { key: 'completed', label: 'Done' },
-          { key: 'cancelled', label: 'Cancelled' },
+          { key: 'scheduled', label: t('driver:tabsScheduled') },
+          { key: 'in_progress', label: t('driver:tabsLive') },
+          { key: 'completed', label: t('driver:tabsDone') },
+          { key: 'cancelled', label: t('driver:tabsCancelled') },
         ]}
       />
       {rows.length === 0 ? (
         <EmptyState
           icon="route"
-          title={`No ${tab.replace('_', ' ')} rides`}
-          body="Create a ride to start filling seats."
-          actionLabel="Create ride"
+          title={t(EMPTY_TITLE_KEY[tab] || 'driver:noRidesTitle')}
+          body={t('driver:createRideListBody')}
+          actionLabel={t('driver:createRide')}
           onAction={() => nav.navigate('CreateRide')}
         />
       ) : (
@@ -65,21 +75,21 @@ export default function DriverRides() {
                     {r.route?.origin_city} → {r.route?.destination_city}
                   </Text>
                   <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                    {new Date(r.departure_time).toLocaleString()}
+                    {formatDateTime(r.departure_time)}
                   </Text>
                 </Stack>
                 <Stack gap={2} style={{ alignItems: 'flex-end' }}>
                   <Text variant="headlineSm" color={colors.primary}>
-                    {sold * r.price_per_seat} TND
+                    {sold * r.price_per_seat} {t('common:tnd')}
                   </Text>
-                  <Badge label={`${sold}/${r.total_seats} seats`} variant="info" icon="event-seat" />
+                  <Badge label={t('driver:seatsCount', { count: sold, total: r.total_seats })} variant="info" icon="event-seat" />
                 </Stack>
               </Row>
             </Card>
           );
         })
       )}
-      <FAB icon="add" label="New ride" onPress={() => nav.navigate('CreateRide')} />
+      <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
     </Screen>
   );
 }

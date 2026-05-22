@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -21,8 +22,16 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing } from '../../theme';
 
+const EMPTY_DRIVER_KEY = {
+  pending: 'admin:noDriversPending',
+  verified: 'admin:noDriversVerified',
+  rejected: 'admin:noDriversRejected',
+  suspended: 'admin:noDriversSuspended',
+};
+
 export default function AdminDrivers() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user } = useAuth();
   const toast = useToast();
   const [tab, setTab] = useState('pending');
@@ -55,7 +64,7 @@ export default function AdminDrivers() {
       toast.show(res.error, 'error');
       return;
     }
-    toast.show(approve ? 'Driver verified' : 'Driver rejected', approve ? 'success' : 'warning');
+    toast.show(approve ? t('toast:driverVerified') : t('toast:driverRejected'), approve ? 'success' : 'warning');
     setSelected(null);
     setRejectReason('');
     load();
@@ -63,20 +72,20 @@ export default function AdminDrivers() {
 
   return (
     <Screen>
-      <ScreenHeader title="Driver verifications" subtitle="Review documents and approve drivers" />
+      <ScreenHeader title={t('admin:driverVerifications')} subtitle={t('admin:driverVerificationsSubtitle')} />
       <Tabs
         value={tab}
         onChange={setTab}
         tabs={[
-          { key: 'pending', label: 'Pending' },
-          { key: 'verified', label: 'Verified' },
-          { key: 'rejected', label: 'Rejected' },
-          { key: 'suspended', label: 'Suspended' },
+          { key: 'pending', label: t('admin:pending') },
+          { key: 'verified', label: t('admin:verified') },
+          { key: 'rejected', label: t('admin:rejected') },
+          { key: 'suspended', label: t('admin:suspended') },
         ]}
       />
 
       {rows.length === 0 ? (
-        <EmptyState icon="verified-user" title={`No ${tab} drivers`} />
+        <EmptyState icon="verified-user" title={t(EMPTY_DRIVER_KEY[tab] || 'admin:noDriversPending')} />
       ) : (
         rows.map((d) => (
           <Card key={d.id} onPress={() => setSelected(d)}>
@@ -84,10 +93,10 @@ export default function AdminDrivers() {
               <Stack gap={2} style={{ flex: 1 }}>
                 <Text variant="bodyLg">{d.user?.full_name}</Text>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {d.vehicle_brand} {d.vehicle_model} · {d.seat_count} seats
+                  {t('driver:vehicleSummary', { brand: d.vehicle_brand, model: d.vehicle_model, count: d.seat_count })}
                 </Text>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  Plate {d.plate_decrypted}
+                  {t('driver:plateValue', { plate: d.plate_decrypted })}
                 </Text>
               </Stack>
               <Badge label={d.status} variant={d.status === 'verified' ? 'success' : d.status === 'rejected' ? 'error' : 'warning'} />
@@ -98,45 +107,45 @@ export default function AdminDrivers() {
 
       {selected ? (
         <Card accent={colors.primary} style={{ gap: spacing.md }}>
-          <Section title={`Review · ${selected.user?.full_name}`} />
+          <Section title={t('admin:reviewLabel', { name: selected.user?.full_name })} />
           <Banner
             variant="info"
-            title="Field-encrypted PII"
-            body="Decrypted only inside this admin session. Not exported to logs."
+            title={t('admin:fieldEncryptedTitle')}
+            body={t('admin:fieldEncryptedBody')}
           />
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
-              ID number
+              {t('admin:idNumber')}
             </Text>
             <Text variant="bodyMd">{maskId(selected.id_decrypted)}</Text>
           </Stack>
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
-              License
+              {t('admin:license')}
             </Text>
             <Text variant="bodyMd">{selected.license_decrypted}</Text>
           </Stack>
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
-              Plate
+              {t('driver:plate')}
             </Text>
             <Text variant="bodyMd">{selected.plate_decrypted}</Text>
           </Stack>
           <Input
-            label="Rejection reason (optional)"
+            label={t('admin:rejectReason')}
             value={rejectReason}
             onChangeText={setRejectReason}
-            placeholder="e.g. License unreadable, please re-upload"
+            placeholder={t('admin:rejectReasonPlaceholder')}
           />
           <Row gap={spacing.sm}>
             <View style={{ flex: 1 }}>
-              <Button label="Reject" variant="danger" onPress={() => decide(false)} loading={busy} />
+              <Button label={t('admin:reject')} variant="danger" onPress={() => decide(false)} loading={busy} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Approve" variant="secondary" onPress={() => decide(true)} loading={busy} />
+              <Button label={t('admin:approve')} variant="secondary" onPress={() => decide(true)} loading={busy} />
             </View>
           </Row>
-          <Button label="Close" variant="ghost" onPress={() => setSelected(null)} />
+          <Button label={t('common:close')} variant="ghost" onPress={() => setSelected(null)} />
         </Card>
       ) : null}
     </Screen>

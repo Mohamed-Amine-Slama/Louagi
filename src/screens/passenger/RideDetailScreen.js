@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, ActivityIndicator, Pressable } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,9 +23,11 @@ import { useToast } from '../../components/Toast';
 import { peekSeatLock } from '../../security/seatLock';
 import { randomBytesHex } from '../../security/crypto';
 import { spacing, radius } from '../../theme';
+import { formatDate, formatTime } from '../../i18n/format';
 
 export default function RideDetailScreen() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const nav = useNavigation();
   const route = useRoute();
   const { id } = route.params;
@@ -42,17 +45,17 @@ export default function RideDetailScreen() {
   }, [id]);
 
   useEffect(() => {
-    const t = setInterval(() => {
+    const interval = setInterval(() => {
       const lock = peekSeatLock(id);
       if (lock && lock.userId !== user?.id) {
         const left = Math.max(0, Math.ceil((lock.expiresAt - Date.now()) / 1000));
-        setLockBanner(`Another rider is booking now (${left}s)`);
+        setLockBanner(t('ride:seatLockBody', { seconds: left }));
       } else {
         setLockBanner(null);
       }
     }, 1000);
-    return () => clearInterval(t);
-  }, [id, user?.id]);
+    return () => clearInterval(interval);
+  }, [id, user?.id, t]);
 
   if (!ride) {
     return (
@@ -67,12 +70,12 @@ export default function RideDetailScreen() {
 
   const book = async () => {
     if (!user) {
-      toast.show('Sign in to book', 'info');
+      toast.show(t('toast:signInToBook'), 'info');
       nav.navigate('Login');
       return;
     }
     if (user.role !== 'passenger') {
-      toast.show('Only passengers can book rides', 'warning');
+      toast.show(t('toast:onlyPassengersBook'), 'warning');
       return;
     }
     setSubmitting(true);
@@ -94,26 +97,26 @@ export default function RideDetailScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title={`${ride.route.origin_city} → ${ride.route.destination_city}`} subtitle={dep.toDateString()} showBack />
+      <ScreenHeader title={`${ride.route.origin_city} → ${ride.route.destination_city}`} subtitle={formatDate(dep)} showBack />
 
       <Card>
-        <Section title="Trip">
+        <Section title={t('ride:trip')}>
           <RouteTimeline
             origin={ride.route.origin_city}
             destination={ride.route.destination_city}
-            departureLabel={`Departs ${dep.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}`}
-            arrivalLabel={`~${ride.route.estimated_duration_min} min ride`}
+            departureLabel={t('ride:departsAt', { time: formatTime(dep) })}
+            arrivalLabel={t('ride:duration', { minutes: ride.route.estimated_duration_min })}
           />
         </Section>
         <Row gap={spacing.md} style={{ marginTop: spacing.md }}>
-          <Pill icon="event-seat" label={`${ride.available_seats} seats left`} />
-          <Pill icon="ac-unit" label="AC" />
-          <Pill icon="security" label="Verified" tone="success" />
+          <Pill icon="event-seat" label={t('ride:seatsLeft', { count: ride.available_seats })} />
+          <Pill icon="ac-unit" label={t('ride:ac')} />
+          <Pill icon="security" label={t('ride:verified')} tone="success" />
         </Row>
       </Card>
 
       <Card>
-        <Section title="Driver">
+        <Section title={t('ride:driver')}>
           <Row gap={spacing.md}>
             <Avatar name={ride.driver?.full_name} size={56} badge={ride.driver?.status === 'verified'} />
             <View style={{ flex: 1 }}>
@@ -122,7 +125,7 @@ export default function RideDetailScreen() {
                 <Row gap={4}>
                   <MaterialIcons name="star" size={14} color={colors.secondaryContainer} />
                   <Text variant="labelSm">
-                    {(ride.driver?.rating ?? 0).toFixed(1)} · {ride.driver?.trips_completed} trips
+                    {(ride.driver?.rating ?? 0).toFixed(1)} · {t('ride:trips', { count: ride.driver?.trips_completed ?? 0 })}
                   </Text>
                 </Row>
               </Row>
@@ -135,18 +138,18 @@ export default function RideDetailScreen() {
       </Card>
 
       <Card>
-        <Section title="Seats">
+        <Section title={t('ride:seats')}>
           <Row justify="space-between">
-            <Text variant="bodyMd">How many seats?</Text>
+            <Text variant="bodyMd">{t('ride:howManySeats')}</Text>
             <Stepper value={seats} onChange={setSeats} min={1} max={ride.available_seats} />
           </Row>
         </Section>
-        <Section title="Payment">
+        <Section title={t('ride:payment')}>
           <Row gap={spacing.sm}>
             {[
-              { k: 'card', label: 'Card', icon: 'credit-card' },
-              { k: 'mobile_pay', label: 'Mobile pay', icon: 'phone-android' },
-              { k: 'cash', label: 'Cash', icon: 'payments' },
+              { k: 'card', label: t('ride:card'), icon: 'credit-card' },
+              { k: 'mobile_pay', label: t('ride:mobilePay'), icon: 'phone-android' },
+              { k: 'cash', label: t('ride:cash'), icon: 'payments' },
             ].map((opt) => {
               const active = method === opt.k;
               return (
@@ -181,32 +184,32 @@ export default function RideDetailScreen() {
         </Section>
       </Card>
 
-      {lockBanner ? <Banner variant="warning" title="Seat lock active" body={lockBanner} /> : null}
+      {lockBanner ? <Banner variant="warning" title={t('ride:seatLockActive')} body={lockBanner} /> : null}
 
       <Card style={{ gap: spacing.sm }}>
         <Row justify="space-between">
           <Text variant="bodyMd">
-            {seats} × {ride.price_per_seat} TND
+            {seats} × {ride.price_per_seat} {t('common:tnd')}
           </Text>
-          <Text variant="bodyMd">{total} TND</Text>
+          <Text variant="bodyMd">{total} {t('common:tnd')}</Text>
         </Row>
         <Row justify="space-between">
           <Text variant="labelMd" color={colors.onSurfaceVariant}>
-            Booking fee
+            {t('ride:bookingFee')}
           </Text>
           <Text variant="labelMd" color={colors.onSurfaceVariant}>
-            0 TND
+            0 {t('common:tnd')}
           </Text>
         </Row>
         <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginVertical: spacing.xs }} />
         <Row justify="space-between">
-          <Text variant="bodyLg">Total</Text>
+          <Text variant="bodyLg">{t('ride:total')}</Text>
           <Text variant="headlineMd" color={colors.primary}>
-            {total} TND
+            {total} {t('common:tnd')}
           </Text>
         </Row>
         <Button
-          label={submitting ? 'Processing payment…' : `Book ${seats} seat${seats > 1 ? 's' : ''}`}
+          label={submitting ? t('ride:processingPayment') : t('ride:bookSeats', { count: seats })}
           variant="secondary"
           onPress={book}
           loading={submitting}

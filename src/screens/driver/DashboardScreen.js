@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, Pressable } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -17,13 +18,12 @@ import { EmptyState } from '../../components/EmptyState';
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { spacing, radius } from '../../theme';
+import { formatDateTime, dayLetter, formatDayOfMonth } from '../../i18n/format';
 
 const PERIODS = [
-  { key: 'week', label: 'Week', bins: 7 },
-  { key: 'month', label: 'Month', bins: 30 },
+  { key: 'week', bins: 7 },
+  { key: 'month', bins: 30 },
 ];
-
-const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 const EMPTY_ANALYTICS = {
   period: 'week',
@@ -52,10 +52,10 @@ function formatTnd(n) {
   return n.toFixed(0);
 }
 
-function delta(current, prev) {
+function delta(current, prev, t) {
   if (prev === 0) {
     if (current === 0) return { sign: 0, label: '—' };
-    return { sign: 1, label: 'new' };
+    return { sign: 1, label: t('common:new') };
   }
   const pct = Math.round(((current - prev) / prev) * 100);
   if (pct === 0) return { sign: 0, label: '0%' };
@@ -64,6 +64,7 @@ function delta(current, prev) {
 
 export default function DriverDashboard() {
   const { colors } = useTheme();
+  const { t, locale } = useLocale();
   const { user, signOut } = useAuth();
   const nav = useNavigation();
   const [rides, setRides] = useState([]);
@@ -85,9 +86,12 @@ export default function DriverDashboard() {
   const max = Math.max(...(analytics.history.length ? analytics.history : [1]), 1);
   const bins = period === 'month' ? 30 : 7;
 
-  const labels = useMemo(() => buildLabels(period, analytics.historyStart, bins), [period, analytics.historyStart, bins]);
+  const labels = useMemo(
+    () => buildLabels(period, analytics.historyStart, bins, locale),
+    [period, analytics.historyStart, bins, locale]
+  );
 
-  const earningsDelta = delta(periodEarnings(analytics, period), analytics.earningsPrev);
+  const earningsDelta = delta(periodEarnings(analytics, period), analytics.earningsPrev, t);
 
   return (
     <Screen padded={false}>
@@ -106,7 +110,7 @@ export default function DriverDashboard() {
             <Avatar name={user?.name} size={42} />
             <View>
               <Text variant="labelSm" color={colors.onPrimaryContainer}>
-                Good day,
+                {t('driver:goodDay')},
               </Text>
               <Text variant="headlineSm" color={colors.onPrimary}>
                 {user?.name?.split(' ')[0]}
@@ -146,38 +150,38 @@ export default function DriverDashboard() {
         <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
           <KpiTile
             icon="route"
-            label="Trips"
+            label={t('driver:tripsKpi')}
             value={String(analytics.tripsThisPeriod)}
-            delta={delta(analytics.tripsThisPeriod, analytics.tripsPrevPeriod)}
+            delta={delta(analytics.tripsThisPeriod, analytics.tripsPrevPeriod, t)}
             dark
           />
           <KpiTile
             icon="event-seat"
-            label="Seats sold"
+            label={t('driver:seatsSold')}
             value={String(analytics.seatsSold)}
-            delta={delta(analytics.seatsSold, analytics.seatsPrev)}
+            delta={delta(analytics.seatsSold, analytics.seatsPrev, t)}
             dark
           />
           <KpiTile
             icon="donut-large"
-            label="Occupancy"
+            label={t('driver:occupancy')}
             value={`${analytics.occupancyPct}%`}
-            delta={delta(analytics.occupancyPct, analytics.occupancyPrevPct)}
+            delta={delta(analytics.occupancyPct, analytics.occupancyPrevPct, t)}
             dark
           />
           <KpiTile
             icon="payments"
-            label="Avg fare"
+            label={t('driver:avgFare')}
             value={`${formatTnd(analytics.avgFare)}`}
-            suffix=" TND"
-            delta={delta(analytics.avgFare, analytics.avgFarePrev)}
+            suffix={` ${t('common:tnd')}`}
+            delta={delta(analytics.avgFare, analytics.avgFarePrev, t)}
             dark
           />
         </Row>
       </View>
 
       <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.md, gap: spacing.md }}>
-        <Section title="Today's ride">
+        <Section title={t('driver:todaysRide')}>
           {today ? (
             <Card
               style={{
@@ -187,16 +191,16 @@ export default function DriverDashboard() {
               }}
             >
               <Row justify="space-between" align="flex-start">
-                <Badge label="Scheduled" variant="info" icon="schedule" />
+                <Badge label={t('driver:scheduled')} variant="info" icon="schedule" />
                 <Text variant="headlineMd" color={colors.onSecondaryContainer}>
-                  {(today.total_seats - today.available_seats) * today.price_per_seat} TND
+                  {(today.total_seats - today.available_seats) * today.price_per_seat} {t('common:tnd')}
                 </Text>
               </Row>
               <RouteTimeline
                 origin={today.route.origin_city}
                 destination={today.route.destination_city}
-                departureLabel={new Date(today.departure_time).toLocaleString()}
-                arrivalLabel={`~${today.route.estimated_duration_min} min`}
+                departureLabel={formatDateTime(today.departure_time)}
+                arrivalLabel={t('common:minutes', { count: today.route.estimated_duration_min })}
               />
               <Row justify="space-between" align="center">
                 <AvatarStack
@@ -205,7 +209,7 @@ export default function DriverDashboard() {
                   extra={Math.max(0, today.total_seats - today.available_seats - 3)}
                 />
                 <Button
-                  label="Manage ride"
+                  label={t('driver:manageRide')}
                   variant="primary"
                   fullWidth={false}
                   small
@@ -217,20 +221,21 @@ export default function DriverDashboard() {
           ) : (
             <EmptyState
               icon="event-busy"
-              title="No rides scheduled"
-              body="Create your next ride and start filling seats."
-              actionLabel="Create ride"
+              title={t('driver:noRidesTitle')}
+              body={t('driver:noRidesBody')}
+              actionLabel={t('driver:createRide')}
               onAction={() => nav.navigate('CreateRide')}
             />
           )}
         </Section>
 
         <Section
-          title="Earnings"
+          title={t('driver:earnings')}
           action={
             <Row gap={4}>
               {PERIODS.map((p) => {
                 const active = p.key === period;
+                const label = p.key === 'week' ? t('driver:thisWeek') : t('driver:thisMonth');
                 return (
                   <Pressable
                     key={p.key}
@@ -246,7 +251,7 @@ export default function DriverDashboard() {
                       variant="labelSm"
                       color={active ? colors.onPrimary : colors.onSurface}
                     >
-                      {p.label}
+                      {label}
                     </Text>
                   </Pressable>
                 );
@@ -258,10 +263,10 @@ export default function DriverDashboard() {
             <Row justify="space-between" align="flex-end" style={{ marginBottom: spacing.md }}>
               <Stack gap={2}>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  This {period}
+                  {period === 'week' ? t('driver:thisWeek') : t('driver:thisMonth')}
                 </Text>
                 <Text variant="displayLg">
-                  {formatTnd(periodEarnings(analytics, period))} TND
+                  {formatTnd(periodEarnings(analytics, period))} {t('common:tnd')}
                 </Text>
               </Stack>
               <Badge
@@ -307,7 +312,7 @@ export default function DriverDashboard() {
                 </Text>
               </Row>
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                Rating · {analytics.tripsCompleted} lifetime trips
+                {t('driver:ratingLifetime', { count: analytics.tripsCompleted ?? 0 })}
               </Text>
             </Card>
           </View>
@@ -318,7 +323,9 @@ export default function DriverDashboard() {
                 <Text variant="headlineSm">{analytics.cancelRatePct}%</Text>
               </Row>
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                Cancellation rate this {period}
+                {period === 'week'
+                  ? t('driver:cancellationRateThisWeek')
+                  : t('driver:cancellationRateThisMonth')}
               </Text>
             </Card>
           </View>
@@ -341,23 +348,23 @@ export default function DriverDashboard() {
               </View>
               <Stack gap={2} style={{ flex: 1 }}>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  Top route this {period}
+                  {period === 'week' ? t('driver:topRouteThisWeek') : t('driver:topRouteThisMonth')}
                 </Text>
                 <Text variant="bodyMd">
                   {analytics.topRoute.origin_city} → {analytics.topRoute.destination_city}
                 </Text>
               </Stack>
               <Stack gap={2} style={{ alignItems: 'flex-end' }}>
-                <Text variant="labelMd">{analytics.topRoute.count} rides</Text>
+                <Text variant="labelMd">{t('common:ridesCount', { count: analytics.topRoute.count })}</Text>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {formatTnd(analytics.topRoute.revenue)} TND
+                  {formatTnd(analytics.topRoute.revenue)} {t('common:tnd')}
                 </Text>
               </Stack>
             </Row>
           </Card>
         ) : null}
       </View>
-      <FAB icon="add" label="New ride" onPress={() => nav.navigate('CreateRide')} />
+      <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
     </Screen>
   );
 }
@@ -366,10 +373,10 @@ function periodEarnings(analytics, period) {
   return period === 'month' ? analytics.month : analytics.week;
 }
 
-function buildLabels(period, historyStartIso, bins) {
-  // Week: one letter per day, anchored to historyStart so "today" lines up
-  // with the rightmost bar. Month: sparse labels every ~5 days so 30 chars
-  // don't overlap on narrow screens.
+function buildLabels(period, historyStartIso, bins, locale) {
+  // Week: locale-aware one-letter weekday, anchored to historyStart so "today"
+  // lines up with the rightmost bar. Month: sparse labels every ~5 days so 30
+  // chars don't overlap on narrow screens.
   const start = historyStartIso ? new Date(historyStartIso) : new Date();
   if (!historyStartIso) start.setDate(start.getDate() - (bins - 1));
   const out = [];
@@ -377,10 +384,10 @@ function buildLabels(period, historyStartIso, bins) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     if (period === 'week') {
-      out.push(DOW[d.getDay()]);
+      out.push(dayLetter(d, { locale }));
     } else {
       // Show day-of-month on 1st, every 5th, and the last bar
-      if (i === 0 || i === bins - 1 || (bins - 1 - i) % 5 === 0) out.push(String(d.getDate()));
+      if (i === 0 || i === bins - 1 || (bins - 1 - i) % 5 === 0) out.push(formatDayOfMonth(d, { locale }));
       else out.push('');
     }
   }

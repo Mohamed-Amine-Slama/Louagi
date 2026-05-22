@@ -21,6 +21,7 @@ import { usersApi, reservationsApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius, shadows } from '../../theme';
+import { formatMonthYear } from '../../i18n/format';
 import {
   getBiometricCapability,
   promptBiometric,
@@ -30,6 +31,7 @@ import {
   BIOMETRIC_KIND,
 } from '../../security/biometric';
 
+// Autonym labels — each language displayed in its own script.
 const LANGUAGES = [
   { code: 'fr', label: 'Français' },
   { code: 'ar', label: 'العربية' },
@@ -38,7 +40,7 @@ const LANGUAGES = [
 
 export default function PassengerProfile() {
   const { colors, mode, setMode } = useTheme();
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
   const nav = useNavigation();
   const { user, signOut } = useAuth();
   const toast = useToast();
@@ -77,7 +79,7 @@ export default function PassengerProfile() {
         reservationsApi.listReservations({ actor: user }),
       ]);
       if (!p) {
-        setLoadError('Your session no longer matches any account. Please sign in again.');
+        setLoadError(t('auth:sessionInvalid'));
         return;
       }
       setLoadError(null);
@@ -100,9 +102,9 @@ export default function PassengerProfile() {
       const fav = [...routeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
       setStats({ trips, spent, favouriteRoute: fav });
     } catch (err) {
-      setLoadError(err?.message || 'Failed to load your profile.');
+      setLoadError(err?.message || t('auth:profileLoadFailed'));
     }
-  }, [user]);
+  }, [user, t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -121,32 +123,35 @@ export default function PassengerProfile() {
     if (biometricBusy) return;
     if (!biometricCap.available) {
       const reason = !biometricCap.enrolled && biometricCap.kind !== BIOMETRIC_KIND.NONE
-        ? 'No fingerprint enrolled in your device settings.'
-        : 'Biometric sensor not available on this device.';
+        ? t('auth:biometricNotEnrolled')
+        : t('auth:biometricNotAvailable');
       toast.show(reason, 'error');
       return;
     }
     setBiometricBusy(true);
     try {
       if (next) {
-        const promptKind = biometricCap.kind === BIOMETRIC_KIND.FACE ? 'Face ID' : 'fingerprint';
-        const auth = await promptBiometric({ promptMessage: `Confirm to enable ${promptKind} sign-in` });
+        const promptMessage =
+          biometricCap.kind === BIOMETRIC_KIND.FACE
+            ? t('auth:biometricPromptEnrollFace')
+            : t('auth:biometricPromptEnrollFingerprint');
+        const auth = await promptBiometric({ promptMessage });
         if (!auth.success) {
-          toast.show("Biometric check didn't succeed", 'error');
+          toast.show(t('auth:biometricFailedShort'), 'error');
           return;
         }
         const res = await authApi.enrollBiometric({ userId: user.id });
         if (!res.ok) {
-          toast.show(res.error || 'Could not enable biometric sign-in', 'error');
+          toast.show(res.error || t('auth:biometricCouldNotEnable'), 'error');
           return;
         }
         await saveBiometricCredential({ userId: user.id, userName: profile?.full_name || user.name, ticket: res.ticket });
         setBiometric(true);
-        toast.show('Biometric sign-in enabled', 'success');
+        toast.show(t('auth:biometricEnabledToast'), 'success');
       } else {
         await clearBiometricCredential();
         setBiometric(false);
-        toast.show('Biometric sign-in turned off', 'info');
+        toast.show(t('auth:biometricDisabledToast'), 'info');
       }
     } finally {
       setBiometricBusy(false);
@@ -156,10 +161,10 @@ export default function PassengerProfile() {
   if (loadError) {
     return (
       <Screen>
-        <ScreenHeader title="Profile & settings" />
+        <ScreenHeader title={t('passenger:profileTitle')} />
         <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
-          <Banner variant="error" title="Couldn't load profile" body={loadError} />
-          <Button label="Sign out" variant="outline" iconLeft="logout" onPress={signOut} />
+          <Banner variant="error" title={t('auth:couldntLoadProfile')} body={loadError} />
+          <Button label={t('auth:signout')} variant="outline" iconLeft="logout" onPress={signOut} />
         </View>
       </Screen>
     );
@@ -167,10 +172,7 @@ export default function PassengerProfile() {
 
   if (!profile) return <Screen />;
 
-  const memberSince = (() => {
-    const d = new Date(); // demo seed lacks an explicit signup date; show "this year"
-    return d.toLocaleString('en', { month: 'short', year: 'numeric' });
-  })();
+  const memberSince = formatMonthYear(new Date(), { locale });
 
   const saveAccount = async () => {
     setErrors({});
@@ -182,13 +184,13 @@ export default function PassengerProfile() {
       return;
     }
     setSaving(false);
-    toast.show('Account info saved', 'success');
+    toast.show(t('toast:savedAccount'), 'success');
   };
 
   const savePassword = async () => {
     setErrors({});
     if (!newPassword) {
-      setErrors({ newPassword: 'Enter a new password' });
+      setErrors({ newPassword: t('auth:enterNewPassword') });
       return;
     }
     setSaving(true);
@@ -205,7 +207,7 @@ export default function PassengerProfile() {
     setCurrentPassword('');
     setNewPassword('');
     setShowPasswordForm(false);
-    toast.show('Password changed', 'success');
+    toast.show(t('toast:passwordChanged'), 'success');
   };
 
   const saveNotifications = async (nextSms, nextPush) => {
@@ -216,7 +218,7 @@ export default function PassengerProfile() {
 
   const del = async () => {
     if (!deletePassword) {
-      setErrors({ deletePassword: 'Enter your password to confirm' });
+      setErrors({ deletePassword: t('auth:enterPasswordConfirm') });
       return;
     }
     const res = await usersApi.deleteAccount({ actor: user, password: deletePassword });
@@ -224,13 +226,13 @@ export default function PassengerProfile() {
       setErrors({ deletePassword: res.error });
       return;
     }
-    toast.show('Account deleted', 'info');
+    toast.show(t('toast:accountDeleted'), 'info');
     signOut();
   };
 
   return (
     <Screen padded={false}>
-      <ScreenHeader title="Profile & settings" />
+      <ScreenHeader title={t('passenger:profileTitle')} />
 
       <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
         {/* Hero card */}
@@ -246,7 +248,7 @@ export default function PassengerProfile() {
               </Text>
               <Row gap={spacing.xs} style={{ marginTop: 4 }}>
                 <Badge label={profile.role} variant="info" icon="badge" />
-                <Badge label={`Since ${memberSince}`} variant="neutral" icon="event" />
+                <Badge label={t('common:since', { date: memberSince })} variant="neutral" icon="event" />
               </Row>
             </Stack>
           </Row>
@@ -254,9 +256,9 @@ export default function PassengerProfile() {
 
         {/* Travel stats */}
         <Row gap={spacing.sm}>
-          <StatTile icon="route" value={stats.trips} label="Trips" />
-          <StatTile icon="payments" value={`${stats.spent.toFixed(0)} TND`} label="Spent" />
-          <StatTile icon="eco" value={`${(stats.trips * 5).toFixed(0)} kg`} label="CO₂ saved" />
+          <StatTile icon="route" value={stats.trips} label={t('passenger:trips')} />
+          <StatTile icon="payments" value={`${stats.spent.toFixed(0)} ${t('common:tnd')}`} label={t('passenger:spent')} />
+          <StatTile icon="eco" value={`${(stats.trips * 5).toFixed(0)} kg`} label={t('passenger:co2Saved')} />
         </Row>
         {stats.favouriteRoute ? (
           <Card>
@@ -272,7 +274,7 @@ export default function PassengerProfile() {
               </View>
               <Stack gap={2} style={{ flex: 1 }}>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  Favourite route
+                  {t('passenger:favouriteRoute')}
                 </Text>
                 <Text variant="bodyMd">{stats.favouriteRoute}</Text>
               </Stack>
@@ -281,12 +283,12 @@ export default function PassengerProfile() {
         ) : null}
 
         {/* Account info */}
-        <Section title="Account">
+        <Section title={t('passenger:account')}>
           <Card>
             <Stack gap={spacing.md}>
-              <Input label="Full name" value={fullName} onChangeText={setFullName} error={errors.fullName} iconLeft="person" />
+              <Input label={t('auth:fullName')} value={fullName} onChangeText={setFullName} error={errors.fullName} iconLeft="person" />
               <Input
-                label="Email"
+                label={t('auth:email')}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -296,58 +298,60 @@ export default function PassengerProfile() {
               />
               <Row justify="space-between" align="center">
                 <Stack gap={2} style={{ flex: 1 }}>
-                  <Text variant="labelSm" color={colors.onSurfaceVariant}>Phone (verified)</Text>
+                  <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('passenger:phoneVerified')}</Text>
                   <Text variant="bodyMd">{profile.phone_masked}</Text>
                 </Stack>
                 <MaterialIcons name="verified" size={22} color={colors.success} />
               </Row>
-              <Button label="Save account info" variant="secondary" onPress={saveAccount} loading={saving} />
+              <Button label={t('passenger:saveAccount')} variant="secondary" onPress={saveAccount} loading={saving} />
             </Stack>
           </Card>
         </Section>
 
         {/* Security */}
-        <Section title="Security">
+        <Section title={t('passenger:security')}>
           <Card>
             <SettingRow
               icon="lock"
-              title="Password"
-              subtitle="Change your sign-in password"
+              title={t('passenger:passwordRow')}
+              subtitle={t('passenger:passwordRowSubtitle')}
               right={<MaterialIcons name={showPasswordForm ? 'expand-less' : 'expand-more'} size={22} color={colors.onSurfaceVariant} />}
               onPress={() => setShowPasswordForm((v) => !v)}
             />
             {showPasswordForm ? (
               <Stack gap={spacing.md} style={{ marginTop: spacing.sm }}>
                 <Input
-                  label="Current password"
+                  label={t('auth:currentPassword')}
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
                   secureTextEntry
                   error={errors.currentPassword}
                 />
                 <Input
-                  label="New password"
+                  label={t('auth:newPassword')}
                   value={newPassword}
                   onChangeText={setNewPassword}
                   secureTextEntry
-                  hint="Min 8 chars · 1 uppercase · 1 digit"
+                  hint={t('auth:phoneFormatHint')}
                   error={errors.newPassword}
                 />
-                <Button label="Update password" onPress={savePassword} loading={saving} />
+                <Button label={t('passenger:updatePassword')} onPress={savePassword} loading={saving} />
               </Stack>
             ) : null}
             <Divider />
             <SettingRow
               icon={biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}
-              title="Biometric sign-in"
+              title={t('passenger:biometric')}
               subtitle={
                 !biometricCap.available
                   ? (biometricCap.kind === BIOMETRIC_KIND.NONE
-                    ? 'Biometric sensor not available on this device'
-                    : 'No fingerprint enrolled in your device settings')
+                    ? t('auth:biometricNotAvailableShort')
+                    : t('auth:biometricNotEnrolledShort'))
                   : biometric
-                    ? `Linked — next login uses your ${biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}`
-                    : `Scan once to skip phone & password next time`
+                    ? (biometricCap.kind === BIOMETRIC_KIND.FACE
+                      ? t('auth:biometricLinkedFace')
+                      : t('auth:biometricLinkedFingerprint'))
+                    : t('auth:biometricScanOnce')
               }
               right={
                 <Switch
@@ -360,60 +364,60 @@ export default function PassengerProfile() {
             <Divider />
             <SettingRow
               icon="devices"
-              title="Active sessions"
-              subtitle="1 device · this phone"
+              title={t('passenger:activeSessions')}
+              subtitle={t('passenger:activeSessionsSubtitle')}
               right={<MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />}
-              onPress={() => toast.show('Only this device is signed in', 'info')}
+              onPress={() => toast.show(t('toast:onlyThisDevice'), 'info')}
             />
             <Divider />
             <SettingRow
               icon="phonelink-lock"
-              title="Two-step verification"
-              subtitle="SMS OTP on every login"
-              right={<Badge label="Enforced" variant="success" icon="check" />}
+              title={t('passenger:twoStep')}
+              subtitle={t('passenger:twoStepSubtitle')}
+              right={<Badge label={t('passenger:enforced')} variant="success" icon="check" />}
             />
           </Card>
         </Section>
 
         {/* Notifications */}
-        <Section title="Notifications">
+        <Section title={t('passenger:notifications')}>
           <Card>
             <SettingRow
               icon="sms"
-              title="SMS"
-              subtitle="Booking confirmations, OTPs, ride alerts"
+              title={t('passenger:sms')}
+              subtitle={t('passenger:smsSubtitle')}
               right={<Switch value={sms} onValueChange={(v) => saveNotifications(v, push)} />}
             />
             <Divider />
             <SettingRow
               icon="notifications"
-              title="Push"
-              subtitle="Real-time ride status on this device"
+              title={t('passenger:push')}
+              subtitle={t('passenger:pushSubtitle')}
               right={<Switch value={push} onValueChange={(v) => saveNotifications(sms, v)} />}
             />
             <Divider />
             <SettingRow
               icon="campaign"
-              title="Marketing & promos"
-              subtitle="Occasional discounts and tips"
+              title={t('passenger:marketing')}
+              subtitle={t('passenger:marketingSubtitle')}
               right={<Switch value={marketing} onValueChange={setMarketing} />}
             />
           </Card>
         </Section>
 
         {/* Preferences */}
-        <Section title="Travel preferences">
+        <Section title={t('passenger:preferences')}>
           <Card>
             <SettingRow
               icon="event-seat"
-              title="Default seats"
-              subtitle="Pre-fill the seat selector when you book"
+              title={t('passenger:defaultSeats')}
+              subtitle={t('passenger:defaultSeatsSubtitle')}
               right={<Stepper value={defaultSeats} onChange={setDefaultSeats} min={1} max={8} />}
             />
             <Divider />
             <SettingRow
               icon="translate"
-              title="Language"
+              title={t('passenger:language')}
               subtitle={LANGUAGES.find((l) => l.code === locale)?.label}
               right={
                 <Row gap={4}>
@@ -442,8 +446,10 @@ export default function PassengerProfile() {
             <Divider />
             <SettingRow
               icon="palette"
-              title="Theme"
-              subtitle={{ light: 'Light', dark: 'Dark', system: 'Follows system' }[mode]}
+              title={t('passenger:theme')}
+              subtitle={
+                { light: t('passenger:themeLight'), dark: t('passenger:themeDark'), system: t('passenger:themeSystemFollows') }[mode]
+              }
               right={
                 <Row gap={4}>
                   {THEME_MODES.map((m) => {
@@ -473,31 +479,31 @@ export default function PassengerProfile() {
             <Divider />
             <SettingRow
               icon="payments"
-              title="Currency"
-              subtitle="Tunisian Dinar"
-              right={<Badge label="TND" variant="neutral" />}
+              title={t('passenger:currency')}
+              subtitle={t('passenger:currencySubtitle')}
+              right={<Badge label={t('common:tnd')} variant="neutral" />}
             />
             <Divider />
             <LinkRow
               icon="tune"
-              title="All settings"
+              title={t('passenger:allSettings')}
               onPress={() => nav.navigate('Settings')}
             />
           </Card>
         </Section>
 
         {/* Payment methods */}
-        <Section title="Payment methods">
+        <Section title={t('passenger:paymentMethods')}>
           <Card>
             <SettingRow
               icon="credit-card"
-              title="Card ending 4242"
-              subtitle="Default · expires 09/27"
-              right={<Badge label="Default" variant="success" />}
+              title={t('passenger:cardEnding', { last4: '4242' })}
+              subtitle={t('passenger:cardDefault', { exp: '09/27' })}
+              right={<Badge label={t('passenger:cardDefaultBadge')} variant="success" />}
             />
             <Divider />
             <Pressable
-              onPress={() => toast.show('Add card flow is part of the booking sheet', 'info')}
+              onPress={() => toast.show(t('toast:addCardHint'), 'info')}
               style={({ pressed }) => ({
                 paddingVertical: spacing.sm,
                 opacity: pressed ? 0.7 : 1,
@@ -515,43 +521,43 @@ export default function PassengerProfile() {
               >
                 <MaterialIcons name="add" size={20} color={colors.primary} />
               </View>
-              <Text variant="labelMd" color={colors.primary}>Add a card</Text>
+              <Text variant="labelMd" color={colors.primary}>{t('passenger:addCard')}</Text>
             </Pressable>
           </Card>
         </Section>
 
         {/* Support */}
-        <Section title="Support & legal">
+        <Section title={t('passenger:support')}>
           <Card>
-            <LinkRow icon="help" title="Help centre" onPress={() => toast.show('Help centre coming soon', 'info')} />
+            <LinkRow icon="help" title={t('passenger:helpCentre')} onPress={() => toast.show(t('toast:helpComingSoon'), 'info')} />
             <Divider />
-            <LinkRow icon="chat" title="Contact support" onPress={() => toast.show('We reply within 24h', 'info')} />
+            <LinkRow icon="chat" title={t('passenger:contactSupport')} onPress={() => toast.show(t('toast:weReplyIn24h'), 'info')} />
             <Divider />
-            <LinkRow icon="description" title="Terms of service" onPress={() => toast.show('Open in browser', 'info')} />
+            <LinkRow icon="description" title={t('passenger:terms')} onPress={() => toast.show(t('toast:openInBrowser'), 'info')} />
             <Divider />
-            <LinkRow icon="privacy-tip" title="Privacy policy" onPress={() => toast.show('Open in browser', 'info')} />
+            <LinkRow icon="privacy-tip" title={t('passenger:privacy')} onPress={() => toast.show(t('toast:openInBrowser'), 'info')} />
             <Divider />
             <LinkRow
               icon="download"
-              title="Download my data"
-              onPress={() => toast.show('Export queued — you\'ll get an email', 'info')}
+              title={t('passenger:downloadData')}
+              onPress={() => toast.show(t('toast:exportQueued'), 'info')}
             />
           </Card>
         </Section>
 
-        <Button label="Log out" variant="outline" onPress={signOut} iconLeft="logout" />
+        <Button label={t('common:logout')} variant="outline" onPress={signOut} iconLeft="logout" />
 
         {/* Danger zone */}
-        <Section title="Danger zone">
+        <Section title={t('passenger:dangerZone')}>
           <Banner
             variant="error"
-            title="Delete your account"
-            body="Permanently deactivates your account. Past bookings stay in the audit log."
+            title={t('passenger:deleteAccountTitle')}
+            body={t('passenger:deleteAccountBody')}
           />
           {showDeleteForm ? (
             <Card style={{ gap: spacing.md }}>
               <Input
-                label="Confirm with your password"
+                label={t('passenger:confirmDeleteLabel')}
                 value={deletePassword}
                 onChangeText={setDeletePassword}
                 secureTextEntry
@@ -559,20 +565,20 @@ export default function PassengerProfile() {
               />
               <Row gap={spacing.sm}>
                 <View style={{ flex: 1 }}>
-                  <Button label="Cancel" variant="outline" onPress={() => setShowDeleteForm(false)} />
+                  <Button label={t('common:cancel')} variant="outline" onPress={() => setShowDeleteForm(false)} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Button label="Delete forever" variant="danger" onPress={del} />
+                  <Button label={t('common:deleteForever')} variant="danger" onPress={del} />
                 </View>
               </Row>
             </Card>
           ) : (
-            <Button label="Delete account" variant="danger" iconLeft="delete-forever" onPress={() => setShowDeleteForm(true)} />
+            <Button label={t('passenger:deleteAccount')} variant="danger" iconLeft="delete-forever" onPress={() => setShowDeleteForm(true)} />
           )}
         </Section>
 
         <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ textAlign: 'center', marginTop: spacing.md }}>
-          Louagi · v1.0.0
+          {t('passenger:versionFooter', { version: '1.0.0' })}
         </Text>
       </View>
     </Screen>

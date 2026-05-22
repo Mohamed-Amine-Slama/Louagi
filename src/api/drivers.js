@@ -3,6 +3,8 @@ import { encryptField, decryptField } from '../security/crypto';
 import { appendAudit } from '../security/audit';
 import { can } from '../security/rbac';
 import { validateFileSize, validatePlate, validateSeatCount, sanitize } from '../validation/schemas';
+import { useMocks } from '../config';
+import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -16,6 +18,17 @@ export async function registerDriverApplication({
   seatCount,
   files = [], // [{ name, sizeBytes, mime }]
 }) {
+  if (!useMocks) {
+    return gql('RegisterDriverApplication', {
+      idCardNumber,
+      licenseNumber,
+      plateNumber,
+      brand,
+      model,
+      seatCount,
+      files,
+    });
+  }
   await sleep(220);
   if (!actor) return { ok: false, error: 'Unauthenticated' };
   const errs = {};
@@ -96,6 +109,10 @@ export async function registerDriverApplication({
 }
 
 export async function getDriverStatus({ actor }) {
+  if (!useMocks) {
+    const result = await gql('GetDriverStatus');
+    return result?.status ? result : { status: 'not_applied' };
+  }
   await sleep(60);
   const d = findDriverByUserId(actor.id);
   if (!d) return { status: 'not_applied' };
@@ -103,6 +120,10 @@ export async function getDriverStatus({ actor }) {
 }
 
 export async function getDriverProfile({ actor }) {
+  if (!useMocks) {
+    const result = await gql('GetDriverProfile');
+    return result?.id ? result : null;
+  }
   await sleep(60);
   const d = findDriverByUserId(actor.id);
   if (!d) return null;
@@ -125,6 +146,7 @@ export async function getDriverProfile({ actor }) {
 }
 
 export async function updateDriverVehicle({ actor, brand, model, seatCount }) {
+  if (!useMocks) return gql('UpdateDriverVehicle', { brand, model, seatCount });
   await sleep(120);
   const d = findDriverByUserId(actor.id);
   if (!d) return { ok: false, error: 'No driver record' };
@@ -146,6 +168,7 @@ export async function updateDriverVehicle({ actor, brand, model, seatCount }) {
 }
 
 export async function updateDriverPayout({ actor, account }) {
+  if (!useMocks) return gql('UpdateDriverPayout', { account });
   await sleep(120);
   const d = findDriverByUserId(actor.id);
   if (!d) return { ok: false, error: 'No driver record' };
@@ -163,6 +186,7 @@ export async function updateDriverPayout({ actor, account }) {
 
 // --- Admin operations ---
 export async function adminListDrivers({ actor, status }) {
+  if (!useMocks) return gqlList('AdminListDrivers', { status });
   if (!can(actor?.role, 'admin:read')) return [];
   await sleep(80);
   return db.drivers
@@ -177,6 +201,7 @@ export async function adminListDrivers({ actor, status }) {
 }
 
 export async function adminVerifyDriver({ actor, driverId, approve, reason }) {
+  if (!useMocks) return gql('AdminVerifyDriver', { driverId, approve, reason });
   if (!can(actor?.role, 'admin:verify-driver')) return { ok: false, error: 'Forbidden' };
   await sleep(120);
   const d = db.drivers.find((x) => x.id === driverId);

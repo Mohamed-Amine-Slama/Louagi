@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
+import { Text } from './Text';
 import { useTheme } from '../context/ThemeContext';
 import { useLocale } from '../context/LocaleContext';
 import { SUPPORTED_LOCALES } from '../i18n';
@@ -17,7 +18,7 @@ const ICONS = {
 
 export function HeaderQuickToggles({ dark = false }) {
   const { mode, setMode, colors } = useTheme();
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
 
   const cycleTheme = () => {
     const next = THEME_CYCLE[(THEME_CYCLE.indexOf(mode) + 1) % THEME_CYCLE.length];
@@ -36,7 +37,8 @@ export function HeaderQuickToggles({ dark = false }) {
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
       <Pressable
         onPress={cycleTheme}
-        accessibilityLabel="Toggle theme"
+        accessibilityRole="button"
+        accessibilityLabel={t('passenger:theme')}
         style={{
           width: 40,
           height: 40,
@@ -50,23 +52,24 @@ export function HeaderQuickToggles({ dark = false }) {
       </Pressable>
       <Pressable
         onPress={cycleLocale}
-        accessibilityLabel="Toggle language"
+        accessibilityRole="button"
+        accessibilityLabel={t('passenger:language')}
         style={{
           paddingHorizontal: spacing.sm,
           height: 40,
-          minWidth: 48,
+          minWidth: 52,
           borderRadius: radius.full,
           backgroundColor: bg,
           alignItems: 'center',
           justifyContent: 'center',
+          flexDirection: 'row',
+          gap: 4,
         }}
       >
-        <MaterialIcons
-          name="translate"
-          size={18}
-          color={fg}
-          style={{ marginBottom: -2 }}
-        />
+        <MaterialIcons name="translate" size={16} color={fg} />
+        <Text variant="labelSm" color={fg}>
+          {locale.toUpperCase()}
+        </Text>
       </Pressable>
     </View>
   );

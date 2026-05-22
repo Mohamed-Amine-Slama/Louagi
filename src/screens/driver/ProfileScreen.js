@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, Switch } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -27,17 +28,18 @@ import {
   BIOMETRIC_KIND,
 } from '../../security/biometric';
 
-function expiryWarning(iso) {
+function expiryWarning(iso, t) {
   if (!iso) return null;
   const ms = new Date(iso).getTime() - Date.now();
   const days = Math.ceil(ms / 86400000);
-  if (days < 0) return { tone: 'error', label: `Expired ${-days}d ago` };
-  if (days <= 30) return { tone: 'warning', label: `Expires in ${days}d` };
-  return { tone: 'success', label: `Valid · ${days}d left` };
+  if (days < 0) return { tone: 'error', label: t('driver:expired', { days: -days }) };
+  if (days <= 30) return { tone: 'warning', label: t('driver:expiresIn', { days }) };
+  return { tone: 'success', label: t('driver:valid', { days }) };
 }
 
 export default function DriverProfile() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user, signOut } = useAuth();
   const toast = useToast();
   const [profile, setProfile] = useState(null);
@@ -80,32 +82,35 @@ export default function DriverProfile() {
     if (biometricBusy) return;
     if (!biometricCap.available) {
       const reason = !biometricCap.enrolled && biometricCap.kind !== BIOMETRIC_KIND.NONE
-        ? 'No fingerprint enrolled in your device settings.'
-        : 'Biometric sensor not available on this device.';
+        ? t('auth:biometricNotEnrolled')
+        : t('auth:biometricNotAvailable');
       toast.show(reason, 'error');
       return;
     }
     setBiometricBusy(true);
     try {
       if (next) {
-        const promptKind = biometricCap.kind === BIOMETRIC_KIND.FACE ? 'Face ID' : 'fingerprint';
-        const auth = await promptBiometric({ promptMessage: `Confirm to enable ${promptKind} sign-in` });
+        const promptMessage =
+          biometricCap.kind === BIOMETRIC_KIND.FACE
+            ? t('auth:biometricPromptEnrollFace')
+            : t('auth:biometricPromptEnrollFingerprint');
+        const auth = await promptBiometric({ promptMessage });
         if (!auth.success) {
-          toast.show("Biometric check didn't succeed", 'error');
+          toast.show(t('auth:biometricFailedShort'), 'error');
           return;
         }
         const res = await authApi.enrollBiometric({ userId: user.id });
         if (!res.ok) {
-          toast.show(res.error || 'Could not enable biometric sign-in', 'error');
+          toast.show(res.error || t('auth:biometricCouldNotEnable'), 'error');
           return;
         }
         await saveBiometricCredential({ userId: user.id, userName: user.name, ticket: res.ticket });
         setBiometric(true);
-        toast.show('Biometric sign-in enabled', 'success');
+        toast.show(t('auth:biometricEnabledToast'), 'success');
       } else {
         await clearBiometricCredential();
         setBiometric(false);
-        toast.show('Biometric sign-in turned off', 'info');
+        toast.show(t('auth:biometricDisabledToast'), 'info');
       }
     } finally {
       setBiometricBusy(false);
@@ -114,15 +119,15 @@ export default function DriverProfile() {
 
   if (!profile) return <Screen />;
 
-  const lic = expiryWarning(profile.license_expires_at);
-  const idc = expiryWarning(profile.id_expires_at);
+  const lic = expiryWarning(profile.license_expires_at, t);
+  const idc = expiryWarning(profile.id_expires_at, t);
 
   const saveVehicle = async () => {
     setBusy(true);
     const res = await driversApi.updateDriverVehicle({ actor: user, brand, model, seatCount: Number(seats) });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show('Vehicle updated', 'success');
+    toast.show(t('toast:vehicleUpdated'), 'success');
   };
 
   const savePayout = async () => {
@@ -130,12 +135,12 @@ export default function DriverProfile() {
     const res = await driversApi.updateDriverPayout({ actor: user, account: payout });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show('Payout account saved', 'success');
+    toast.show(t('toast:payoutSaved'), 'success');
   };
 
   return (
     <Screen>
-      <ScreenHeader title="Driver profile" />
+      <ScreenHeader title={t('driver:driverProfile')} />
 
       <Card style={{ alignItems: 'center', gap: spacing.sm }}>
         <View
@@ -152,67 +157,67 @@ export default function DriverProfile() {
         </View>
         <Text variant="displayLg">{(profile.rating ?? 0).toFixed(1)}</Text>
         <Text variant="bodyMd" color={colors.onSurfaceVariant}>
-          {profile.trips_completed} trips completed
+          {t('driver:tripsCompleted', { count: profile.trips_completed ?? 0 })}
         </Text>
         <Badge label={profile.status} variant={profile.status === 'verified' ? 'success' : 'warning'} icon="verified" />
       </Card>
 
-      <Section title="Documents">
+      <Section title={t('driver:documents')}>
         <Card>
           <Row justify="space-between" style={{ marginBottom: spacing.sm }}>
-            <Text variant="bodyMd">Driver's license</Text>
+            <Text variant="bodyMd">{t('driver:driverLicense')}</Text>
             {lic ? <Badge label={lic.label} variant={lic.tone} /> : null}
           </Row>
           <Row justify="space-between">
-            <Text variant="bodyMd">National ID</Text>
+            <Text variant="bodyMd">{t('driver:nationalId')}</Text>
             {idc ? <Badge label={idc.label} variant={idc.tone} /> : null}
           </Row>
         </Card>
         {lic?.tone === 'error' || idc?.tone === 'error' ? (
           <Banner
             variant="error"
-            title="Documents expired"
-            body="You can't publish new rides until expired documents are renewed."
+            title={t('driver:documentsExpired')}
+            body={t('driver:documentsExpiredBody')}
           />
         ) : null}
       </Section>
 
-      <Section title="Vehicle">
+      <Section title={t('driver:vehicle')}>
         <Card>
           <Row gap={spacing.sm}>
             <View style={{ flex: 1 }}>
-              <Input label="Brand" value={brand} onChangeText={setBrand} />
+              <Input label={t('driver:brand')} value={brand} onChangeText={setBrand} />
             </View>
             <View style={{ flex: 1 }}>
-              <Input label="Model" value={model} onChangeText={setModel} />
+              <Input label={t('driver:model')} value={model} onChangeText={setModel} />
             </View>
           </Row>
           <Input
-            label="Seat count"
+            label={t('driver:seatCount')}
             value={seats}
             onChangeText={setSeats}
             keyboardType="number-pad"
           />
           <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: 4 }}>
-            Plate: {profile.plate_number_masked}
+            {t('driver:plateLabel', { plate: profile.plate_number_masked })}
           </Text>
-          <Button label="Save vehicle" variant="secondary" onPress={saveVehicle} loading={busy} />
+          <Button label={t('driver:saveVehicle')} variant="secondary" onPress={saveVehicle} loading={busy} />
         </Card>
       </Section>
 
-      <Section title="Payout">
+      <Section title={t('driver:payout')}>
         <Card>
           <Input
-            label="Bank / Konnect account"
+            label={t('driver:payoutAccount')}
             value={payout}
             onChangeText={setPayout}
             iconLeft="account-balance"
           />
-          <Button label="Save payout details" onPress={savePayout} loading={busy} />
+          <Button label={t('driver:savePayout')} onPress={savePayout} loading={busy} />
         </Card>
       </Section>
 
-      <Section title="Security">
+      <Section title={t('passenger:security')}>
         <Card>
           <Row gap={spacing.md} align="center">
             <View
@@ -229,15 +234,17 @@ export default function DriverProfile() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text variant="labelMd">Biometric sign-in</Text>
+              <Text variant="labelMd">{t('auth:biometricSignIn')}</Text>
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
                 {!biometricCap.available
                   ? (biometricCap.kind === BIOMETRIC_KIND.NONE
-                    ? 'Biometric sensor not available on this device'
-                    : 'No fingerprint enrolled in your device settings')
+                    ? t('auth:biometricNotAvailableShort')
+                    : t('auth:biometricNotEnrolledShort'))
                   : biometric
-                    ? `Linked — next login uses your ${biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}`
-                    : 'Scan once to skip phone & password next time'}
+                    ? (biometricCap.kind === BIOMETRIC_KIND.FACE
+                      ? t('auth:biometricLinkedFace')
+                      : t('auth:biometricLinkedFingerprint'))
+                    : t('auth:biometricScanOnce')}
               </Text>
             </View>
             <Switch
@@ -249,7 +256,7 @@ export default function DriverProfile() {
         </Card>
       </Section>
 
-      <Button label="Log out" variant="outline" onPress={signOut} />
+      <Button label={t('common:logout')} variant="outline" onPress={signOut} />
     </Screen>
   );
 }

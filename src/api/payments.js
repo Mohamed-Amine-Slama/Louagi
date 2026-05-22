@@ -1,10 +1,13 @@
 import { db, findReservationById, findUserById } from './mockDb';
 import { appendAudit } from '../security/audit';
 import { can } from '../security/rbac';
+import { useMocks } from '../config';
+import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function listPayments({ actor }) {
+  if (!useMocks) return gqlList('ListPayments');
   await sleep(80);
   if (!actor) return [];
   if (actor.role === 'admin') return db.payments.slice().reverse();
@@ -17,6 +20,7 @@ export async function listPayments({ actor }) {
 }
 
 export async function adminRefund({ actor, paymentId, amount }) {
+  if (!useMocks) return gql('AdminRefund', { paymentId, amount });
   if (!can(actor?.role, 'admin:refund')) return { ok: false, error: 'Forbidden' };
   await sleep(180);
   const pay = db.payments.find((p) => p.id === paymentId);
@@ -41,6 +45,7 @@ export async function adminRefund({ actor, paymentId, amount }) {
 }
 
 export async function adminFlagPayment({ actor, paymentId, reason }) {
+  if (!useMocks) return gql('AdminFlagPayment', { paymentId, reason });
   if (!can(actor?.role, 'admin:read')) return { ok: false, error: 'Forbidden' };
   await sleep(80);
   const pay = db.payments.find((p) => p.id === paymentId);

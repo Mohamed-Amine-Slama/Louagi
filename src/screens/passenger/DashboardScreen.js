@@ -19,14 +19,7 @@ import { reservationsApi, paymentsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
-
-function fmtCountdown(from) {
-  const ms = new Date(from).getTime() - Date.now();
-  if (ms <= 0) return 'Departing';
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  return `${h}h ${m}m`;
-}
+import { formatDateTime, formatDate, countdownFrom } from '../../i18n/format';
 
 export default function PassengerDashboard() {
   const { colors } = useTheme();
@@ -66,7 +59,7 @@ export default function PassengerDashboard() {
       toast.show(res.error, 'error');
       return;
     }
-    toast.show('Booking cancelled. Refund issued.', 'success');
+    toast.show(t('toast:bookingCancelled'), 'success');
     load();
   };
 
@@ -108,7 +101,7 @@ export default function PassengerDashboard() {
                 style={{
                   position: 'absolute',
                   top: 8,
-                  right: 8,
+                  end: 8,
                   width: 8,
                   height: 8,
                   borderRadius: 4,
@@ -161,9 +154,9 @@ export default function PassengerDashboard() {
           (upcoming.length === 0 ? (
             <EmptyState
               icon="event-note"
-              title="No upcoming rides"
-              body="Find a louage from your favourite city to anywhere in Tunisia."
-              actionLabel="Search rides"
+              title={t('passenger:noUpcomingTitle')}
+              body={t('passenger:noUpcomingBody')}
+              actionLabel={t('landing:searchRides')}
               onAction={() => nav.navigate('Search')}
             />
           ) : (
@@ -175,15 +168,19 @@ export default function PassengerDashboard() {
                       {row.route?.origin_city} → {row.route?.destination_city}
                     </Text>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      {new Date(row.ride?.departure_time).toLocaleString()}
+                      {formatDateTime(row.ride?.departure_time)}
                     </Text>
                   </View>
-                  <Badge label={`Departs in ${fmtCountdown(row.ride?.departure_time)}`} variant="warning" icon="schedule" />
+                  <Badge
+                    label={t('common:departsIn', { duration: countdownFrom(row.ride?.departure_time, t) })}
+                    variant="warning"
+                    icon="schedule"
+                  />
                 </Row>
                 <Row gap={spacing.md} style={{ marginTop: spacing.sm }}>
                   <Stack gap={2} style={{ flex: 1 }}>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      Driver
+                      {t('passenger:driverShort')}
                     </Text>
                     <Row gap={spacing.sm}>
                       <Avatar name={row.driverUser?.full_name} size={28} />
@@ -192,27 +189,27 @@ export default function PassengerDashboard() {
                   </Stack>
                   <Stack gap={2}>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      Seats
+                      {t('passenger:seatsShort')}
                     </Text>
                     <Text variant="bodyMd">{row.reservation.seats_booked}</Text>
                   </Stack>
                   <Stack gap={2}>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      Paid
+                      {t('passenger:paidShort')}
                     </Text>
-                    <Text variant="bodyMd">{row.reservation.total_price} TND</Text>
+                    <Text variant="bodyMd">{row.reservation.total_price} {t('common:tnd')}</Text>
                   </Stack>
                 </Row>
                 <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
                   <View style={{ flex: 1 }}>
                     <Button
-                      label="View ticket"
+                      label={t('passenger:viewTicket')}
                       variant="primary"
                       onPress={() => nav.navigate('BookingConfirm', { id: row.reservation.id })}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Button label="Cancel" variant="danger" onPress={() => cancel(row.reservation.id)} />
+                    <Button label={t('common:cancel')} variant="danger" onPress={() => cancel(row.reservation.id)} />
                   </View>
                 </Row>
               </Card>
@@ -221,7 +218,11 @@ export default function PassengerDashboard() {
 
         {tab === 'past' &&
           (past.length === 0 ? (
-            <EmptyState icon="history" title="No past rides yet" body="Once you ride, it'll show up here." />
+            <EmptyState
+              icon="history"
+              title={t('passenger:noPastTitle')}
+              body={t('passenger:noPastBody')}
+            />
           ) : (
             past.map((row) => (
               <Card key={row.reservation.id}>
@@ -231,7 +232,7 @@ export default function PassengerDashboard() {
                       {row.route?.origin_city} → {row.route?.destination_city}
                     </Text>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      {new Date(row.reservation.booked_at).toLocaleDateString()}
+                      {formatDate(row.reservation.booked_at)}
                     </Text>
                   </Stack>
                   <Badge label={row.reservation.status} variant={row.reservation.status === 'cancelled' ? 'error' : 'success'} />
@@ -242,15 +243,15 @@ export default function PassengerDashboard() {
 
         {tab === 'payments' &&
           (payments.length === 0 ? (
-            <EmptyState icon="payments" title="No payments yet" />
+            <EmptyState icon="payments" title={t('passenger:noPaymentsTitle')} />
           ) : (
             payments.map((p) => (
               <Card key={p.id}>
                 <Row justify="space-between">
                   <Stack gap={2}>
-                    <Text variant="bodyLg">{p.amount} TND</Text>
+                    <Text variant="bodyLg">{p.amount} {t('common:tnd')}</Text>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      {p.method} · {new Date(p.paid_at).toLocaleDateString()}
+                      {p.method} · {formatDate(p.paid_at)}
                     </Text>
                   </Stack>
                   <Badge

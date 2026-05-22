@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -17,9 +18,11 @@ import { paymentsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing } from '../../theme';
+import { formatDateTime } from '../../i18n/format';
 
 export default function AdminPayments() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user } = useAuth();
   const toast = useToast();
   const [rows, setRows] = useState([]);
@@ -40,24 +43,24 @@ export default function AdminPayments() {
 
   const refund = async () => {
     const amount = Number(refundAmount);
-    if (!amount) return toast.show('Enter an amount', 'warning');
+    if (!amount) return toast.show(t('admin:enterAmount'), 'warning');
     setBusy(true);
     const res = await paymentsApi.adminRefund({ actor: user, paymentId: selected.id, amount });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show(`Refund issued (${amount} TND)`, 'success');
+    toast.show(t('toast:refundIssued', { amount }), 'success');
     setSelected(null);
     setRefundAmount('');
     load();
   };
 
   const flag = async () => {
-    if (!flagReason) return toast.show('Add a reason', 'warning');
+    if (!flagReason) return toast.show(t('admin:addReason'), 'warning');
     setBusy(true);
     const res = await paymentsApi.adminFlagPayment({ actor: user, paymentId: selected.id, reason: flagReason });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show('Flagged for review', 'warning');
+    toast.show(t('toast:flagged'), 'warning');
     setSelected(null);
     setFlagReason('');
     load();
@@ -65,17 +68,17 @@ export default function AdminPayments() {
 
   return (
     <Screen>
-      <ScreenHeader title="Payments" subtitle="Refunds, flags, and gateway references" />
+      <ScreenHeader title={t('admin:paymentsTitle')} subtitle={t('admin:paymentsSubtitle')} />
       {rows.length === 0 ? (
-        <Banner variant="info" title="No payments yet" body="Once passengers book, transactions appear here." />
+        <Banner variant="info" title={t('admin:noPaymentsTitle')} body={t('admin:noPaymentsBody')} />
       ) : (
         rows.map((p) => (
           <Card key={p.id} onPress={() => setSelected(p)}>
             <Row justify="space-between">
               <Stack gap={2} style={{ flex: 1 }}>
-                <Text variant="bodyLg">{p.amount} TND</Text>
+                <Text variant="bodyLg">{p.amount} {t('common:tnd')}</Text>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {p.method} · {p.gateway_reference} · {new Date(p.paid_at).toLocaleString()}
+                  {p.method} · {p.gateway_reference} · {formatDateTime(p.paid_at)}
                 </Text>
               </Stack>
               <Stack gap={4} style={{ alignItems: 'flex-end' }}>
@@ -85,7 +88,7 @@ export default function AdminPayments() {
                     p.status === 'succeeded' ? 'success' : p.status === 'refunded' ? 'warning' : 'error'
                   }
                 />
-                {p.flagged ? <Badge label="flagged" variant="error" icon="flag" /> : null}
+                {p.flagged ? <Badge label={t('toast:flagged')} variant="error" icon="flag" /> : null}
               </Stack>
             </Row>
           </Card>
@@ -94,39 +97,39 @@ export default function AdminPayments() {
 
       {selected ? (
         <Card style={{ gap: spacing.md }} accent={colors.primary}>
-          <Section title="Action" />
+          <Section title={t('admin:action')} />
           <Banner
             variant="info"
-            title="Card data is tokenized"
-            body={`Gateway ref: ${selected.gateway_reference}. Louagi only stores the reference, never the card.`}
+            title={t('admin:cardTokenizedTitle')}
+            body={t('admin:cardTokenizedBody', { ref: selected.gateway_reference })}
           />
           <Input
-            label="Refund amount"
+            label={t('admin:refundAmount')}
             value={refundAmount}
             onChangeText={setRefundAmount}
             keyboardType="decimal-pad"
-            hint={`Max ${selected.amount} TND`}
+            hint={t('admin:maxAmount', { amount: selected.amount })}
           />
           <Row gap={spacing.sm}>
             <View style={{ flex: 1 }}>
               <Button
-                label="Full refund"
+                label={t('admin:fullRefund')}
                 variant="outline"
                 onPress={() => setRefundAmount(String(selected.amount))}
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Refund" variant="secondary" onPress={refund} loading={busy} />
+              <Button label={t('admin:refund')} variant="secondary" onPress={refund} loading={busy} />
             </View>
           </Row>
           <Input
-            label="Flag reason"
+            label={t('admin:flagReason')}
             value={flagReason}
             onChangeText={setFlagReason}
-            placeholder="e.g. Possible fraud, chargeback risk"
+            placeholder={t('admin:flagPlaceholder')}
           />
-          <Button label="Flag for review" variant="danger" onPress={flag} loading={busy} />
-          <Button label="Close" variant="ghost" onPress={() => setSelected(null)} />
+          <Button label={t('admin:flagForReview')} variant="danger" onPress={flag} loading={busy} />
+          <Button label={t('common:close')} variant="ghost" onPress={() => setSelected(null)} />
         </Card>
       ) : null}
     </Screen>

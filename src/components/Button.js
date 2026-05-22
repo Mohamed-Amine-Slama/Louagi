@@ -129,7 +129,7 @@ export function FAB({ icon, onPress, label }) {
           justifyContent: 'center',
           backgroundColor: pressed ? colors.secondaryFixed : colors.secondaryContainer,
           position: 'absolute',
-          right: spacing.lg,
+          end: spacing.lg,
           bottom: floatingTabBar.height + floatingTabBar.bottomGap + 8,
           ...shadows.floating,
         },

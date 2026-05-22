@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -21,6 +22,7 @@ import { spacing } from '../../theme';
 
 export default function AdminUsers() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user, applySession } = useAuth();
   const toast = useToast();
   const [q, setQ] = useState('');
@@ -47,7 +49,7 @@ export default function AdminUsers() {
     });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show(selected.is_active ? 'User suspended' : 'User reactivated', 'success');
+    toast.show(selected.is_active ? t('toast:userSuspended') : t('toast:userReactivated'), 'success');
     setSelected({ ...selected, is_active: !selected.is_active });
     load();
   };
@@ -57,7 +59,7 @@ export default function AdminUsers() {
     const res = await adminApi.adminImpersonate({ actor: user, userId: selected.id });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show('Impersonation session — all actions audit-logged.', 'warning');
+    toast.show(t('toast:impersonating'), 'warning');
     await applySession({
       accessToken: res.accessToken,
       refreshToken: null,
@@ -67,13 +69,13 @@ export default function AdminUsers() {
 
   return (
     <Screen>
-      <ScreenHeader title="User management" subtitle="Search, suspend, impersonate" />
+      <ScreenHeader title={t('admin:userManagement')} subtitle={t('admin:userManagementSubtitle')} />
       <Input
-        label="Search users"
+        label={t('admin:searchUsers')}
         value={q}
         onChangeText={setQ}
         iconLeft="search"
-        placeholder="Name, phone, or email"
+        placeholder={t('admin:searchPlaceholder')}
       />
 
       {rows.map((u) => (
@@ -88,7 +90,7 @@ export default function AdminUsers() {
             <Stack gap={4} style={{ alignItems: 'flex-end' }}>
               <Badge label={u.role} variant="info" />
               <Badge
-                label={u.is_active ? 'active' : 'suspended'}
+                label={u.is_active ? t('admin:active') : t('admin:suspended')}
                 variant={u.is_active ? 'success' : 'error'}
               />
             </Stack>
@@ -101,25 +103,25 @@ export default function AdminUsers() {
           <Section title={selected.full_name} />
           <Banner
             variant="warning"
-            title="Sensitive actions"
-            body="Suspending the last admin is blocked at the API. Impersonating an admin is blocked too."
+            title={t('admin:sensitiveActionsTitle')}
+            body={t('admin:sensitiveActionsBody')}
           />
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
-              Phone
+              {t('admin:phone')}
             </Text>
             <Text variant="bodyMd">{maskPhone(selected.phone_decrypted)}</Text>
           </Stack>
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
-              Email
+              {t('admin:email')}
             </Text>
             <Text variant="bodyMd">{selected.email}</Text>
           </Stack>
           {selected.driver ? (
             <Stack gap={4}>
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                Driver record
+                {t('admin:driverRecord')}
               </Text>
               <Text variant="bodyMd">
                 {selected.driver.vehicle_brand} {selected.driver.vehicle_model} · {selected.driver.status}
@@ -129,7 +131,7 @@ export default function AdminUsers() {
           <Row gap={spacing.sm}>
             <View style={{ flex: 1 }}>
               <Button
-                label={selected.is_active ? 'Suspend' : 'Reactivate'}
+                label={selected.is_active ? t('admin:suspend') : t('admin:reactivate')}
                 variant={selected.is_active ? 'danger' : 'secondary'}
                 onPress={toggle}
                 loading={busy}
@@ -137,7 +139,7 @@ export default function AdminUsers() {
             </View>
             <View style={{ flex: 1 }}>
               <Button
-                label="Impersonate"
+                label={t('admin:impersonate')}
                 variant="outline"
                 onPress={impersonate}
                 loading={busy}
@@ -145,7 +147,7 @@ export default function AdminUsers() {
               />
             </View>
           </Row>
-          <Button label="Close" variant="ghost" onPress={() => setSelected(null)} />
+          <Button label={t('common:close')} variant="ghost" onPress={() => setSelected(null)} />
         </Card>
       ) : null}
     </Screen>

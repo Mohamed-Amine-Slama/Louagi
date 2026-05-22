@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -16,9 +17,11 @@ import { Badge } from '../../components/Badge';
 import { ScreenHeader } from '../../components/Header';
 import { ridesApi } from '../../api';
 import { spacing, radius } from '../../theme';
+import { formatDate, formatWeekday } from '../../i18n/format';
 
 export default function SearchScreen() {
   const { colors } = useTheme();
+  const { t, locale } = useLocale();
   const nav = useNavigation();
   const route = useRoute();
   const params = route.params || {};
@@ -77,7 +80,10 @@ export default function SearchScreen() {
               {origin} → {destination}
             </Text>
             <Text variant="labelSm" color={colors.onPrimaryContainer}>
-              {date.toDateString()} · {seats} seat{seats !== '1' ? 's' : ''}
+              {t('search:headerSummary', {
+                date: formatDate(date),
+                seatsLabel: t('common:seatsCount', { count: Number(seats) || 1 }),
+              })}
             </Text>
           </View>
           <Pressable
@@ -122,7 +128,7 @@ export default function SearchScreen() {
                   variant="labelMd"
                   color={same ? colors.onPrimary : colors.onSurface}
                 >
-                  {d.toLocaleDateString('en', { weekday: 'short' })} {d.getDate()}
+                  {formatWeekday(d, { locale })} {d.getDate()}
                 </Text>
               </Pressable>
             );
@@ -132,10 +138,10 @@ export default function SearchScreen() {
         <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
         {filterOpen ? (
           <Card style={{ gap: spacing.md }}>
-            <Text variant="labelMd">Filters</Text>
+            <Text variant="labelMd">{t('search:filters')}</Text>
             <View>
               <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ marginBottom: 6 }}>
-                Max price
+                {t('search:maxPrice')}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 {[null, 15, 25, 40].map((p) => {
@@ -155,7 +161,7 @@ export default function SearchScreen() {
                         variant="labelSm"
                         color={active ? colors.onPrimary : colors.onSurface}
                       >
-                        {p == null ? 'Any price' : `≤ ${p} TND`}
+                        {p == null ? t('search:anyPrice') : t('search:priceLte', { price: p })}
                       </Text>
                     </Pressable>
                   );
@@ -164,13 +170,13 @@ export default function SearchScreen() {
             </View>
             <View>
               <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ marginBottom: 6 }}>
-                Sort by
+                {t('search:sortBy')}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 {[
-                  { k: 'departure', label: 'Earliest' },
-                  { k: 'price', label: 'Cheapest' },
-                  { k: 'rating', label: 'Best rated' },
+                  { k: 'departure', label: t('search:sortEarliest') },
+                  { k: 'price', label: t('search:sortCheapest') },
+                  { k: 'rating', label: t('search:sortBestRated') },
                 ].map((opt) => {
                   const active = sort === opt.k;
                   return (
@@ -203,8 +209,8 @@ export default function SearchScreen() {
         ) : rides.length === 0 ? (
           <EmptyState
             icon="search-off"
-            title="No rides found"
-            body="Adjust the date, route, or filters to see more options."
+            title={t('search:noResultsTitle')}
+            body={t('search:noResultsBody')}
           />
         ) : (
           rides.map((r) => (

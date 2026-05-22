@@ -145,31 +145,27 @@ src/
 
 ## Mock vs. real backend
 
-This repo carries three persistence layers, picked at bundle-build time:
+This repo carries two runtime paths, picked at bundle-build time:
 
 | Layer | Where | Used by |
 |---|---|---|
-| In-memory mock | `src/api/*.mock.js` | Default (`EXPO_PUBLIC_USE_MOCKS=true`) so the whole flow runs offline |
-| Supabase Auth | Cloud project | Phone-OTP sign-in / refresh; client talks to it directly via `src/lib/supabase.js` |
-| Node backend + Postgres | [`server/`](./server/README.md), [`supabase/`](./supabase) | Business logic (rides, reservations, payments, drivers, admin) |
+| Node GraphQL backend + Postgres | [`server/`](./server/README.md), [`supabase/`](./supabase) | Default auth and business logic path |
+| Empty in-memory mock | `src/api/*.mock.js` | Offline UI work only (`EXPO_PUBLIC_USE_MOCKS=true`) |
 
-The Node backend verifies Supabase access tokens and runs queries against
-the Supabase Postgres project with the service-role key. RLS policies in
-`supabase/migrations/20260519000001_rls_policies.sql` lock down what the
-client's publishable key can reach directly.
+The Node backend verifies backend-issued JWTs and runs GraphQL resolvers
+against the Supabase Postgres project. Demo credentials and catalogue rows live
+in `supabase/seed.sql`, not in the app bundle.
 
 ### Switching to the real backend
 
 1. Create your local env file: `cp .env.example .env`.
 2. Fill in:
-   - `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_KEY` from
-     Project Settings → API in the Supabase dashboard.
    - `EXPO_PUBLIC_API_URL` — your Node backend URL. On a physical device,
      use your LAN IP (e.g. `http://192.168.1.10:3000`).
-3. Set `EXPO_PUBLIC_USE_MOCKS=false`.
+3. Keep `EXPO_PUBLIC_USE_MOCKS=false`.
 4. Stand up the backend per [`server/README.md`](./server/README.md):
-   `cp server/.env.example server/.env`, fill in the service-role key + JWT
-   secret + database URL, then `cd server && npm install && npm run dev`.
+   `cp server/.env.example server/.env`, fill in `APP_JWT_SECRET` +
+   `DATABASE_URL`, then `cd server && npm install && npm run dev`.
 5. Apply the schema: `supabase login && supabase link --project-ref <ref> && supabase db push`.
 6. Restart Metro with `npx expo start -c` (env vars are inlined at build time).
 
@@ -179,15 +175,14 @@ requirement are all specified there.
 
 ### How the dispatch works
 
-`src/api/auth.js` is a thin dispatcher that picks between `auth.mock.js` (the
-in-memory implementation) and `auth.real.js` (HTTP) at module load, based on
-`EXPO_PUBLIC_USE_MOCKS`. To migrate another module, copy this pattern: rename
-the current file to `<module>.mock.js`, write `<module>.real.js` against
-`src/api/http.js`, and turn the original file into a dispatcher.
+`src/api/auth.js` is a thin dispatcher that picks between `auth.mock.js` and
+`auth.real.js` at module load. The other API modules keep the same exported
+function names but call `src/api/graphql.js` when mocks are off, so screens do
+not know whether data came from the backend or the offline mock.
 
 ### What lives where
 
-- **Client**: `src/api/http.js` (fetch + 15s timeout + 401 refresh-and-retry),
+- **Client**: `src/api/graphql.js` (fetch + 15s timeout + 401 refresh-and-retry),
   `src/security/tokenStore.js` (in-memory token cache shared with `AuthContext`),
   `src/security/secureStorage.js`, `src/validation/`, all UI components.
 - **Server (when built)**: password hashing, JWT signing, OTP issuance,

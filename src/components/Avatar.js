@@ -53,7 +53,7 @@ export function Avatar({ name, size = 40, badge }) {
         <View
           style={{
             position: 'absolute',
-            right: -2,
+            end: -2,
             bottom: -2,
             width: size * 0.42,
             height: size * 0.42,

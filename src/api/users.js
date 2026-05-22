@@ -2,10 +2,16 @@ import { db, findUserById } from './mockDb';
 import { decryptField, hashPassword, verifyPassword } from '../security/crypto';
 import { appendAudit } from '../security/audit';
 import { validateEmail, validateName, validatePassword, sanitize } from '../validation/schemas';
+import { useMocks } from '../config';
+import { gql } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function getProfile({ actor }) {
+  if (!useMocks) {
+    const result = await gql('GetProfile');
+    return result?.id ? result : null;
+  }
   await sleep(50);
   const u = findUserById(actor.id);
   if (!u) return null;
@@ -20,6 +26,7 @@ export async function getProfile({ actor }) {
 }
 
 export async function updateProfile({ actor, fullName, email, currentPassword, newPassword }) {
+  if (!useMocks) return gql('UpdateProfile', { fullName, email, currentPassword, newPassword });
   await sleep(160);
   const u = findUserById(actor.id);
   if (!u) return { ok: false, error: 'Not found' };
@@ -56,6 +63,7 @@ export async function updateProfile({ actor, fullName, email, currentPassword, n
 }
 
 export async function updateNotificationPrefs({ actor, sms, push }) {
+  if (!useMocks) return gql('UpdateNotificationPrefs', { sms, push });
   await sleep(60);
   const u = findUserById(actor.id);
   if (!u) return { ok: false };
@@ -64,6 +72,7 @@ export async function updateNotificationPrefs({ actor, sms, push }) {
 }
 
 export async function deleteAccount({ actor, password }) {
+  if (!useMocks) return gql('DeleteAccount', { password });
   await sleep(140);
   const u = findUserById(actor.id);
   if (!u) return { ok: false, error: 'Not found' };

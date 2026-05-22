@@ -14,6 +14,7 @@ import { useLocale } from '../../context/LocaleContext';
 import { SUPPORTED_LOCALES } from '../../i18n';
 import { spacing, radius } from '../../theme';
 
+// Native (autonym) labels — display each language in its own script.
 const LANG_LABELS = { en: 'English', fr: 'Français', ar: 'العربية' };
 const THEME_ICONS = { light: 'light-mode', dark: 'dark-mode', system: 'brightness-auto' };
 

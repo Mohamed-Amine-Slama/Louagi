@@ -5,7 +5,7 @@ export const apiUrl =
   process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 export const useMocks =
-  (process.env.EXPO_PUBLIC_USE_MOCKS ?? 'true') !== 'false';
+  (process.env.EXPO_PUBLIC_USE_MOCKS ?? 'false') === 'true';
 
 export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 export const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';

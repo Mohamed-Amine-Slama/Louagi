@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { I18nManager, Platform, Alert, NativeModules } from 'react-native';
 import * as Localization from 'expo-localization';
 import { useTranslation } from 'react-i18next';
@@ -8,24 +8,25 @@ import { getSecure, setSecure } from '../security/secureStorage';
 const KEY = 'louagi.locale';
 const LocaleCtx = createContext(null);
 
-function reloadApp() {
+function reloadApp(t) {
   // Expo Go (DEV) — DevSettings.reload() exists when __DEV__ is true.
   if (__DEV__ && NativeModules?.DevSettings?.reload) {
     NativeModules.DevSettings.reload();
     return;
   }
-  // Production / web: fall back to a polite alert.
-  Alert.alert(
-    'Restart required',
-    'Please reopen Louagi to finish applying the new layout direction.',
-    [{ text: 'OK' }]
-  );
+  // Production / web: fall back to a polite alert in the active locale.
+  const title = t ? t('settings:rtlReloadTitle') : 'Restart required';
+  const body = t ? t('settings:rtlReloadBody') : 'Please reopen the app to finish applying the new layout direction.';
+  Alert.alert(title, body, [{ text: t ? t('common:close') : 'OK' }]);
 }
 
 export function LocaleProvider({ children }) {
   const { t } = useTranslation();
   const [locale, setLocaleState] = useState('en');
   const [ready, setReady] = useState(false);
+  // Guards setLocale from being called repeatedly while a change is in flight
+  // (avoids racing the RTL reload).
+  const switchingRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -41,34 +42,45 @@ export function LocaleProvider({ children }) {
       const desiredRTL = RTL_LOCALES.has(stored);
       I18nManager.allowRTL(true);
       if (I18nManager.isRTL !== desiredRTL && Platform.OS !== 'web') {
-        // On first boot we *do* need a reload to make AR render right.
+        // First boot mismatch — flip and reload so AR renders right.
         I18nManager.forceRTL(desiredRTL);
-        reloadApp();
+        setLocaleState(stored);
+        setReady(true);
+        reloadApp(t);
+        return;
       }
       setLocaleState(stored);
       setReady(true);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setLocale = useCallback(
     async (next, { skipReload = false } = {}) => {
       const clamped = clampLocale(next);
       if (clamped === locale) return;
-      await setSecure(KEY, clamped);
-      await i18n.changeLanguage(clamped);
-      const desiredRTL = RTL_LOCALES.has(clamped);
-      const currentRTL = RTL_LOCALES.has(locale);
-      setLocaleState(clamped);
-      if (Platform.OS !== 'web' && desiredRTL !== currentRTL) {
-        I18nManager.allowRTL(true);
-        I18nManager.forceRTL(desiredRTL);
-        if (!skipReload) {
-          // Give React a tick to commit the state before reloading.
-          setTimeout(reloadApp, 250);
+      if (switchingRef.current) return;
+      switchingRef.current = true;
+      try {
+        await setSecure(KEY, clamped);
+        await i18n.changeLanguage(clamped);
+        const desiredRTL = RTL_LOCALES.has(clamped);
+        const currentRTL = RTL_LOCALES.has(locale);
+        setLocaleState(clamped);
+        if (Platform.OS !== 'web' && desiredRTL !== currentRTL) {
+          I18nManager.allowRTL(true);
+          I18nManager.forceRTL(desiredRTL);
+          if (!skipReload) {
+            // Give React a tick to commit the state before reloading so the
+            // user briefly sees translations in the new locale before reload.
+            setTimeout(() => reloadApp(t), 250);
+          }
         }
+      } finally {
+        switchingRef.current = false;
       }
     },
-    [locale]
+    [locale, t]
   );
 
   const value = useMemo(

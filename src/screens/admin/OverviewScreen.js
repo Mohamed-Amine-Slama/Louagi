@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, Pressable } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import { spacing, radius } from '../../theme';
 
 export default function AdminOverview() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user, signOut } = useAuth();
   const nav = useNavigation();
   const [stats, setStats] = useState(null);
@@ -50,18 +52,18 @@ export default function AdminOverview() {
       <Screen>
         <Banner
           variant="error"
-          title="403 — IP not allowlisted"
-          body="Admin dashboard is restricted to the ops network. Connect via VPN and retry."
+          title={t('admin:ipDeniedTitle')}
+          body={t('admin:ipDeniedBody')}
         />
       </Screen>
     );
   }
 
   const cards = [
-    { label: 'Active rides', value: stats?.activeRides ?? '—', icon: 'route', color: colors.primary },
-    { label: 'Bookings today', value: stats?.bookingsToday ?? '—', icon: 'event-seat', color: colors.success },
-    { label: 'Revenue today', value: `${(stats?.revenueToday ?? 0).toFixed(0)} TND`, icon: 'payments', color: colors.secondaryContainer, dark: true },
-    { label: 'New users (24h)', value: stats?.newUsers ?? '—', icon: 'person-add', color: colors.primaryContainer },
+    { label: t('admin:activeRides'), value: stats?.activeRides ?? '—', icon: 'route', color: colors.primary },
+    { label: t('admin:bookingsToday'), value: stats?.bookingsToday ?? '—', icon: 'event-seat', color: colors.success },
+    { label: t('admin:revenueToday'), value: `${(stats?.revenueToday ?? 0).toFixed(0)} ${t('common:tnd')}`, icon: 'payments', color: colors.secondaryContainer, dark: true },
+    { label: t('admin:newUsers24h'), value: stats?.newUsers ?? '—', icon: 'person-add', color: colors.primaryContainer },
   ];
 
   return (
@@ -69,9 +71,9 @@ export default function AdminOverview() {
       <Row justify="space-between" align="center">
         <View>
           <Text variant="labelSm" color={colors.onSurfaceVariant}>
-            Admin
+            {t('admin:title')}
           </Text>
-          <Text variant="headlineMd">Platform overview</Text>
+          <Text variant="headlineMd">{t('admin:platformOverview')}</Text>
         </View>
         <Row gap={spacing.xs}>
           <Pressable
@@ -150,9 +152,9 @@ export default function AdminOverview() {
         ))}
       </Row>
 
-      <Section title="Alerts">
+      <Section title={t('admin:alerts')}>
         {alerts.length === 0 ? (
-          <Banner variant="success" title="All clear" body="No flagged payments or pending verifications." />
+          <Banner variant="success" title={t('admin:allClearTitle')} body={t('admin:allClearBody')} />
         ) : (
           alerts.map((a) => (
             <Card key={a.id} accent={a.kind === 'verification' ? colors.secondaryContainer : colors.error}>
@@ -176,8 +178,8 @@ export default function AdminOverview() {
 
       <Banner
         variant="info"
-        title="Security policy"
-        body="All admin actions are recorded in the immutable audit log. IP allowlist is enforced at the gateway."
+        title={t('admin:securityPolicyTitle')}
+        body={t('admin:securityPolicyBody')}
       />
     </Screen>
   );

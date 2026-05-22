@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -18,9 +19,11 @@ import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
+import { formatWeekday } from '../../i18n/format';
 
 export default function CreateRideScreen() {
   const { colors } = useTheme();
+  const { t, locale } = useLocale();
   const { user } = useAuth();
   const nav = useNavigation();
   const toast = useToast();
@@ -67,7 +70,7 @@ export default function CreateRideScreen() {
       setError(res.error);
       return;
     }
-    toast.show('Ride published. Passengers can book now.', 'success');
+    toast.show(t('toast:ridePublished'), 'success');
     nav.replace('RideManagement', { id: res.ride.id });
   };
 
@@ -79,9 +82,9 @@ export default function CreateRideScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="Create new ride" subtitle="Set route, time, price, seats" showBack />
+      <ScreenHeader title={t('driver:createNewRide')} subtitle={t('driver:createNewRideSubtitle')} showBack />
 
-      <Section title="Route">
+      <Section title={t('driver:route')}>
         <Stack gap={spacing.sm}>
           {routes.map((r) => {
             const active = r.id === routeId;
@@ -105,7 +108,7 @@ export default function CreateRideScreen() {
                     {r.origin_city} → {r.destination_city}
                   </Text>
                   <Text variant="labelMd" color={colors.onSurfaceVariant}>
-                    {r.distance_km} km · {r.base_price} TND
+                    {r.distance_km} km · {r.base_price} {t('common:tnd')}
                   </Text>
                 </Row>
               </Pressable>
@@ -114,7 +117,7 @@ export default function CreateRideScreen() {
         </Stack>
       </Section>
 
-      <Section title="Departure">
+      <Section title={t('driver:departure')}>
         <Row gap={spacing.sm}>
           {days.map((d) => {
             const same = d.toDateString() === date.toDateString();
@@ -134,7 +137,7 @@ export default function CreateRideScreen() {
                 }}
               >
                 <Text variant="labelMd" color={same ? colors.onPrimary : colors.onSurface}>
-                  {d.toLocaleDateString('en', { weekday: 'short' })} {d.getDate()}
+                  {formatWeekday(d, { locale })} {d.getDate()}
                 </Text>
               </Pressable>
             );
@@ -143,10 +146,10 @@ export default function CreateRideScreen() {
         <Row gap={spacing.sm} style={{ marginTop: spacing.sm }}>
           <View style={{ flex: 1 }}>
             <Input
-              label="Hour"
+              label={t('driver:hour')}
               value={String(date.getHours()).padStart(2, '0')}
-              onChangeText={(t) => {
-                const h = Math.max(0, Math.min(23, parseInt(t || '0', 10)));
+              onChangeText={(txt) => {
+                const h = Math.max(0, Math.min(23, parseInt(txt || '0', 10)));
                 const d = new Date(date);
                 d.setHours(h);
                 setDate(d);
@@ -156,10 +159,10 @@ export default function CreateRideScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Input
-              label="Minute"
+              label={t('driver:minute')}
               value={String(date.getMinutes()).padStart(2, '0')}
-              onChangeText={(t) => {
-                const m = Math.max(0, Math.min(59, parseInt(t || '0', 10)));
+              onChangeText={(txt) => {
+                const m = Math.max(0, Math.min(59, parseInt(txt || '0', 10)));
                 const d = new Date(date);
                 d.setMinutes(m);
                 setDate(d);
@@ -170,35 +173,39 @@ export default function CreateRideScreen() {
         </Row>
       </Section>
 
-      <Section title="Price per seat">
+      <Section title={t('driver:pricePerSeat')}>
         {route ? (
-          <Banner variant="warning" title="Suggested range" body={`${min} – ${max} TND (base ${route.base_price} TND)`} />
+          <Banner
+            variant="warning"
+            title={t('driver:suggestedRange')}
+            body={t('driver:suggestedRangeBody', { min, max, base: route.base_price })}
+          />
         ) : null}
         <Card>
           <Row justify="space-between">
-            <Text variant="bodyMd">Price (TND)</Text>
+            <Text variant="bodyMd">{t('driver:priceTnd')}</Text>
             <Stepper value={Number(price)} onChange={setPrice} min={min || 1} max={max || 50} large />
           </Row>
         </Card>
       </Section>
 
-      <Section title="Capacity">
+      <Section title={t('driver:capacity')}>
         <Card accent={colors.primary}>
           <Row justify="space-between">
-            <Text variant="bodyMd">Seats available</Text>
+            <Text variant="bodyMd">{t('driver:seatsAvailable')}</Text>
             <Stepper value={Number(seats)} onChange={setSeats} min={1} max={8} />
           </Row>
         </Card>
       </Section>
 
-      {error ? <Banner variant="error" title="Couldn't publish ride" body={error} /> : null}
+      {error ? <Banner variant="error" title={t('driver:couldntPublish')} body={error} /> : null}
 
       <Row gap={spacing.sm}>
         <View style={{ flex: 1 }}>
-          <Button label="Cancel" variant="outline" onPress={() => nav.goBack()} />
+          <Button label={t('common:cancel')} variant="outline" onPress={() => nav.goBack()} />
         </View>
         <View style={{ flex: 1.5 }}>
-          <Button label="Publish ride" variant="secondary" loading={loading} onPress={submit} />
+          <Button label={t('driver:publishRide')} variant="secondary" loading={loading} onPress={submit} />
         </View>
       </Row>
     </Screen>

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, Pressable } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -18,20 +19,29 @@ import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
+import { formatDateTime } from '../../i18n/format';
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, t }) {
   const map = {
-    scheduled: { variant: 'info', label: 'Scheduled' },
-    in_progress: { variant: 'warning', label: 'Live' },
-    completed: { variant: 'success', label: 'Completed' },
-    cancelled: { variant: 'error', label: 'Cancelled' },
+    scheduled: { variant: 'info', label: t('driver:scheduled') },
+    in_progress: { variant: 'warning', label: t('driver:live') },
+    completed: { variant: 'success', label: t('driver:completedStatus') },
+    cancelled: { variant: 'error', label: t('driver:cancelledStatus') },
   };
   const m = map[status] ?? map.scheduled;
   return <Badge label={m.label} variant={m.variant} />;
 }
 
+const STATUS_TOAST_KEY = {
+  scheduled: 'toast:markedAsScheduled',
+  in_progress: 'toast:markedAsInProgress',
+  completed: 'toast:markedAsCompleted',
+  cancelled: 'toast:markedAsCancelled',
+};
+
 export default function RideManagementScreen() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user } = useAuth();
   const nav = useNavigation();
   const route = useRoute();
@@ -67,7 +77,7 @@ export default function RideManagementScreen() {
     const res = await ridesApi.updateRideStatus({ actor: user, rideId: id, status });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show(`Marked as ${status.replace('_', ' ')}`, 'success');
+    toast.show(t(STATUS_TOAST_KEY[status] || 'toast:markedAsScheduled'), 'success');
     load();
   };
 
@@ -76,7 +86,7 @@ export default function RideManagementScreen() {
     const res = await ridesApi.cancelRide({ actor: user, rideId: id, reason: 'driver-cancel' });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show(`Ride cancelled. ${res.cancelled} passenger${res.cancelled !== 1 ? 's' : ''} refunded.`, 'warning');
+    toast.show(t('toast:rideCancelled', { count: res.cancelled }), 'warning');
     load();
   };
 
@@ -84,15 +94,15 @@ export default function RideManagementScreen() {
     <Screen>
       <ScreenHeader
         title={`${ride.route.origin_city} → ${ride.route.destination_city}`}
-        subtitle={new Date(ride.departure_time).toLocaleString()}
+        subtitle={formatDateTime(ride.departure_time)}
         showBack
       />
 
       <Card>
         <Row gap={spacing.sm} style={{ marginBottom: spacing.sm }}>
-          <StatusBadge status={ride.status} />
-          <Badge label={`${sold}/${ride.total_seats} seats`} variant="info" icon="event-seat" />
-          <Badge label={`${earnings} TND`} variant="success" icon="payments" />
+          <StatusBadge status={ride.status} t={t} />
+          <Badge label={t('driver:seatsCount', { count: sold, total: ride.total_seats })} variant="info" icon="event-seat" />
+          <Badge label={t('driver:amountTnd', { amount: earnings })} variant="success" icon="payments" />
         </Row>
         <Row gap={spacing.sm} style={{ marginTop: spacing.sm }}>
           <View style={{ flex: 1 }}>
@@ -119,29 +129,29 @@ export default function RideManagementScreen() {
           <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
             <View style={{ flex: 1 }}>
               <Button
-                label="Mark as in progress"
+                label={t('driver:markInProgress')}
                 variant="primary"
                 onPress={() => setStatus('in_progress')}
                 loading={busy}
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Cancel ride" variant="danger" onPress={cancel} loading={busy} />
+              <Button label={t('driver:cancelRide')} variant="danger" onPress={cancel} loading={busy} />
             </View>
           </Row>
         ) : ride.status === 'in_progress' ? (
           <Button
             style={{ marginTop: spacing.md }}
-            label="Mark as completed"
+            label={t('driver:markCompleted')}
             variant="secondary"
             onPress={() => setStatus('completed')}
           />
         ) : null}
       </Card>
 
-      <Section title={`Passengers (${passengers.length})`}>
+      <Section title={t('driver:passengers', { count: passengers.length })}>
         {passengers.length === 0 ? (
-          <Banner variant="info" title="No bookings yet" body="Once someone books, they'll appear here." />
+          <Banner variant="info" title={t('driver:noBookingsTitle')} body={t('driver:noBookingsBody')} />
         ) : (
           passengers.map((p) => (
             <Card key={p.id}>
@@ -150,7 +160,7 @@ export default function RideManagementScreen() {
                 <View style={{ flex: 1 }}>
                   <Text variant="bodyMd">{p.user?.full_name}</Text>
                   <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                    {p.seats_booked} seat{p.seats_booked > 1 ? 's' : ''} · {p.total_price} TND
+                    {t('common:seatsCount', { count: p.seats_booked })} · {p.total_price} {t('common:tnd')}
                   </Text>
                 </View>
                 <Badge
@@ -158,7 +168,9 @@ export default function RideManagementScreen() {
                   variant={p.status === 'confirmed' ? 'success' : p.status === 'cancelled' ? 'error' : 'info'}
                 />
                 <Pressable
-                  onPress={() => toast.show('Calling…', 'info')}
+                  onPress={() => toast.show(t('toast:callingStub'), 'info')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('driver:callPassenger')}
                   style={{
                     width: 36,
                     height: 36,

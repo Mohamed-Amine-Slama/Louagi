@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocale } from '../../context/LocaleContext';
 import { View, Pressable } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -17,9 +18,11 @@ import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
+import { formatDateTime } from '../../i18n/format';
 
 export default function AdminRides() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { user } = useAuth();
   const toast = useToast();
   const [status, setStatus] = useState('scheduled');
@@ -42,22 +45,22 @@ export default function AdminRides() {
     const res = await ridesApi.cancelRide({ actor: user, rideId: selected.id, reason: 'admin-cancel' });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
-    toast.show(`Cancelled. ${res.cancelled} passenger refund(s) triggered.`, 'warning');
+    toast.show(t('toast:rideCancelledAdmin', { count: res.cancelled }), 'warning');
     setSelected(null);
     load();
   };
 
   return (
     <Screen>
-      <ScreenHeader title="Ride oversight" subtitle="All rides across the platform" />
+      <ScreenHeader title={t('admin:rideOversight')} subtitle={t('admin:rideOversightSubtitle')} />
       <Tabs
         value={status}
         onChange={setStatus}
         tabs={[
-          { key: 'scheduled', label: 'Scheduled' },
-          { key: 'in_progress', label: 'Live' },
-          { key: 'completed', label: 'Done' },
-          { key: 'cancelled', label: 'Cancelled' },
+          { key: 'scheduled', label: t('admin:scheduled') },
+          { key: 'in_progress', label: t('admin:live') },
+          { key: 'completed', label: t('admin:done') },
+          { key: 'cancelled', label: t('admin:cancelled') },
         ]}
       />
 
@@ -71,7 +74,7 @@ export default function AdminRides() {
                   {r.route?.origin_city} → {r.route?.destination_city}
                 </Text>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {new Date(r.departure_time).toLocaleString()}
+                  {formatDateTime(r.departure_time)}
                 </Text>
               </Stack>
               <Badge label={`${sold}/${r.total_seats}`} variant="info" icon="event-seat" />
@@ -82,24 +85,24 @@ export default function AdminRides() {
 
       {selected ? (
         <Card style={{ gap: spacing.md }} accent={colors.error}>
-          <Section title="Cancel ride" />
+          <Section title={t('admin:cancelRide')} />
           <Banner
             variant="warning"
-            title="Admin override"
-            body="Admin cancel bypasses the 2-hour passenger window. All confirmed reservations refunded."
+            title={t('admin:adminOverrideTitle')}
+            body={t('admin:adminOverrideBody')}
           />
           <Text variant="bodyMd">
             {selected.route?.origin_city} → {selected.route?.destination_city}
           </Text>
           <Text variant="labelSm" color={colors.onSurfaceVariant}>
-            Departure {new Date(selected.departure_time).toLocaleString()}
+            {t('admin:departureAt', { at: formatDateTime(selected.departure_time) })}
           </Text>
           <Row gap={spacing.sm}>
             <View style={{ flex: 1 }}>
-              <Button label="Close" variant="outline" onPress={() => setSelected(null)} />
+              <Button label={t('common:close')} variant="outline" onPress={() => setSelected(null)} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Cancel & refund" variant="danger" onPress={cancel} loading={busy} />
+              <Button label={t('admin:cancelAndRefund')} variant="danger" onPress={cancel} loading={busy} />
             </View>
           </Row>
         </Card>

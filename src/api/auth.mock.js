@@ -1,4 +1,4 @@
-import { db, findUserByPhone, findDriverByUserId, bootstrapPasswords, newId } from './mockDb';
+import { db, findUserByPhone, findDriverByUserId, newId } from './mockDb';
 import { hashPassword, verifyPassword, encryptField } from '../security/crypto';
 import { signAccessToken, signRefreshToken, verifyToken } from '../security/jwt';
 import { issueOtp, verifyOtp, peekOtp } from '../security/otp';
@@ -17,7 +17,9 @@ import {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function ensureReady() {
-  await bootstrapPasswords();
+  // No-op. Mock store starts empty for users/drivers/admins — register
+  // through the UI to create an account. Credentials live server-side
+  // (supabase + server/) once mocks are switched off.
 }
 
 export async function startLogin(phoneRaw, password) {

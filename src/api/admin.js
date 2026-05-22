@@ -3,10 +3,16 @@ import { decryptField } from '../security/crypto';
 import { appendAudit, listAudit, totalAuditCount } from '../security/audit';
 import { signAccessToken } from '../security/jwt';
 import { can } from '../security/rbac';
+import { useMocks } from '../config';
+import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function adminStats({ actor }) {
+  if (!useMocks) {
+    const result = await gql('AdminStats');
+    return result?.activeRides != null ? result : null;
+  }
   if (!can(actor?.role, 'admin:read')) return null;
   await sleep(100);
   const today = new Date();
@@ -29,6 +35,7 @@ export async function adminStats({ actor }) {
 }
 
 export async function adminAlerts({ actor }) {
+  if (!useMocks) return gqlList('AdminAlerts');
   if (!can(actor?.role, 'admin:read')) return [];
   await sleep(80);
   const alerts = [];
@@ -60,6 +67,7 @@ export async function adminAlerts({ actor }) {
 }
 
 export async function adminSearchUsers({ actor, q }) {
+  if (!useMocks) return gqlList('AdminSearchUsers', { q });
   if (!can(actor?.role, 'admin:read')) return [];
   await sleep(120);
   const ql = (q || '').trim().toLowerCase();
@@ -80,6 +88,7 @@ export async function adminSearchUsers({ actor, q }) {
 }
 
 export async function adminSetUserActive({ actor, userId, active }) {
+  if (!useMocks) return gql('AdminSetUserActive', { userId, active });
   if (!can(actor?.role, 'admin:suspend-user')) return { ok: false, error: 'Forbidden' };
   await sleep(100);
   const u = findUserById(userId);
@@ -104,6 +113,7 @@ export async function adminSetUserActive({ actor, userId, active }) {
 }
 
 export async function adminImpersonate({ actor, userId }) {
+  if (!useMocks) return gql('AdminImpersonate', { userId });
   if (!can(actor?.role, 'admin:impersonate')) return { ok: false, error: 'Forbidden' };
   const target = findUserById(userId);
   if (!target) return { ok: false, error: 'Not found' };
@@ -127,12 +137,14 @@ export async function adminImpersonate({ actor, userId }) {
 }
 
 export async function adminListAudit({ actor, filters = {} }) {
+  if (!useMocks) return gql('AdminListAudit', { filters });
   if (!can(actor?.role, 'admin:read')) return { total: 0, rows: [] };
   await sleep(80);
   return listAudit({ ...filters, limit: 200 });
 }
 
 export async function adminAuditCount({ actor }) {
+  if (!useMocks) return gql('AdminAuditCount');
   if (!can(actor?.role, 'admin:read')) return 0;
   return totalAuditCount();
 }

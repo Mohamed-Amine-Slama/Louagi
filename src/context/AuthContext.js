@@ -23,9 +23,9 @@ export function AuthProvider({ children }) {
     }
     const { accessToken: a, refreshToken: r, user: u } = next;
     await Promise.all([
-      a ? setSecure(TOKEN_KEY, a) : Promise.resolve(),
-      r ? setSecure(REFRESH_KEY, r) : Promise.resolve(),
-      u ? setSecure(USER_KEY, u) : Promise.resolve(),
+      a ? setSecure(TOKEN_KEY, a) : clearSecure(TOKEN_KEY),
+      r ? setSecure(REFRESH_KEY, r) : clearSecure(REFRESH_KEY),
+      u ? setSecure(USER_KEY, u) : clearSecure(USER_KEY),
     ]);
   }, []);
 

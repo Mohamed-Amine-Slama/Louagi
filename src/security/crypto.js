@@ -27,7 +27,7 @@ export function randomDigits(n = 6) {
   return Array.from(arr).map((b) => (b % 10).toString()).join('');
 }
 
-const PEPPER = 'louagi-app-pepper-v1';
+const PEPPER = randomBytesHex(32);
 
 // bcrypt-equivalent (without native bindings): salted SHA-256 with iterated rounds.
 // The platform docs call for bcrypt; this is the closest mobile-safe analogue.
@@ -49,7 +49,7 @@ export async function verifyPassword(plain, stored) {
 // Field-level encryption simulation for PII (phone, ID, license, plate).
 // In production, swap for a KMS-managed AES-GCM key. Here we XOR-mask under a
 // device-side key derived from a stable seed so reads are obfuscated at rest.
-const FIELD_KEY = 'louagi-field-key-v1-tunisia-pii-mask';
+const FIELD_KEY = randomBytesHex(32);
 
 function xorMask(input, key) {
   const out = [];

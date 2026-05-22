@@ -1,22 +1,39 @@
 # Louagi backend contract
 
 This document is the source of truth for what the Louagi client expects from
-the backend. The auth path is served by **Supabase Auth** directly; the rest
-of the API (rides, reservations, payments, drivers, admin) is served by the
-Node backend under [`server/`](../server/README.md), which persists to the
+the backend. Auth and business data are served by the Node backend under
+[`server/`](../server/README.md) through `POST /graphql`, which persists to the
 Supabase Postgres project under [`supabase/migrations`](../supabase/migrations).
+The mobile app no longer ships demo credentials or catalogue data; local demo
+rows live in [`supabase/seed.sql`](../supabase/seed.sql).
 
-The in-memory mocks in `src/api/*.mock.js` remain the reference
-implementation — port them one router at a time.
+The in-memory mocks in `src/api/*.mock.js` remain only as an offline UI path.
+Backend mode is the default.
 
-> **Section 2 below** is preserved verbatim so `src/api/auth.real.js` keeps
-> working against either the legacy hashed-sun shape *or* the Supabase Auth
-> adapter that wraps it. The adapter is responsible for mapping
-> `signInWithOtp` / `verifyOtp` / `refreshSession` results into this envelope.
+> **Section 2 below** keeps the same response envelopes the screens already
+> consume. Those calls now travel as GraphQL operations with matching names
+> instead of REST paths.
 
 ---
 
 ## 1. Conventions
+
+### GraphQL transport
+The client sends every real backend call to `POST /graphql`:
+
+```jsonc
+{
+  "operationName": "SearchRides",
+  "variables": { "origin": "Tunis", "destination": "Sfax" },
+  "query": "query SearchRides($input: JSON) { SearchRides(input: $input) }"
+}
+```
+
+The server returns GraphQL-style data while preserving the payload shapes below:
+
+```jsonc
+{ "data": { "SearchRides": [/* rows */] } }
+```
 
 ### Response envelope
 Every response has one of these shapes:
@@ -52,9 +69,10 @@ the envelope in the body.
 
 ### Authentication
 - The client sends `Authorization: Bearer <accessToken>` on every request after
-  login. The `/auth/*` endpoints listed below are public except `/auth/logout`,
-  which requires the access token.
-- On `401`, the client tries `/auth/refresh` exactly once, then retries the
+  login. `StartLogin`, `Register`, `VerifyOtp`, `ResendOtp`, `Refresh`, and
+  `BiometricLogin` are public GraphQL operations; `Logout` and all business
+  mutations use the bearer token.
+- On `401`, the client tries the `Refresh` GraphQL operation exactly once, then retries the
   original request. Concurrent 401s share a single in-flight refresh.
 
 ### JWT claims (informational)
@@ -71,12 +89,12 @@ a superset. The client only reads `sub`, `role`, `name`, `driverStatus`, `exp`.
 ```
 
 ### Refresh-token rotation
-`/auth/refresh` MUST issue a new refresh token and invalidate the old one. The
+`Refresh` MUST issue a new refresh token and invalidate the old one. The
 client persists the new pair on every refresh. Without rotation, a leaked
 token stays valid indefinitely.
 
 ### `devOtp` field (development only)
-`/auth/login` and `/auth/register` may include a `devOtp` string in their
+`StartLogin`, `Register`, and `ResendOtp` may include a `devOtp` string in their
 response body to surface the OTP in a dev banner. The backend MUST omit this
 field when `NODE_ENV === 'production'`. The client treats it as best-effort and
 falls back to `null` gracefully.
@@ -85,13 +103,13 @@ falls back to `null` gracefully.
 
 ## 2. Endpoints
 
-### `POST /auth/login`
+### `StartLogin`
 Start the login flow with phone + password. On success, an OTP is sent via SMS
 and the client moves to the OTP-verification screen.
 
 **Request**
 ```json
-{ "phone": "+21698765432", "password": "Passenger1" }
+{ "phone": "+216XXXXXXXX", "password": "<password>" }
 ```
 
 **Success (`200`)**
@@ -109,7 +127,7 @@ Backend may mirror or tighten.
 
 ---
 
-### `POST /auth/otp/verify`
+### `VerifyOtp`
 Single endpoint used by both login and register OTP confirmation. The `purpose`
 field disambiguates which flow is being completed.
 
@@ -144,16 +162,16 @@ For passengers and admins it is `null`.
 
 ---
 
-### `POST /auth/register`
+### `Register`
 Create a new user account and dispatch a registration OTP.
 
 **Request**
 ```json
 {
   "fullName": "Mariem Ben Salem",
-  "phone": "+21698765432",
-  "email": "mariem@example.tn",
-  "password": "Passenger1",
+  "phone": "+216XXXXXXXX",
+  "email": "user@example.tn",
+  "password": "<password>",
   "role": "passenger"
 }
 ```
@@ -174,7 +192,7 @@ re-validate): min 8 chars, at least 1 uppercase, at least 1 digit.
 
 ---
 
-### `POST /auth/otp/resend`
+### `ResendOtp`
 Issue a fresh OTP for an in-flight login or registration.
 
 **Request**
@@ -189,7 +207,7 @@ Issue a fresh OTP for an in-flight login or registration.
 
 ---
 
-### `POST /auth/refresh`
+### `Refresh`
 Exchange a refresh token for a new access + refresh pair. Backend MUST rotate
 the refresh token and invalidate the old one.
 
@@ -209,7 +227,7 @@ the refresh token and invalidate the old one.
 
 ---
 
-### `POST /auth/logout`
+### `Logout`
 Revoke the current refresh token server-side. The client also clears its local
 session unconditionally; this endpoint is best-effort.
 
@@ -235,40 +253,39 @@ The client config lives in `src/config.js` and reads four env vars:
 | Var | Purpose | Default |
 |---|---|---|
 | `EXPO_PUBLIC_API_URL` | Base URL of the Node backend (`server/`) | `http://localhost:3000` |
-| `EXPO_PUBLIC_USE_MOCKS` | `"true"` to keep the in-memory mock active; `"false"` to hit the backend | `"true"` |
-| `EXPO_PUBLIC_SUPABASE_URL` | Supabase project URL (used by the client's auth flow) | — |
-| `EXPO_PUBLIC_SUPABASE_KEY` | Supabase publishable / anon key | — |
+| `EXPO_PUBLIC_USE_MOCKS` | `"true"` to use the empty in-memory mock; `"false"` to hit the backend | `"false"` |
+| `EXPO_PUBLIC_SUPABASE_URL` | Optional future direct-Supabase client features | — |
+| `EXPO_PUBLIC_SUPABASE_KEY` | Optional future direct-Supabase client features | — |
 
 When testing on a physical phone via Expo Go, `localhost` does not resolve to
 your laptop. Use the LAN IP (e.g. `http://192.168.1.10:3000`) or an `ngrok` /
 Expo tunnel URL. Restart Metro with `npx expo start -c` after changing env
 vars — Expo inlines them at bundle build time.
 
-### Supabase Auth integration
+### GraphQL auth integration
 
-`src/api/auth.real.js` is implemented on top of `@supabase/supabase-js` and
-must keep returning the envelope shapes in section 2. The mapping:
+`src/api/auth.real.js` calls the Node backend through `src/api/graphql.js` and
+keeps returning the envelope shapes in section 2. The mapping:
 
-| Contract method | Supabase call |
+| Contract method | GraphQL operation |
 |---|---|
-| `startLogin(phone, password)` | `signInWithOtp({ phone })` — the password field is recorded for legacy parity but Supabase Auth's primary factor is the OTP. |
-| `completeLogin(userId, otp)` | `verifyOtp({ phone, token: otp, type: 'sms' })` |
-| `register({ fullName, phone, email, password, role })` | `signUp({ phone, password, options: { data: { full_name, role } } })` then `signInWithOtp` to send the OTP. |
-| `verifyRegistration(userId, otp)` | `verifyOtp({ phone, token: otp, type: 'sms' })` |
-| `resendOtp(userId, purpose)` | `signInWithOtp({ phone })` |
-| `refresh(token)` | `refreshSession({ refresh_token: token })` |
-| `logout(refreshToken)` | `signOut()` |
+| `startLogin(phone, password)` | `StartLogin` |
+| `completeLogin(userId, otp)` | `VerifyOtp` with `purpose: "login"` |
+| `register({ fullName, phone, email, password, role })` | `Register` |
+| `verifyRegistration(userId, otp)` | `VerifyOtp` with `purpose: "register"` |
+| `resendOtp(userId, purpose)` | `ResendOtp` |
+| `refresh(token)` | `Refresh` |
+| `logout(refreshToken)` | `Logout` |
 
-The migration in `supabase/migrations/20260519000000_init_schema.sql` keeps
-`public.users.id` in lock-step with `auth.users.id` via a trigger, so the
-`user.id` returned to the client is the same value the Node backend uses as
-the FK in `reservations.user_id`, `notifications.user_id`, etc.
+The migration in `supabase/migrations/20260522000000_backend_graphql_auth.sql`
+lets `public.users` be backend-owned and adds password hashes/preferences for
+the GraphQL auth flow.
 
 ### Server (`server/`)
 
 The Node backend reads its config from `server/.env` (see
-`server/.env.example`). On every protected route it verifies the Supabase
-JWT, loads the role from `public.users`, and runs the request with the
+`server/.env.example`). On every protected GraphQL operation it verifies the
+backend-issued JWT, loads the role from `public.users`, and runs the request with the
 service-role Postgres connection (which bypasses RLS). See
 [`server/README.md`](../server/README.md) for the full setup flow.
 

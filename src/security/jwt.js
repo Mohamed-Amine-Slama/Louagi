@@ -4,7 +4,7 @@ import { b64encode, b64decode, sha256, randomBytesHex } from './crypto';
 // The signature is a SHA-256 HMAC analogue (key-prefixed hash) — sufficient for
 // the client-side token shape spec'd in the docs; replace with a real HMAC on the server.
 
-const SIGNING_SECRET = 'louagi-jwt-secret-rotate-me';
+const SIGNING_SECRET = randomBytesHex(32);
 const ACCESS_TTL_SEC = 15 * 60; // 15 minutes (matches spec)
 const REFRESH_TTL_SEC = 14 * 24 * 60 * 60; // 14 days
 
@@ -55,11 +55,15 @@ export async function verifyToken(token) {
   const parts = token.split('.');
   if (parts.length !== 3) return null;
   const [header, payload, sig] = parts;
-  const expected = await sign(`${header}.${payload}`);
-  if (expected !== sig) return null;
   try {
     const claims = JSON.parse(b64urlDecode(payload));
     if (claims.exp && claims.exp < Math.floor(Date.now() / 1000)) return null;
+    // Backend-issued tokens are verified on the server. The client only needs
+    // to know whether a cached token is structurally usable and unexpired.
+    if (claims.iss === 'louagi-server') return claims;
+
+    const expected = await sign(`${header}.${payload}`);
+    if (expected !== sig) return null;
     return claims;
   } catch {
     return null;

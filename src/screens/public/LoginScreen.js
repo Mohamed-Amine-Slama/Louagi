@@ -34,8 +34,8 @@ export default function LoginScreen() {
   const toast = useToast();
 
   const [step, setStep] = useState('credentials');
-  const [phone, setPhone] = useState('98765432');
-  const [password, setPassword] = useState('Passenger1');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [userId, setUserId] = useState(null);
   const [devOtp, setDevOtp] = useState(null);
@@ -75,9 +75,9 @@ export default function LoginScreen() {
   const runBiometricLogin = async () => {
     if (!biometricInfo.credential) return;
     setError(null);
-    const auth = await promptBiometric({ promptMessage: 'Sign in to Louagi' });
+    const auth = await promptBiometric({ promptMessage: t('auth:biometricPromptLogin') });
     if (!auth.success) {
-      setError("Biometric check didn't succeed. Try again or use your password.");
+      setError(t('auth:biometricFailed'));
       return;
     }
     setLoading(true);
@@ -88,7 +88,7 @@ export default function LoginScreen() {
       await clearBiometricCredential();
       setBiometricInfo({ available: false, kind: BIOMETRIC_KIND.NONE, credential: null });
       setStep('credentials');
-      setError(res.error || 'Biometric sign-in failed');
+      setError(res.error || t('auth:biometricSignInFailed'));
       return;
     }
     if (res.ticket) {
@@ -248,11 +248,6 @@ export default function LoginScreen() {
         ) : step === 'credentials' ? (
           <Stack gap={spacing.md}>
             <Text variant="headlineMd">{t('auth:welcomeBack')}</Text>
-            <Banner
-              variant="info"
-              title={t('auth:tryDemoTitle')}
-              body={t('auth:tryDemoBody')}
-            />
             {lockSecs > 0 ? (
               <Banner
                 variant="error"
@@ -296,6 +291,8 @@ export default function LoginScreen() {
           <Stack gap={spacing.md}>
             <Pressable
               onPress={() => setStep('credentials')}
+              accessibilityRole="button"
+              accessibilityLabel={t('common:back')}
               style={{
                 width: 40,
                 height: 40,
@@ -305,7 +302,7 @@ export default function LoginScreen() {
                 justifyContent: 'center',
               }}
             >
-              <Text variant="labelMd">{'←'}</Text>
+              <MaterialIcons name="arrow-back" size={20} color={colors.onSurface} />
             </Pressable>
             <Text variant="headlineMd">{t('auth:verifyPhone')}</Text>
             <Text variant="bodyMd" color={colors.onSurfaceVariant}>
