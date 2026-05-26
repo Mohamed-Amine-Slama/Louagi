@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, ActivityIndicator, Pressable } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -36,7 +36,7 @@ export default function RideDetailScreen() {
 
   const [ride, setRide] = useState(null);
   const [seats, setSeats] = useState(1);
-  const [method, setMethod] = useState('card');
+
   const [submitting, setSubmitting] = useState(false);
   const [lockBanner, setLockBanner] = useState(null);
 
@@ -65,7 +65,9 @@ export default function RideDetailScreen() {
     );
   }
 
-  const total = seats * ride.price_per_seat;
+  const seatCost = seats * ride.price_per_seat;
+  const reservationFee = 3;
+  const total = seatCost + reservationFee;
   const dep = new Date(ride.departure_time);
 
   const book = async () => {
@@ -84,7 +86,7 @@ export default function RideDetailScreen() {
       actor: user,
       rideId: ride.id,
       seats,
-      paymentMethod: method,
+      paymentMethod: 'flouci',
       idempotencyKey,
     });
     setSubmitting(false);
@@ -145,64 +147,51 @@ export default function RideDetailScreen() {
           </Row>
         </Section>
         <Section title={t('ride:payment')}>
-          <Row gap={spacing.sm}>
-            {[
-              { k: 'card', label: t('ride:card'), icon: 'credit-card' },
-              { k: 'mobile_pay', label: t('ride:mobilePay'), icon: 'phone-android' },
-              { k: 'cash', label: t('ride:cash'), icon: 'payments' },
-            ].map((opt) => {
-              const active = method === opt.k;
-              return (
-                <Pressable
-                  key={opt.k}
-                  onPress={() => setMethod(opt.k)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: spacing.sm,
-                    paddingHorizontal: spacing.sm,
-                    borderRadius: radius.lg,
-                    alignItems: 'center',
-                    backgroundColor: active ? colors.primary : colors.surfaceContainer,
-                    gap: 4,
-                  }}
-                >
-                  <MaterialIcons
-                    name={opt.icon}
-                    size={20}
-                    color={active ? colors.onPrimary : colors.onSurface}
-                  />
-                  <Text
-                    variant="labelSm"
-                    color={active ? colors.onPrimary : colors.onSurface}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </Row>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: radius.lg,
+              backgroundColor: colors.primaryFixed,
+            }}
+          >
+            <MaterialIcons name="account-balance-wallet" size={22} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text variant="labelMd">{t('ride:flouci')}</Text>
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('ride:flouciHint')}</Text>
+            </View>
+            <Badge label={t('ride:secure')} variant="success" icon="lock" />
+          </View>
         </Section>
       </Card>
 
       {lockBanner ? <Banner variant="warning" title={t('ride:seatLockActive')} body={lockBanner} /> : null}
 
       <Card style={{ gap: spacing.sm }}>
-        <Row justify="space-between">
+        <Row justify="space-between" style={{ alignItems: 'flex-start' }}>
           <Text variant="bodyMd">
             {seats} × {ride.price_per_seat} {t('common:tnd')}
           </Text>
-          <Text variant="bodyMd">{total} {t('common:tnd')}</Text>
+          <Text variant="bodyMd">{seatCost} {t('common:tnd')}</Text>
         </Row>
-        <Row justify="space-between">
-          <Text variant="labelMd" color={colors.onSurfaceVariant}>
-            {t('ride:bookingFee')}
-          </Text>
-          <Text variant="labelMd" color={colors.onSurfaceVariant}>
-            0 {t('common:tnd')}
+        <Row justify="space-between" style={{ alignItems: 'flex-start' }}>
+          <Stack>
+            <Text variant="labelMd" color={colors.onSurfaceVariant}>
+              {t('ride:reservationFee')}
+            </Text>
+            <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ fontStyle: 'italic' }}>
+              {t('ride:reservationFeeBreakdown')}
+            </Text>
+          </Stack>
+          <Text variant="labelMd" color={colors.warning}>
+            {reservationFee.toFixed(3)} {t('common:tnd')}
           </Text>
         </Row>
         <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginVertical: spacing.xs }} />
-        <Row justify="space-between">
+        <Row justify="space-between" style={{ alignItems: 'center' }}>
           <Text variant="bodyLg">{t('ride:total')}</Text>
           <Text variant="headlineMd" color={colors.primary}>
             {total} {t('common:tnd')}

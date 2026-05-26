@@ -21,6 +21,7 @@ export async function getProfile({ actor }) {
     email: u.email,
     phone_masked: decryptField(u.phone_number),
     role: u.role,
+    created_at: u.created_at,
     notifications: u.notifications ?? { sms: true, push: true },
   };
 }

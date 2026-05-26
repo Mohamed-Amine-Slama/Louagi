@@ -15,6 +15,7 @@ export const db = {
   payments: [],
   reviews: [],
   notifications: [],
+  messages: [],
   documents: [],
 };
 

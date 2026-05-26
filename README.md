@@ -28,16 +28,11 @@ the QR code with the Expo Go app (SDK 54+) on a real device.
 - **Stuck on the loading screen**: clear the Metro cache with
   `npx expo start --clear`.
 
-### Demo accounts (seeded on first launch)
+### Demo accounts
 
-| Role      | Phone        | Password      |
-|-----------|--------------|---------------|
-| Passenger | `98765432`   | `Passenger1`  |
-| Driver    | `22334455`   | `Driver1234`  |
-| Admin     | `55000000`   | `AdminLou2026`|
-
-The OTP code is generated on the device and surfaced in a dev-mode banner on
-the OTP screen (would arrive via SMS in production).
+Local demo accounts are seeded through `supabase/seed.sql`; credentials are no
+longer duplicated in the app bundle or README. OTP verification is hardcoded
+with `DEV_OTP_CODE` in the backend until SMTP/SMS is wired.
 
 ## Language & theme
 

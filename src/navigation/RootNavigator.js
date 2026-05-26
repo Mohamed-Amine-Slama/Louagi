@@ -20,8 +20,13 @@ import BookingConfirmScreen from '../screens/passenger/BookingConfirmScreen';
 
 import CreateRideScreen from '../screens/driver/CreateRideScreen';
 import RideManagementScreen from '../screens/driver/RideManagementScreen';
+import DriverDeliveryScreen from '../screens/driver/DriverDeliveryScreen';
+import { DriverVerificationScreen } from '../screens/driver/DriverVerificationScreen';
+import { NotificationProvider } from '../context/NotificationContext';
 
 import SettingsScreen from '../screens/common/SettingsScreen';
+import ChatListScreen from '../screens/common/ChatListScreen';
+import ChatScreen from '../screens/common/ChatScreen';
 
 import { PassengerTabs } from './PassengerTabs';
 import { DriverTabs } from './DriverTabs';
@@ -58,6 +63,8 @@ function PassengerStack() {
       <Stack.Screen name="Tabs" component={PassengerTabs} />
       <Stack.Screen name="RideDetail" component={RideDetailScreen} />
       <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
+      <Stack.Screen name="ChatList" component={ChatListScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   );
@@ -78,7 +85,10 @@ function DriverStack({ pending }) {
           <Stack.Screen name="Tabs" component={DriverTabs} />
           <Stack.Screen name="CreateRide" component={CreateRideScreen} />
           <Stack.Screen name="RideManagement" component={RideManagementScreen} />
+          <Stack.Screen name="DriverDelivery" component={DriverDeliveryScreen} />
           <Stack.Screen name="RideDetail" component={RideDetailScreen} />
+          <Stack.Screen name="ChatList" component={ChatListScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </>
       )}
@@ -130,17 +140,19 @@ export function RootNavigator() {
         },
       }}
     >
-      {!user ? (
-        <PublicStack />
-      ) : user.role === 'passenger' ? (
-        <PassengerStack />
-      ) : user.role === 'driver' ? (
-        <DriverStack pending={user.driverStatus !== 'verified'} />
-      ) : user.role === 'admin' ? (
-        <AdminStack />
-      ) : (
-        <PublicStack />
-      )}
+      <NotificationProvider>
+        {!user ? (
+          <PublicStack />
+        ) : user.role === 'passenger' ? (
+          <PassengerStack />
+        ) : user.role === 'driver' ? (
+          <DriverStack pending={user.driverStatus !== 'verified'} />
+        ) : user.role === 'admin' ? (
+          <AdminStack />
+        ) : (
+          <PublicStack />
+        )}
+      </NotificationProvider>
     </NavigationContainer>
   );
 }

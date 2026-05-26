@@ -148,24 +148,35 @@ export async function getRideDetail(rideId) {
   };
 }
 
-export async function createRide({ actor, routeId, departureTime, pricePerSeat, availableSeats }) {
-  if (!useMocks) return gql('CreateRide', { routeId, departureTime, pricePerSeat, availableSeats });
+export async function createRide({ actor, origin, destination, departureTime, pricePerSeat, availableSeats }) {
+  if (!useMocks) return gql('CreateRide', { origin, destination, departureTime, pricePerSeat, availableSeats });
   await sleep(180);
   if (!can(actor?.role, 'rides:create')) return { ok: false, error: 'Forbidden' };
   const driver = findDriverByUserId(actor.id);
   if (!driver) return { ok: false, error: 'Driver record not found' };
   if (driver.status !== 'verified') return { ok: false, error: 'Driver not verified' };
-  const route = findRouteById(routeId);
-  if (!route) return { ok: false, error: 'Unknown route' };
+  if (!origin || !destination) return { ok: false, error: 'Origin and destination required' };
+
+  let route = db.routes.find(
+    (r) => r.origin_city.toLowerCase() === origin.toLowerCase() && r.destination_city.toLowerCase() === destination.toLowerCase()
+  );
+  if (!route) {
+    route = {
+      id: newId(),
+      origin_city: origin,
+      destination_city: destination,
+      distance_km: 150,
+      base_price: 20,
+    };
+    db.routes.push(route);
+  }
   const t = new Date(departureTime).getTime();
   if (!t || t < Date.now() + 30 * 60 * 1000) return { ok: false, error: 'Must depart 30+ min from now' };
   if (availableSeats < 1 || availableSeats > driver.seat_count) {
     return { ok: false, error: `Seats must be 1-${driver.seat_count}` };
   }
-  const min = route.base_price * 0.5;
-  const max = route.base_price * 1.5;
-  if (pricePerSeat < min || pricePerSeat > max) {
-    return { ok: false, error: `Price must be ${min.toFixed(0)}-${max.toFixed(0)} TND` };
+  if (pricePerSeat < 1 || pricePerSeat > 200) {
+    return { ok: false, error: `Price must be 1-200 TND` };
   }
   const ride = {
     id: newId(),

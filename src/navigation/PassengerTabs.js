@@ -5,6 +5,7 @@ import LandingScreen from '../screens/public/LandingScreen';
 import SearchScreen from '../screens/passenger/SearchScreen';
 import PassengerDashboard from '../screens/passenger/DashboardScreen';
 import PassengerProfile from '../screens/passenger/ProfileScreen';
+import DeliveryScreen from '../screens/passenger/DeliveryScreen';
 
 import { FloatingTabBar } from '../components/FloatingTabBar';
 
@@ -19,6 +20,7 @@ export function PassengerTabs() {
       <Tab.Screen name="Home" component={LandingScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Bookings" component={PassengerDashboard} />
+      <Tab.Screen name="Delivery" component={DeliveryScreen} />
       <Tab.Screen name="Profile" component={PassengerProfile} />
     </Tab.Navigator>
   );

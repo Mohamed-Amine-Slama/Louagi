@@ -94,6 +94,12 @@ export default function BookingConfirmScreen() {
           </Row>
           <Row justify="space-between">
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
+              {t('booking:reservationFee')}
+            </Text>
+            <Text variant="bodyMd">3.000 {t('common:tnd')}</Text>
+          </Row>
+          <Row justify="space-between">
+            <Text variant="labelSm" color={colors.onSurfaceVariant}>
               {t('booking:gatewayRef')}
             </Text>
             <Text variant="bodySm" color={colors.onSurfaceVariant}>

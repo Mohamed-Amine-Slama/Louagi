@@ -14,8 +14,9 @@ import { Tabs } from '../../components/Tabs';
 import { Stack, Row } from '../../components/Section';
 import { EmptyState } from '../../components/EmptyState';
 import { Avatar } from '../../components/Avatar';
+import { RateDriverModal } from '../../components/RateDriverModal';
 
-import { reservationsApi, paymentsApi } from '../../api';
+import { reservationsApi, paymentsApi, deliveriesApi, reviewsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
@@ -32,18 +33,21 @@ export default function PassengerDashboard() {
   const [upcoming, setUpcoming] = useState([]);
   const [past, setPast] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setRefreshing(true);
-    const [u, p, py] = await Promise.all([
+    const [u, p, py, dl] = await Promise.all([
       reservationsApi.listReservations({ actor: user, status: 'confirmed' }),
       reservationsApi.listReservations({ actor: user, status: 'cancelled' }),
       paymentsApi.listPayments({ actor: user }),
+      deliveriesApi.listMyDeliveries({ actor: user }),
     ]);
     setUpcoming(u);
     setPast(p);
     setPayments(py);
+    setDeliveries(dl);
     setRefreshing(false);
   }, [user]);
 
@@ -53,13 +57,38 @@ export default function PassengerDashboard() {
     }, [load])
   );
 
-  const cancel = async (id) => {
+  const [cancellingId, setCancellingId] = useState(null);
+  
+  // Rating state
+  const [ratingRide, setRatingRide] = useState(null);
+  const [ratingDriver, setRatingDriver] = useState(null);
+
+  const handleRateSubmit = async ({ rating, comment }) => {
+    const res = await reviewsApi.submitReview({
+      actor: user,
+      rideId: ratingRide,
+      driverId: ratingDriver,
+      rating,
+      comment,
+    });
+    if (res.ok) {
+      toast.show(t('passenger:ratingSubmitted'), 'success');
+      setRatingRide(null);
+      setRatingDriver(null);
+    } else {
+      toast.show(res.error, 'error');
+    }
+  };
+
+  const confirmCancel = async (id) => {
     const res = await reservationsApi.cancelReservation({ actor: user, id });
     if (!res.ok) {
       toast.show(res.error, 'error');
+      setCancellingId(null);
       return;
     }
     toast.show(t('toast:bookingCancelled'), 'success');
+    setCancellingId(null);
     load();
   };
 
@@ -85,6 +114,16 @@ export default function PassengerDashboard() {
             </Text>
           </View>
           <Row gap={spacing.sm}>
+            <Pressable
+              onPress={() => nav.navigate('ChatList')}
+              style={{
+                width: 40, height: 40, borderRadius: 20,
+                backgroundColor: colors.primaryContainer,
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="chat" size={20} color={colors.onPrimary} />
+            </Pressable>
             <Pressable
               onPress={() => toast.show(t('toast:noNewNotifications'), 'info')}
               style={{
@@ -147,6 +186,7 @@ export default function PassengerDashboard() {
             { key: 'upcoming', label: t('passenger:upcoming') },
             { key: 'past', label: t('passenger:past') },
             { key: 'payments', label: t('passenger:payments') },
+            { key: 'deliveries', label: t('passenger:deliveries') },
           ]}
         />
 
@@ -200,18 +240,32 @@ export default function PassengerDashboard() {
                     <Text variant="bodyMd">{row.reservation.total_price} {t('common:tnd')}</Text>
                   </Stack>
                 </Row>
-                <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
-                  <View style={{ flex: 1 }}>
-                    <Button
-                      label={t('passenger:viewTicket')}
-                      variant="primary"
-                      onPress={() => nav.navigate('BookingConfirm', { id: row.reservation.id })}
-                    />
+                {cancellingId === row.reservation.id ? (
+                  <View style={{ backgroundColor: colors.errorContainer, padding: spacing.md, borderRadius: radius.md, marginTop: spacing.md, gap: spacing.md }}>
+                    <Text variant="labelSm" color={colors.error}>{t('ride:feeNonRefundable')}</Text>
+                    <Row gap={spacing.sm}>
+                      <View style={{ flex: 1 }}>
+                        <Button label={t('common:back')} variant="outline" onPress={() => setCancellingId(null)} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Button label={t('common:confirm')} variant="danger" onPress={() => confirmCancel(row.reservation.id)} />
+                      </View>
+                    </Row>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Button label={t('common:cancel')} variant="danger" onPress={() => cancel(row.reservation.id)} />
-                  </View>
-                </Row>
+                ) : (
+                  <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
+                    <View style={{ flex: 1 }}>
+                      <Button
+                        label={t('passenger:viewTicket')}
+                        variant="primary"
+                        onPress={() => nav.navigate('BookingConfirm', { id: row.reservation.id })}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Button label={t('common:cancel')} variant="danger" onPress={() => setCancellingId(row.reservation.id)} />
+                    </View>
+                  </Row>
+                )}
               </Card>
             ))
           ))}
@@ -235,7 +289,21 @@ export default function PassengerDashboard() {
                       {formatDate(row.reservation.booked_at)}
                     </Text>
                   </Stack>
-                  <Badge label={row.reservation.status} variant={row.reservation.status === 'cancelled' ? 'error' : 'success'} />
+                  <View style={{ alignItems: 'flex-end', gap: spacing.sm }}>
+                    <Badge label={row.reservation.status} variant={row.reservation.status === 'cancelled' ? 'error' : 'success'} />
+                    {row.reservation.status === 'completed' && (
+                      <Button
+                        label={t('passenger:rateDriver')}
+                        variant="outline"
+                        small
+                        fullWidth={false}
+                        onPress={() => {
+                          setRatingRide(row.ride?.id);
+                          setRatingDriver(row.ride?.driver_id);
+                        }}
+                      />
+                    )}
+                  </View>
                 </Row>
               </Card>
             ))
@@ -264,7 +332,46 @@ export default function PassengerDashboard() {
               </Card>
             ))
           ))}
+
+        {tab === 'deliveries' &&
+          (deliveries.length === 0 ? (
+            <EmptyState icon="local-shipping" title={t('delivery:noDeliveries')} />
+          ) : (
+            deliveries.map((d) => {
+              // Convert underscore status to camelCase for translation key (e.g., picked_up -> statusPickedUp)
+              const camelStatus = d.status.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+              const transKey = `delivery:status${camelStatus.charAt(0).toUpperCase() + camelStatus.slice(1)}`;
+              return (
+                <Card key={d.id}>
+                  <Row justify="space-between">
+                    <Stack gap={2}>
+                      <Text variant="bodyLg">
+                        {d.ride?.origin_city} → {d.ride?.destination_city}
+                      </Text>
+                      <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                        {t('delivery:title')} · {d.severity_label} · {formatDate(d.booked_at)}
+                      </Text>
+                    </Stack>
+                    <Badge
+                      label={t(transKey)}
+                      variant={d.status === 'delivered' ? 'success' : d.status === 'cancelled' ? 'error' : 'warning'}
+                    />
+                  </Row>
+                </Card>
+              );
+            })
+          ))}
       </View>
+      
+      <RateDriverModal
+        visible={!!ratingRide}
+        driverName={past.find(r => r.ride?.id === ratingRide)?.driverUser?.full_name}
+        onClose={() => {
+          setRatingRide(null);
+          setRatingDriver(null);
+        }}
+        onSubmit={handleRateSubmit}
+      />
     </Screen>
   );
 }

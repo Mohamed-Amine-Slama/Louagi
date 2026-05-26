@@ -1,4 +1,4 @@
-// Native fetch wrapper for the hashed-sun backend.
+// Legacy native fetch wrapper. Current real API calls use src/api/graphql.js.
 //
 // Contract: every helper resolves to the same envelope the mock API uses —
 // `{ ok: true, ... }` on success, `{ ok: false, error }` on failure — so the
@@ -35,10 +35,14 @@ async function refreshOnce() {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-      const res = await fetch(`${apiUrl}/auth/refresh`, {
+      const res = await fetch(`${apiUrl}/graphql`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: rt }),
+        body: JSON.stringify({
+          operationName: 'Refresh',
+          variables: { refreshToken: rt },
+          query: 'query Refresh($input: JSON) { Refresh(input: $input) }',
+        }),
         signal: controller.signal,
       });
       clearTimeout(timer);
@@ -46,7 +50,8 @@ async function refreshOnce() {
         clearTokens();
         return false;
       }
-      const data = await res.json().catch(() => null);
+      const payload = await res.json().catch(() => null);
+      const data = payload?.data?.Refresh;
       if (!data?.ok || !data.accessToken || !data.refreshToken) {
         clearTokens();
         return false;

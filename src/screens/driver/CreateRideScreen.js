@@ -28,8 +28,8 @@ export default function CreateRideScreen() {
   const nav = useNavigation();
   const toast = useToast();
 
-  const [routes, setRoutes] = useState([]);
-  const [routeId, setRouteId] = useState(null);
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
   const [date, setDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -41,26 +41,17 @@ export default function CreateRideScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    ridesApi.listRoutes().then((rs) => {
-      setRoutes(rs);
-      if (rs[0]) {
-        setRouteId(rs[0].id);
-        setPrice(rs[0].base_price);
-      }
-    });
-  }, []);
-
-  const route = routes.find((r) => r.id === routeId);
-  const min = route ? Math.round(route.base_price * 0.5) : 0;
-  const max = route ? Math.round(route.base_price * 1.5) : 0;
+  // Default suggestions for price based on nothing since free text
+  const min = 5;
+  const max = 50;
 
   const submit = async () => {
     setError(null);
     setLoading(true);
     const res = await ridesApi.createRide({
       actor: user,
-      routeId,
+      origin,
+      destination,
       departureTime: date,
       pricePerSeat: Number(price),
       availableSeats: Number(seats),
@@ -86,39 +77,23 @@ export default function CreateRideScreen() {
 
       <Section title={t('driver:route')}>
         <Stack gap={spacing.sm}>
-          {routes.map((r) => {
-            const active = r.id === routeId;
-            return (
-              <Pressable
-                key={r.id}
-                onPress={() => {
-                  setRouteId(r.id);
-                  setPrice(r.base_price);
-                }}
-                style={{
-                  padding: spacing.md,
-                  borderRadius: radius.xl,
-                  borderWidth: 1,
-                  borderColor: active ? colors.primary : colors.outlineVariant,
-                  backgroundColor: active ? colors.primaryFixed : colors.surfaceContainerLowest,
-                }}
-              >
-                <Row justify="space-between">
-                  <Text variant="bodyLg">
-                    {r.origin_city} → {r.destination_city}
-                  </Text>
-                  <Text variant="labelMd" color={colors.onSurfaceVariant}>
-                    {r.distance_km} km · {r.base_price} {t('common:tnd')}
-                  </Text>
-                </Row>
-              </Pressable>
-            );
-          })}
+          <Input
+            label={t('landing:from')}
+            value={origin}
+            onChangeText={setOrigin}
+            placeholder="e.g. Tunis"
+          />
+          <Input
+            label={t('landing:to')}
+            value={destination}
+            onChangeText={setDestination}
+            placeholder="e.g. Sousse"
+          />
         </Stack>
       </Section>
 
       <Section title={t('driver:departure')}>
-        <Row gap={spacing.sm}>
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
           {days.map((d) => {
             const same = d.toDateString() === date.toDateString();
             return (
@@ -174,13 +149,11 @@ export default function CreateRideScreen() {
       </Section>
 
       <Section title={t('driver:pricePerSeat')}>
-        {route ? (
-          <Banner
-            variant="warning"
-            title={t('driver:suggestedRange')}
-            body={t('driver:suggestedRangeBody', { min, max, base: route.base_price })}
-          />
-        ) : null}
+        <Banner
+          variant="warning"
+          title={t('driver:suggestedRange')}
+          body={t('driver:suggestedRangeBody', { min, max, base: 20 })}
+        />
         <Card>
           <Row justify="space-between">
             <Text variant="bodyMd">{t('driver:priceTnd')}</Text>

@@ -4,6 +4,7 @@ import { appendAudit } from '../security/audit';
 import { randomBytesHex } from '../security/crypto';
 import { can } from '../security/rbac';
 import { useMocks } from '../config';
+import { pushLocalNotification } from '../services/notifications.service';
 import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -45,7 +46,10 @@ export async function createReservation({ actor, rideId, seats, paymentMethod = 
   if (!lock.ok) return { ok: false, error: 'Another booking is in progress' };
 
   // 2. Create pending reservation
-  const total = ride.price_per_seat * seats;
+  const PLATFORM_FEE = 1.5;
+  const DRIVER_FEE = 1.5;
+  const seatCost = ride.price_per_seat * seats;
+  const total = seatCost + PLATFORM_FEE + DRIVER_FEE;
   const reservation = {
     id: newId(),
     user_id: actor.id,
@@ -86,6 +90,8 @@ export async function createReservation({ actor, rideId, seats, paymentMethod = 
     reservation_id: reservation.id,
     method: paymentMethod,
     amount: total,
+    platform_fee: PLATFORM_FEE,
+    driver_fee: DRIVER_FEE,
     status: 'succeeded',
     paid_at: new Date().toISOString(),
     gateway_reference: gw.reference,
@@ -106,6 +112,13 @@ export async function createReservation({ actor, rideId, seats, paymentMethod = 
       read: false,
     });
   }
+
+  // Push local notification to the passenger
+  pushLocalNotification({
+    title: 'Booking Confirmed!',
+    body: `You booked ${seats} seat${seats > 1 ? 's' : ''} to ${ridePtr?.route?.destination_city || 'your destination'}.`,
+    data: { screen: 'Dashboard' },
+  });
 
   appendAudit({
     actorId: actor.id,
@@ -176,6 +189,7 @@ export async function cancelReservation({ actor, id }) {
   if (pay && pay.status === 'succeeded') {
     pay.status = 'refunded';
     pay.refunded_at = new Date().toISOString();
+    pay.refunded_amount = pay.amount - (pay.platform_fee || 0) - (pay.driver_fee || 0);
   }
   appendAudit({
     actorId: actor.id,

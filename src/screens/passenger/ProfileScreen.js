@@ -20,7 +20,7 @@ import { ScreenHeader } from '../../components/Header';
 import { usersApi, reservationsApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
-import { spacing, radius, shadows } from '../../theme';
+import { spacing, radius, withAlpha } from '../../theme';
 import { formatMonthYear } from '../../i18n/format';
 import {
   getBiometricCapability,
@@ -172,7 +172,13 @@ export default function PassengerProfile() {
 
   if (!profile) return <Screen />;
 
-  const memberSince = formatMonthYear(new Date(), { locale });
+  const memberSince = formatMonthYear(profile.created_at || new Date(), { locale });
+  const roleLabel =
+    profile.role === 'driver'
+      ? t('auth:driver')
+      : profile.role === 'passenger'
+        ? t('auth:passenger')
+        : profile.role;
 
   const saveAccount = async () => {
     setErrors({});
@@ -232,28 +238,46 @@ export default function PassengerProfile() {
 
   return (
     <Screen padded={false}>
-      <ScreenHeader title={t('passenger:profileTitle')} />
+      <View
+        style={{
+          backgroundColor: colors.primary,
+          paddingHorizontal: spacing.containerMargin,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.xl,
+          borderBottomLeftRadius: 24,
+          borderBottomRightRadius: 24,
+          gap: spacing.md,
+        }}
+      >
+        <Text variant="labelSm" color={colors.onPrimaryContainer}>
+          {t('passenger:profileTitle')}
+        </Text>
+        <Row gap={spacing.md} align="center">
+          <View
+            style={{
+              borderWidth: 3,
+              borderColor: withAlpha(colors.onPrimary, 0.24),
+              borderRadius: 40,
+            }}
+          >
+            <Avatar name={profile.full_name} size={72} badge />
+          </View>
+          <Stack gap={6} style={{ flex: 1 }}>
+            <Text variant="headlineMd" color={colors.onPrimary} numberOfLines={1}>
+              {profile.full_name}
+            </Text>
+            <Text variant="bodySm" color={colors.onPrimaryContainer} numberOfLines={1}>
+              {profile.email}
+            </Text>
+            <Row gap={spacing.xs} style={{ flexWrap: 'wrap' }}>
+              <ProfileMetaPill icon="badge" label={roleLabel} />
+              <ProfileMetaPill icon="event" label={t('common:since', { date: memberSince })} />
+            </Row>
+          </Stack>
+        </Row>
+      </View>
 
       <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
-        {/* Hero card */}
-        <Card style={{ gap: spacing.md, padding: spacing.lg }}>
-          <Row gap={spacing.md}>
-            <View>
-              <Avatar name={profile.full_name} size={64} badge />
-            </View>
-            <Stack gap={2} style={{ flex: 1 }}>
-              <Text variant="headlineSm">{profile.full_name}</Text>
-              <Text variant="bodySm" color={colors.onSurfaceVariant}>
-                {profile.email}
-              </Text>
-              <Row gap={spacing.xs} style={{ marginTop: 4 }}>
-                <Badge label={profile.role} variant="info" icon="badge" />
-                <Badge label={t('common:since', { date: memberSince })} variant="neutral" icon="event" />
-              </Row>
-            </Stack>
-          </Row>
-        </Card>
-
         {/* Travel stats */}
         <Row gap={spacing.sm}>
           <StatTile icon="route" value={stats.trips} label={t('passenger:trips')} />
@@ -496,9 +520,9 @@ export default function PassengerProfile() {
         <Section title={t('passenger:paymentMethods')}>
           <Card>
             <SettingRow
-              icon="credit-card"
-              title={t('passenger:cardEnding', { last4: '4242' })}
-              subtitle={t('passenger:cardDefault', { exp: '09/27' })}
+              icon="account-balance-wallet"
+              title={t('passenger:cardEnding')}
+              subtitle={t('passenger:cardDefault')}
               right={<Badge label={t('passenger:cardDefaultBadge')} variant="success" />}
             />
             <Divider />
@@ -582,6 +606,30 @@ export default function PassengerProfile() {
         </Text>
       </View>
     </Screen>
+  );
+}
+
+function ProfileMetaPill({ icon, label }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 6,
+        borderRadius: radius.full,
+        backgroundColor: withAlpha(colors.onPrimary, 0.14),
+        maxWidth: '100%',
+        flexShrink: 1,
+      }}
+    >
+      <MaterialIcons name={icon} size={14} color={colors.onPrimary} />
+      <Text variant="labelSm" color={colors.onPrimary} numberOfLines={1} style={{ flexShrink: 1 }}>
+        {label}
+      </Text>
+    </View>
   );
 }
 

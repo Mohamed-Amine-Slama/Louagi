@@ -1,8 +1,7 @@
 import { b64encode, b64decode, sha256, randomBytesHex } from './crypto';
 
-// Lightweight JWT-compatible encoder/decoder using HS256-style payload signing.
-// The signature is a SHA-256 HMAC analogue (key-prefixed hash) — sufficient for
-// the client-side token shape spec'd in the docs; replace with a real HMAC on the server.
+// Lightweight JWT-compatible encoder/decoder for the offline mock path.
+// Backend-issued tokens are minted and verified server-side.
 
 const SIGNING_SECRET = randomBytesHex(32);
 const ACCESS_TTL_SEC = 15 * 60; // 15 minutes (matches spec)

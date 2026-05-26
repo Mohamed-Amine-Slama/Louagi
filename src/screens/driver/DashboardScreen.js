@@ -119,6 +119,19 @@ export default function DriverDashboard() {
           </Row>
           <Row gap={spacing.xs}>
             <Pressable
+              onPress={() => nav.navigate('ChatList')}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: colors.primaryContainer,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="chat" size={20} color={colors.onPrimary} />
+            </Pressable>
+            <Pressable
               onPress={() => nav.navigate('Settings')}
               style={{
                 width: 40,
@@ -147,7 +160,7 @@ export default function DriverDashboard() {
           </Row>
         </Row>
 
-        <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
+        <Row gap={spacing.sm} style={{ marginTop: spacing.md, flexWrap: 'wrap' }}>
           <KpiTile
             icon="route"
             label={t('driver:tripsKpi')}
@@ -405,6 +418,7 @@ function KpiTile({ icon, label, value, suffix, delta, dark }) {
     <View
       style={{
         flex: 1,
+        minWidth: '45%',
         backgroundColor: tileBg,
         borderRadius: radius.lg,
         padding: spacing.sm,

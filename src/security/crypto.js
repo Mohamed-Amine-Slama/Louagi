@@ -46,9 +46,8 @@ export async function verifyPassword(plain, stored) {
   return h === expected;
 }
 
-// Field-level encryption simulation for PII (phone, ID, license, plate).
-// In production, swap for a KMS-managed AES-GCM key. Here we XOR-mask under a
-// device-side key derived from a stable seed so reads are obfuscated at rest.
+// Field-level encryption simulation for the offline mock path only. Real PII
+// lives in Supabase and is handled by the backend.
 const FIELD_KEY = randomBytesHex(32);
 
 function xorMask(input, key) {

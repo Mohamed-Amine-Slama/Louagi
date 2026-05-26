@@ -11,6 +11,7 @@ const ROUTE_META = {
   Home: { icon: 'home', label: 'Home' },
   Search: { icon: 'search', label: 'Search' },
   Bookings: { icon: 'event', label: 'Bookings' },
+  Delivery: { icon: 'local-shipping', label: 'Delivery' },
   Profile: { icon: 'person', label: 'Profile' },
   Dashboard: { icon: 'space-dashboard', label: 'Dashboard' },
   Rides: { icon: 'directions-car', label: 'Rides' },

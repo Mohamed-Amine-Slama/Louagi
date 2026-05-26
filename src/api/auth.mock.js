@@ -207,6 +207,9 @@ export async function enrollBiometric({ userId }) {
   // Long-lived biometric ticket. The `kind: 'biometric'` claim lets
   // biometricLogin distinguish it from a regular refresh token.
   const ticket = await signRefreshToken({ sub: user.id, role: user.role, kind: 'biometric' });
+  // Persist enrollment to the database so it is linked to the account
+  user.biometric_enrolled = true;
+  user.biometric_enrolled_at = new Date().toISOString();
   appendAudit({
     actorId: user.id,
     actorRole: user.role,
@@ -226,6 +229,10 @@ export async function biometricLogin(ticket) {
   const user = db.users.find((u) => u.id === claims.sub);
   if (!user || !user.is_active) {
     return { ok: false, error: 'Account unavailable' };
+  }
+  // Verify biometric enrollment is persisted in the database
+  if (!user.biometric_enrolled) {
+    return { ok: false, error: 'Biometric is not enrolled for this account. Please re-enable it in settings.' };
   }
   const driver = findDriverByUserId(user.id);
   const sessionClaims = {

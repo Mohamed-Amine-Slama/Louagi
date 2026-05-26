@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, Pressable } from 'react-native';
+import { View, Pressable, Linking } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -147,6 +147,16 @@ export default function RideManagementScreen() {
             onPress={() => setStatus('completed')}
           />
         ) : null}
+        
+        {ride.accepts_delivery && (
+          <Button
+            style={{ marginTop: spacing.md }}
+            label={t('passenger:deliveries')}
+            variant="outline"
+            iconLeft="local-shipping"
+            onPress={() => nav.navigate('DriverDelivery', { rideId: id })}
+          />
+        )}
       </Card>
 
       <Section title={t('driver:passengers', { count: passengers.length })}>
@@ -167,21 +177,41 @@ export default function RideManagementScreen() {
                   label={p.status}
                   variant={p.status === 'confirmed' ? 'success' : p.status === 'cancelled' ? 'error' : 'info'}
                 />
-                <Pressable
-                  onPress={() => toast.show(t('toast:callingStub'), 'info')}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('driver:callPassenger')}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: colors.primaryFixed,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MaterialIcons name="call" size={18} color={colors.primary} />
-                </Pressable>
+                <Row gap={spacing.xs}>
+                  <Pressable
+                    onPress={() => nav.navigate('Chat', { userId: p.user.id, userName: p.user.full_name })}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('driver:messagePassenger')}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: colors.surfaceContainerHigh,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MaterialIcons name="chat" size={18} color={colors.primary} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      const phone = p.user?.phone_number || '+21600000000';
+                      Linking.openURL(`tel:${phone}`);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('driver:callPassenger')}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: colors.primaryFixed,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MaterialIcons name="call" size={18} color={colors.primary} />
+                  </Pressable>
+                </Row>
               </Row>
             </Card>
           ))
