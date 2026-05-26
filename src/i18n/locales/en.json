@@ -261,7 +261,7 @@
     "driverShort": "Driver",
     "seatsShort": "Seats",
     "paidShort": "Paid",
-    "versionFooter": "Louagi · v{{version}}",
+    "versionFooter": "Louagi Beta Version",
     "departsInLabel": "Departs in {{duration}}",
     "noPastRidesTitle": "No Past Rides",
     "noPastRidesBody": "Rides you've completed or cancelled will appear here.",
@@ -470,6 +470,7 @@
     "themeSystem": "System",
     "about": "About",
     "version": "Version",
+    "betaVersion": "Beta Version",
     "rtlReloadTitle": "Restart required",
     "rtlReloadBody": "Switching to Arabic flips the layout. The app will reload."
   },

@@ -21,7 +21,6 @@ import BookingConfirmScreen from '../screens/passenger/BookingConfirmScreen';
 import CreateRideScreen from '../screens/driver/CreateRideScreen';
 import RideManagementScreen from '../screens/driver/RideManagementScreen';
 import DriverDeliveryScreen from '../screens/driver/DriverDeliveryScreen';
-import { DriverVerificationScreen } from '../screens/driver/DriverVerificationScreen';
 import { NotificationProvider } from '../context/NotificationContext';
 
 import SettingsScreen from '../screens/common/SettingsScreen';

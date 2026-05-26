@@ -258,7 +258,7 @@
     "driverShort": "Chauffeur",
     "seatsShort": "Places",
     "paidShort": "Payé",
-    "versionFooter": "Louagi · v{{version}}",
+    "versionFooter": "Louagi Version Bêta",
     "departsInLabel": "Départ dans {{duration}}"
   },
   "driver": {
@@ -455,6 +455,7 @@
     "themeSystem": "Système",
     "about": "À propos",
     "version": "Version",
+    "betaVersion": "Version Bêta",
     "rtlReloadTitle": "Redémarrage requis",
     "rtlReloadBody": "Passer à l'arabe inverse la mise en page. L'application va redémarrer."
   },

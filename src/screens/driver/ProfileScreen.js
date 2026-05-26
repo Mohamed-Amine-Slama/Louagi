@@ -306,7 +306,7 @@ export default function DriverProfile() {
         <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
           <Button label={t('common:logout')} variant="outline" iconLeft="logout" onPress={signOut} />
           <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ textAlign: 'center' }}>
-            {t('passenger:versionFooter', { version: '1.0.0' })}
+            {t('passenger:versionFooter')}
           </Text>
         </View>
       </ScrollView>

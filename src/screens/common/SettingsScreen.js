@@ -127,7 +127,7 @@ export default function SettingsScreen() {
         <Card>
           <Row justify="space-between">
             <Text variant="bodyMd">{t('settings:version')}</Text>
-            <Text variant="labelMd" color={colors.onSurfaceVariant}>1.0.0</Text>
+            <Text variant="labelMd" color={colors.onSurfaceVariant}>{t('settings:betaVersion')}</Text>
           </Row>
         </Card>
       </Section>

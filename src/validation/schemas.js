@@ -64,10 +64,18 @@ export function validateSeatCount(n, max = 8) {
 }
 
 // Sanitiser stripping HTML/script payloads and control bytes from free-text inputs.
+// Uses a loop to prevent incomplete sanitization from nested payloads
+// (e.g. "<scr<script>ipt>" reassembling after a single pass).
 export function sanitize(str) {
   if (!str) return '';
-  return String(str)
-    .replace(/<[^>]*>/g, '')
+  let s = String(str);
+  // Loop until no HTML tags remain (prevents nested-tag bypass)
+  let prev;
+  do {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  } while (s !== prev);
+  return s
     .replace(/[\x00-\x1f\x7f]/g, '')
     .trim()
     .slice(0, 500);

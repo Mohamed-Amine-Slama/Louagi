@@ -258,7 +258,7 @@
     "driverShort": "السائق",
     "seatsShort": "المقاعد",
     "paidShort": "مدفوع",
-    "versionFooter": "لواج · إصدار {{version}}",
+    "versionFooter": "لواج · نسخة بيتا",
     "departsInLabel": "ينطلق خلال {{duration}}"
   },
   "driver": {
@@ -455,6 +455,7 @@
     "themeSystem": "النظام",
     "about": "حول",
     "version": "الإصدار",
+    "betaVersion": "نسخة بيتا",
     "rtlReloadTitle": "إعادة تشغيل مطلوبة",
     "rtlReloadBody": "تفعيل العربية يقلب التخطيط. سيعاد تشغيل التطبيق."
   },

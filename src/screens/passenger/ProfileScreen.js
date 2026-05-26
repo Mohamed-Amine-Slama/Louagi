@@ -602,7 +602,7 @@ export default function PassengerProfile() {
         </Section>
 
         <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ textAlign: 'center', marginTop: spacing.md }}>
-          {t('passenger:versionFooter', { version: '1.0.0' })}
+          {t('passenger:versionFooter')}
         </Text>
       </View>
     </Screen>
