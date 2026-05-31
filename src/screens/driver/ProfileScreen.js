@@ -297,9 +297,9 @@ export default function DriverProfile() {
 
         <Section title={t('passenger:support')}>
           <Card>
-            <LinkRow icon="help" title={t('passenger:helpCentre')} onPress={() => toast.show(t('toast:helpComingSoon'), 'info')} />
+            <LinkRow icon="help" title={t('passenger:helpCentre')} onPress={() => nav.navigate('Support', { section: 'help' })} />
             <Divider />
-            <LinkRow icon="mail" title={t('passenger:contactSupport')} onPress={() => toast.show(t('toast:weReplyIn24h'), 'info')} />
+            <LinkRow icon="mail" title={t('passenger:contactSupport')} onPress={() => nav.navigate('Support', { section: 'contact' })} />
           </Card>
         </Section>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +24,7 @@ import DriverDeliveryScreen from '../screens/driver/DriverDeliveryScreen';
 import { NotificationProvider } from '../context/NotificationContext';
 
 import SettingsScreen from '../screens/common/SettingsScreen';
+import SupportScreen from '../screens/common/SupportScreen';
 import ChatListScreen from '../screens/common/ChatListScreen';
 import ChatScreen from '../screens/common/ChatScreen';
 
@@ -34,6 +35,7 @@ import { AdminTabs } from './AdminTabs';
 import { typography } from '../theme';
 
 const Stack = createNativeStackNavigator();
+export const navigationRef = createNavigationContainerRef();
 
 function useStackScreenOptions() {
   const { colors } = useTheme();
@@ -65,6 +67,7 @@ function PassengerStack() {
       <Stack.Screen name="ChatList" component={ChatListScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Support" component={SupportScreen} />
     </Stack.Navigator>
   );
 }
@@ -89,6 +92,7 @@ function DriverStack({ pending }) {
           <Stack.Screen name="ChatList" component={ChatListScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Support" component={SupportScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -101,6 +105,7 @@ function AdminStack() {
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="Tabs" component={AdminTabs} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Support" component={SupportScreen} />
     </Stack.Navigator>
   );
 }
@@ -121,6 +126,7 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer
+      ref={navigationRef}
       theme={{
         dark: isDark,
         colors: {
@@ -139,7 +145,7 @@ export function RootNavigator() {
         },
       }}
     >
-      <NotificationProvider>
+      <NotificationProvider navigationRef={navigationRef}>
         {!user ? (
           <PublicStack />
         ) : user.role === 'passenger' ? (

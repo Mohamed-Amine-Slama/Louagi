@@ -7,6 +7,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
+      REDIS_URL: redis://:louagi-dev@redis:6379
     command: npm run dev
     ports:
       - "3000:3000"
@@ -50,6 +51,12 @@ services:
         condition: service_started
     stdin_open: true
     tty: true
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass louagi-dev
 
 volumes:
   api_node_modules:

@@ -17,7 +17,7 @@ import { Banner } from '../../components/Banner';
 import { Section, Row, Stack } from '../../components/Section';
 import { ScreenHeader } from '../../components/Header';
 
-import { ridesApi, reservationsApi } from '../../api';
+import { ridesApi, reservationsApi, usersApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { peekSeatLock } from '../../security/seatLock';
@@ -30,7 +30,8 @@ export default function RideDetailScreen() {
   const { t } = useLocale();
   const nav = useNavigation();
   const route = useRoute();
-  const { id } = route.params;
+  const params = route.params || {};
+  const { id } = params;
   const { user } = useAuth();
   const toast = useToast();
 
@@ -41,8 +42,24 @@ export default function RideDetailScreen() {
   const [lockBanner, setLockBanner] = useState(null);
 
   useEffect(() => {
-    ridesApi.getRideDetail(id).then(setRide);
-  }, [id]);
+    let cancelled = false;
+    (async () => {
+      const detail = await ridesApi.getRideDetail(id);
+      if (cancelled) return;
+      setRide(detail);
+      if (!detail) return;
+
+      let initialSeats = Number(params.seats) || 1;
+      if (!params.seats && user?.role === 'passenger') {
+        const profile = await usersApi.getProfile({ actor: user });
+        if (cancelled) return;
+        initialSeats = Number(profile?.preferences?.defaultSeats) || 1;
+      }
+      const maxSeats = Math.max(1, detail.available_seats || 1);
+      setSeats(Math.min(maxSeats, Math.max(1, initialSeats)));
+    })();
+    return () => { cancelled = true; };
+  }, [id, params.seats, user?.id, user?.role]);
 
   useEffect(() => {
     const interval = setInterval(() => {

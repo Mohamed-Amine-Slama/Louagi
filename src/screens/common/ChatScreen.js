@@ -23,7 +23,7 @@ export default function ChatScreen() {
   const nav = useNavigation();
   const toast = useToast();
   
-  const { userId, userName } = route.params;
+  const { userId, userName, phoneNumber } = route.params;
 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -59,7 +59,11 @@ export default function ChatScreen() {
   };
 
   const handleCall = () => {
-    Linking.openURL(`tel:+21600000000`); // Mock number, normally from user profile
+    if (!phoneNumber) {
+      toast.show(t('toast:phoneUnavailable'), 'warning');
+      return;
+    }
+    Linking.openURL(`tel:${phoneNumber}`);
   };
 
   return (

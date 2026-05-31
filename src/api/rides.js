@@ -11,6 +11,7 @@ import { appendAudit } from '../security/audit';
 import { can } from '../security/rbac';
 import { useMocks } from '../config';
 import { gql, gqlList } from './graphql';
+import { decryptField } from '../security/crypto';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -37,6 +38,16 @@ function emptyAnalytics(period = 'week') {
     topRoute: null,
     rating: null,
     tripsCompleted: 0,
+  };
+}
+
+function passengerContact(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    full_name: user.full_name,
+    role: user.role,
+    phone_number: decryptField(user.phone_number),
   };
 }
 
@@ -284,7 +295,7 @@ export async function ridePassengers({ actor, rideId }) {
     .filter((r) => r.ride_id === rideId)
     .map((res) => ({
       ...res,
-      user: findUserById(res.user_id),
+      user: passengerContact(findUserById(res.user_id)),
     }));
 }
 

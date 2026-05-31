@@ -36,7 +36,6 @@ export default function DeliveryScreen() {
   );
 
   const [selectedRide, setSelectedRide] = useState(null);
-  const [tier, setTier] = useState(1);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -46,7 +45,6 @@ export default function DeliveryScreen() {
     const res = await deliveriesApi.createDelivery({
       actor: user,
       rideId: selectedRide.id,
-      severityTier: tier,
       description
     });
     setSubmitting(false);
@@ -60,8 +58,6 @@ export default function DeliveryScreen() {
     nav.navigate('Tabs', { screen: 'Bookings' });
   };
 
-  const TIER_PRICES = { 1: 7, 2: 9, 3: 12 };
-
   return (
     <Screen padded={false}>
       <View style={{ backgroundColor: colors.primary, padding: spacing.lg, paddingBottom: spacing.xl, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
@@ -69,7 +65,7 @@ export default function DeliveryScreen() {
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
         {availableRides.map(ride => (
-          <Card key={ride.id} onPress={() => { setSelectedRide(ride); setTier(1); }}>
+          <Card key={ride.id} onPress={() => { setSelectedRide(ride); }}>
             <Row justify="space-between">
               <Stack gap={4}>
                 <Text variant="headlineSm">{ride.route?.origin_city} → {ride.route?.destination_city}</Text>
@@ -79,29 +75,11 @@ export default function DeliveryScreen() {
             </Row>
             {selectedRide?.id === ride.id && (
               <View style={{ marginTop: spacing.md, gap: spacing.md }}>
-                <Text variant="labelMd">{t('delivery:selectTier')}</Text>
+                <Text variant="labelMd">{t('delivery:priceLabel')}</Text>
                 <View style={{ gap: spacing.sm }}>
-                  {[1, 2, 3].map(tLevel => {
-                    const tierColors = {
-                      1: { bg: '#16A34A', pressed: '#15803D', border: '#16A34A', fg: '#fff' }, // green  – Standard
-                      2: { bg: '#E69500', pressed: '#CA8A04', border: '#E69500', fg: '#fff' }, // amber  – Sensitive
-                      3: { bg: '#DC2626', pressed: '#B91C1C', border: '#DC2626', fg: '#fff' }, // red    – Critical
-                    };
-                    const tc = tierColors[tLevel];
-                    const selected = tier === tLevel;
-                    return (
-                      <Button 
-                        key={tLevel} 
-                        label={`${t(`delivery:tier${tLevel === 1 ? 'Standard' : tLevel === 2 ? 'Sensitive' : 'Critical'}`)} - ${TIER_PRICES[tLevel]} ${t('common:tnd')}`} 
-                        variant={selected ? 'primary' : 'outline'} 
-                        onPress={() => setTier(tLevel)} 
-                        style={selected
-                          ? { backgroundColor: tc.bg, borderColor: tc.bg, borderWidth: 1.5 }
-                          : { backgroundColor: 'transparent', borderColor: tc.border, borderWidth: 1.5 }
-                        }
-                      />
-                    );
-                  })}
+                  <Text variant="bodyMd" color={colors.onSurfaceVariant}>
+                    {t('delivery:fixedPrice', { price: '10.000' })}
+                  </Text>
                 </View>
                 <TextInput
                   placeholder={t('delivery:itemDescription')}

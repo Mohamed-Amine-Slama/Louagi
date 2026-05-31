@@ -64,24 +64,25 @@ export async function listRideDeliveries({ actor, rideId }) {
     });
 }
 
-export async function createDelivery({ actor, rideId, severityTier, description }) {
-  if (!useMocks) return gql('CreateDelivery', { rideId, severityTier, description });
+export async function createDelivery({ actor, rideId, description }) {
+  if (!useMocks) return gql('CreateDelivery', { rideId, description });
   await sleep(200);
   if (!db.deliveries) db.deliveries = [];
-  const TIER_PRICES = { 1: 7, 2: 9, 3: 12 };
-  const TIER_LABELS = { 1: 'Standard', 2: 'Sensitive', 3: 'Critical' };
   
-  const price = TIER_PRICES[severityTier];
-  const label = TIER_LABELS[severityTier];
+  const price = 10;
+  const driver_fee = 8;
+  const platform_fee = 2;
+  const label = 'Standard Delivery';
 
   const delivery = {
     id: newId(),
     user_id: actor.id,
     ride_id: rideId,
-    severity_tier: severityTier,
     severity_label: label,
     item_description: description || null,
     price,
+    driver_fee,
+    platform_fee,
     status: 'pending',
     booked_at: new Date().toISOString(),
     cancelled_at: null,

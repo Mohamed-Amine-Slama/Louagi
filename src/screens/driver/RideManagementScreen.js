@@ -179,7 +179,11 @@ export default function RideManagementScreen() {
                 />
                 <Row gap={spacing.xs}>
                   <Pressable
-                    onPress={() => nav.navigate('Chat', { userId: p.user.id, userName: p.user.full_name })}
+                    onPress={() => nav.navigate('Chat', {
+                      userId: p.user.id,
+                      userName: p.user.full_name,
+                      phoneNumber: p.user.phone_number,
+                    })}
                     accessibilityRole="button"
                     accessibilityLabel={t('driver:messagePassenger')}
                     style={{
@@ -195,7 +199,11 @@ export default function RideManagementScreen() {
                   </Pressable>
                   <Pressable
                     onPress={() => {
-                      const phone = p.user?.phone_number || '+21600000000';
+                      const phone = p.user?.phone_number;
+                      if (!phone) {
+                        toast.show(t('toast:phoneUnavailable'), 'warning');
+                        return;
+                      }
                       Linking.openURL(`tel:${phone}`);
                     }}
                     accessibilityRole="button"

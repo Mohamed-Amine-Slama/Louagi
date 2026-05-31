@@ -1,0 +1,13 @@
+aws_region = "eu-central-1"
+vpc_id     = "vpc-0123456789abcdef0"
+environment = "production"
+
+# If you have a custom domain:
+# custom_domain = "api.louagi.com"
+# certificate_arn = "arn:aws:acm:eu-central-1:123456789012:certificate/uuid"
+# cdn_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/uuid"
+
+database_url = "postgresql://postgres.xxx:yyy@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
+supabase_url = "https://xxx.supabase.co"
+supabase_service_role_key = "sb_secret_..."
+app_jwt_secret = "..."

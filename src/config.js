@@ -18,7 +18,11 @@ import { Platform } from 'react-native';
  *   3. localhost fallback (web or CI).
  */
 function resolveApiUrl() {
-  // 1. Explicit override always wins
+  // 1. Explicit CDN override
+  const cdnUrl = process.env.EXPO_PUBLIC_CDN_URL;
+  if (cdnUrl) return cdnUrl;
+
+  // 2. Explicit API override
   const explicit = process.env.EXPO_PUBLIC_API_URL;
   if (explicit) return explicit;
 

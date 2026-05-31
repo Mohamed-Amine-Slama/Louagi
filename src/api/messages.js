@@ -2,6 +2,7 @@ import { db, findUserById, newId } from './mockDb';
 import { useMocks } from '../config';
 import { gql, gqlList } from './graphql';
 import { encryptMessage, decryptMessage } from '../security/encryption';
+import { decryptField } from '../security/crypto';
 import { pushLocalNotification } from '../services/notifications.service';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -34,6 +35,7 @@ export async function listChats({ actor }) {
           id: user.id,
           full_name: user.full_name,
           role: user.role,
+          phone_number: decryptField(user.phone_number),
         },
         last_message: decryptMessage(lastMsg.content),
         updated_at: lastMsg.created_at,

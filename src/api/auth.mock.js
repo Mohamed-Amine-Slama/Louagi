@@ -17,9 +17,8 @@ import {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function ensureReady() {
-  // No-op. Mock store starts empty for users/drivers/admins — register
-  // through the UI to create an account. Credentials live server-side
-  // (supabase + server/) once mocks are switched off.
+  // Mock store starts ready and empty for users/drivers/admins. Register
+  // through the UI to create an account.
 }
 
 export async function startLogin(phoneRaw, password) {
@@ -134,6 +133,9 @@ export async function register({ fullName, phone, email, password, role }) {
     role,
     created_at: new Date().toISOString(),
     is_active: true,
+    notifications: { sms: true, push: true, marketing: false },
+    preferences: { defaultSeats: 1 },
+    payment_method: null,
   };
   db.users.push(user);
   const otp = issueOtp(`register:${user.id}`);
@@ -195,8 +197,8 @@ export function peekDevOtp(userId, purpose) {
 }
 
 export async function logout() {
-  // No-op in the in-memory mock; the dispatcher in auth.js needs this export
-  // so its signature stays symmetric with auth.real.js.
+  // Nothing server-side needs revocation in the in-memory mock, but the
+  // dispatcher in auth.js keeps this signature symmetric with auth.real.js.
   return { ok: true };
 }
 

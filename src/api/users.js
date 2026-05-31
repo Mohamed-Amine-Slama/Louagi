@@ -1,4 +1,4 @@
-import { db, findUserById } from './mockDb';
+import { db, findUserById, newId } from './mockDb';
 import { decryptField, hashPassword, verifyPassword } from '../security/crypto';
 import { appendAudit } from '../security/audit';
 import { validateEmail, validateName, validatePassword, sanitize } from '../validation/schemas';
@@ -22,7 +22,9 @@ export async function getProfile({ actor }) {
     phone_masked: decryptField(u.phone_number),
     role: u.role,
     created_at: u.created_at,
-    notifications: u.notifications ?? { sms: true, push: true },
+    notifications: { sms: true, push: true, marketing: false, ...(u.notifications || {}) },
+    preferences: { defaultSeats: 1, ...(u.preferences || {}) },
+    payment_method: u.payment_method || null,
   };
 }
 
@@ -63,13 +65,134 @@ export async function updateProfile({ actor, fullName, email, currentPassword, n
   return { ok: true };
 }
 
-export async function updateNotificationPrefs({ actor, sms, push }) {
-  if (!useMocks) return gql('UpdateNotificationPrefs', { sms, push });
+export async function updateNotificationPrefs({ actor, sms, push, marketing }) {
+  if (!useMocks) return gql('UpdateNotificationPrefs', { sms, push, marketing });
   await sleep(60);
   const u = findUserById(actor.id);
   if (!u) return { ok: false };
-  u.notifications = { sms: !!sms, push: !!push };
+  const current = { sms: true, push: true, marketing: false, ...(u.notifications || {}) };
+  u.notifications = {
+    ...current,
+    ...(sms != null ? { sms: !!sms } : {}),
+    ...(push != null ? { push: !!push } : {}),
+    ...(marketing != null ? { marketing: !!marketing } : {}),
+  };
   return { ok: true };
+}
+
+export async function updateTravelPrefs({ actor, defaultSeats }) {
+  if (!useMocks) return gql('UpdateTravelPrefs', { defaultSeats });
+  await sleep(60);
+  const u = findUserById(actor.id);
+  if (!u) return { ok: false, error: 'Not found' };
+  const seats = Math.round(Number(defaultSeats));
+  if (!Number.isFinite(seats) || seats < 1 || seats > 8) {
+    return { ok: false, errors: { defaultSeats: 'Seats must be 1-8' } };
+  }
+  u.preferences = { ...(u.preferences || {}), defaultSeats: seats };
+  appendAudit({
+    actorId: actor.id,
+    actorRole: actor.role,
+    action: 'preferences.updated',
+    targetEntity: 'user',
+    targetId: u.id,
+    metadata: { defaultSeats: seats },
+  });
+  return { ok: true, preferences: u.preferences };
+}
+
+export async function updatePaymentMethod({ actor, flouciAccount }) {
+  if (!useMocks) return gql('UpdatePaymentMethod', { flouciAccount });
+  await sleep(100);
+  const u = findUserById(actor.id);
+  if (!u) return { ok: false, error: 'Not found' };
+  const account = sanitize(flouciAccount || '');
+  if (!account) {
+    u.payment_method = null;
+  } else {
+    if (account.length < 4) return { ok: false, errors: { flouciAccount: 'Account too short' } };
+    u.payment_method = {
+      provider: 'flouci',
+      account,
+      updated_at: new Date().toISOString(),
+    };
+  }
+  appendAudit({
+    actorId: actor.id,
+    actorRole: actor.role,
+    action: account ? 'payment_method.updated' : 'payment_method.removed',
+    targetEntity: 'user',
+    targetId: u.id,
+  });
+  return { ok: true, payment_method: u.payment_method };
+}
+
+export async function createSupportTicket({ actor, topic, message }) {
+  if (!useMocks) return gql('CreateSupportTicket', { topic, message });
+  await sleep(120);
+  const u = findUserById(actor.id);
+  if (!u) return { ok: false, error: 'Not found' };
+  const cleanMessage = sanitize(message || '');
+  if (cleanMessage.length < 8) return { ok: false, errors: { message: 'Add a few more details' } };
+  const ticket = {
+    id: newId(),
+    user_id: actor.id,
+    topic: sanitize(topic || 'support'),
+    message: cleanMessage,
+    status: 'open',
+    created_at: new Date().toISOString(),
+  };
+  db.supportTickets.push(ticket);
+  appendAudit({
+    actorId: actor.id,
+    actorRole: actor.role,
+    action: 'support.ticket_created',
+    targetEntity: 'support_ticket',
+    targetId: ticket.id,
+  });
+  return { ok: true, ticket };
+}
+
+export async function requestDataExport({ actor }) {
+  if (!useMocks) return gql('RequestDataExport');
+  await sleep(140);
+  const profile = await getProfile({ actor });
+  if (!profile) return { ok: false, error: 'Not found' };
+  const reservations = db.reservations
+    .filter((r) => r.user_id === actor.id)
+    .map(({ id, ride_id, seats_booked, total_price, status, created_at, cancelled_at }) => ({
+      id,
+      ride_id,
+      seats_booked,
+      total_price,
+      status,
+      created_at,
+      cancelled_at,
+    }));
+  const deliveries = (db.deliveries || [])
+    .filter((d) => d.sender_id === actor.id || d.user_id === actor.id)
+    .map(({ id, ride_id, description, status, price, created_at }) => ({
+      id,
+      ride_id,
+      description,
+      status,
+      price,
+      created_at,
+    }));
+  const supportTickets = db.supportTickets
+    .filter((ticket) => ticket.user_id === actor.id)
+    .map(({ id, topic, status, created_at }) => ({ id, topic, status, created_at }));
+
+  return {
+    ok: true,
+    export: {
+      generated_at: new Date().toISOString(),
+      profile,
+      reservations,
+      deliveries,
+      support_tickets: supportTickets,
+    },
+  };
 }
 
 export async function deleteAccount({ actor, password }) {

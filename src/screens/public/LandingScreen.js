@@ -22,7 +22,7 @@ import { Input } from '../../components/Input';
 import { Badge } from '../../components/Badge';
 import { Section, Row, Stack } from '../../components/Section';
 import { useAuth } from '../../context/AuthContext';
-import { ridesApi } from '../../api';
+import { ridesApi, usersApi } from '../../api';
 import { spacing, radius, shadows, typography } from '../../theme';
 
 const normalizeForSearch = (s) =>
@@ -62,6 +62,17 @@ export default function LandingScreen() {
   useEffect(() => {
     ridesApi.listCities().then(setCities);
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== 'passenger') return;
+    let cancelled = false;
+    usersApi.getProfile({ actor: user }).then((profile) => {
+      if (!cancelled && profile?.preferences?.defaultSeats) {
+        setSeats(String(profile.preferences.defaultSeats));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [user?.id, user?.role]);
 
   const swap = () => {
     setOrigin(destination);
@@ -284,8 +295,8 @@ function CityPicker({ label, value, onChange, cities }) {
             }}
             pointerEvents="box-none"
           >
-          <Pressable
-            onPress={() => {}}
+          <View
+            onStartShouldSetResponder={() => true}
             style={{
               backgroundColor: colors.surfaceContainerLowest,
               borderRadius: radius.xl,
@@ -379,7 +390,7 @@ function CityPicker({ label, value, onChange, cities }) {
                 </Pressable>
               )}
             />
-          </Pressable>
+          </View>
           </KeyboardAvoidingView>
         </Pressable>
       </Modal>

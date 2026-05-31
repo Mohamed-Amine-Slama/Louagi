@@ -60,7 +60,8 @@ export default function PassengerProfile() {
   const [biometricCap, setBiometricCap] = useState({ available: false, kind: BIOMETRIC_KIND.NONE, enrolled: false });
   const [biometricBusy, setBiometricBusy] = useState(false);
   const [defaultSeats, setDefaultSeats] = useState(1);
-  const [language, setLanguage] = useState('fr');
+  const [paymentAccount, setPaymentAccount] = useState('');
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
@@ -88,6 +89,9 @@ export default function PassengerProfile() {
       setEmail(p.email || '');
       setSms(p.notifications?.sms ?? true);
       setPush(p.notifications?.push ?? true);
+      setMarketing(p.notifications?.marketing ?? false);
+      setDefaultSeats(p.preferences?.defaultSeats ?? 1);
+      setPaymentAccount(p.payment_method?.account || '');
 
       const trips = all.filter((r) => r.reservation.status === 'confirmed' || r.reservation.status === 'completed').length;
       const spent = all
@@ -216,10 +220,52 @@ export default function PassengerProfile() {
     toast.show(t('toast:passwordChanged'), 'success');
   };
 
-  const saveNotifications = async (nextSms, nextPush) => {
+  const saveNotifications = async (nextSms, nextPush, nextMarketing = marketing) => {
     setSms(nextSms);
     setPush(nextPush);
-    await usersApi.updateNotificationPrefs({ actor: user, sms: nextSms, push: nextPush });
+    setMarketing(nextMarketing);
+    await usersApi.updateNotificationPrefs({
+      actor: user,
+      sms: nextSms,
+      push: nextPush,
+      marketing: nextMarketing,
+    });
+  };
+
+  const saveDefaultSeats = async (nextSeats) => {
+    setDefaultSeats(nextSeats);
+    const res = await usersApi.updateTravelPrefs({ actor: user, defaultSeats: nextSeats });
+    if (!res.ok) {
+      toast.show(res.error || Object.values(res.errors || {})[0], 'error');
+    }
+  };
+
+  const savePaymentMethod = async () => {
+    setErrors({});
+    setSaving(true);
+    const res = await usersApi.updatePaymentMethod({ actor: user, flouciAccount: paymentAccount });
+    setSaving(false);
+    if (!res.ok) {
+      setErrors(res.errors || { flouciAccount: res.error });
+      return;
+    }
+    setPaymentAccount(res.payment_method?.account || '');
+    setShowPaymentForm(false);
+    toast.show(t('toast:paymentMethodSaved'), 'success');
+  };
+
+  const unlinkPaymentMethod = async () => {
+    setErrors({});
+    setSaving(true);
+    const res = await usersApi.updatePaymentMethod({ actor: user, flouciAccount: '' });
+    setSaving(false);
+    if (!res.ok) {
+      toast.show(res.error, 'error');
+      return;
+    }
+    setPaymentAccount('');
+    setShowPaymentForm(false);
+    toast.show(t('toast:paymentMethodRemoved'), 'info');
   };
 
   const del = async () => {
@@ -278,33 +324,32 @@ export default function PassengerProfile() {
       </View>
 
       <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
-        {/* Travel stats */}
         <Row gap={spacing.sm}>
           <StatTile icon="route" value={stats.trips} label={t('passenger:trips')} />
-          <StatTile icon="payments" value={`${stats.spent.toFixed(0)} ${t('common:tnd')}`} label={t('passenger:spent')} />
-          <StatTile icon="eco" value={`${(stats.trips * 5).toFixed(0)} kg`} label={t('passenger:co2Saved')} />
+          <StatTile icon="payments" value={`${stats.spent} ${t('common:tnd')}`} label={t('passenger:spent')} />
         </Row>
-        {stats.favouriteRoute ? (
-          <Card>
-            <Row gap={spacing.sm}>
-              <View
-                style={{
-                  width: 40, height: 40, borderRadius: radius.lg,
-                  backgroundColor: colors.primaryFixed,
-                  alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <MaterialIcons name="favorite" size={20} color={colors.primary} />
-              </View>
-              <Stack gap={2} style={{ flex: 1 }}>
-                <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {t('passenger:favouriteRoute')}
-                </Text>
-                <Text variant="bodyMd">{stats.favouriteRoute}</Text>
-              </Stack>
-            </Row>
-          </Card>
-        ) : null}
+        <Card>
+          <Row gap={spacing.md}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: colors.primaryFixed,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="star" size={20} color={colors.primary} />
+            </View>
+            <Stack gap={2} style={{ flex: 1 }}>
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('passenger:favouriteRoute')}</Text>
+              <Text variant="labelMd" numberOfLines={1}>
+                {stats.favouriteRoute || t('support:noFavouriteRoute')}
+              </Text>
+            </Stack>
+          </Row>
+        </Card>
 
         {/* Account info */}
         <Section title={t('passenger:account')}>
@@ -424,7 +469,7 @@ export default function PassengerProfile() {
               icon="campaign"
               title={t('passenger:marketing')}
               subtitle={t('passenger:marketingSubtitle')}
-              right={<Switch value={marketing} onValueChange={setMarketing} />}
+              right={<Switch value={marketing} onValueChange={(v) => saveNotifications(sms, push, v)} />}
             />
           </Card>
         </Section>
@@ -436,7 +481,7 @@ export default function PassengerProfile() {
               icon="event-seat"
               title={t('passenger:defaultSeats')}
               subtitle={t('passenger:defaultSeatsSubtitle')}
-              right={<Stepper value={defaultSeats} onChange={setDefaultSeats} min={1} max={8} />}
+              right={<Stepper value={defaultSeats} onChange={saveDefaultSeats} min={1} max={8} />}
             />
             <Divider />
             <SettingRow
@@ -521,13 +566,13 @@ export default function PassengerProfile() {
           <Card>
             <SettingRow
               icon="account-balance-wallet"
-              title={t('passenger:cardEnding')}
-              subtitle={t('passenger:cardDefault')}
-              right={<Badge label={t('passenger:cardDefaultBadge')} variant="success" />}
+              title={paymentAccount ? t('passenger:cardEnding') : t('passenger:paymentNotLinked')}
+              subtitle={paymentAccount || t('passenger:paymentNotLinkedSubtitle')}
+              right={paymentAccount ? <Badge label={t('passenger:cardDefaultBadge')} variant="success" /> : null}
             />
             <Divider />
             <Pressable
-              onPress={() => toast.show(t('toast:addCardHint'), 'info')}
+              onPress={() => setShowPaymentForm((v) => !v)}
               style={({ pressed }) => ({
                 paddingVertical: spacing.sm,
                 opacity: pressed ? 0.7 : 1,
@@ -545,26 +590,59 @@ export default function PassengerProfile() {
               >
                 <MaterialIcons name="add" size={20} color={colors.primary} />
               </View>
-              <Text variant="labelMd" color={colors.primary}>{t('passenger:addCard')}</Text>
+              <Text variant="labelMd" color={colors.primary}>
+                {paymentAccount ? t('passenger:editPaymentMethod') : t('passenger:addCard')}
+              </Text>
             </Pressable>
+            {showPaymentForm ? (
+              <Stack gap={spacing.md} style={{ marginTop: spacing.sm }}>
+                <Input
+                  label={t('passenger:paymentAccount')}
+                  value={paymentAccount}
+                  onChangeText={setPaymentAccount}
+                  iconLeft="account-balance-wallet"
+                  error={errors.flouciAccount}
+                />
+                <Row gap={spacing.sm}>
+                  {paymentAccount ? (
+                    <View style={{ flex: 1 }}>
+                      <Button
+                        label={t('passenger:unlinkPaymentMethod')}
+                        variant="outline"
+                        onPress={unlinkPaymentMethod}
+                        loading={saving}
+                      />
+                    </View>
+                  ) : null}
+                  <View style={{ flex: 1 }}>
+                    <Button
+                      label={t('passenger:savePaymentMethod')}
+                      variant="secondary"
+                      onPress={savePaymentMethod}
+                      loading={saving}
+                    />
+                  </View>
+                </Row>
+              </Stack>
+            ) : null}
           </Card>
         </Section>
 
         {/* Support */}
         <Section title={t('passenger:support')}>
           <Card>
-            <LinkRow icon="help" title={t('passenger:helpCentre')} onPress={() => toast.show(t('toast:helpComingSoon'), 'info')} />
+            <LinkRow icon="help" title={t('passenger:helpCentre')} onPress={() => nav.navigate('Support', { section: 'help' })} />
             <Divider />
-            <LinkRow icon="chat" title={t('passenger:contactSupport')} onPress={() => toast.show(t('toast:weReplyIn24h'), 'info')} />
+            <LinkRow icon="chat" title={t('passenger:contactSupport')} onPress={() => nav.navigate('Support', { section: 'contact' })} />
             <Divider />
-            <LinkRow icon="description" title={t('passenger:terms')} onPress={() => toast.show(t('toast:openInBrowser'), 'info')} />
+            <LinkRow icon="description" title={t('passenger:terms')} onPress={() => nav.navigate('Support', { section: 'terms' })} />
             <Divider />
-            <LinkRow icon="privacy-tip" title={t('passenger:privacy')} onPress={() => toast.show(t('toast:openInBrowser'), 'info')} />
+            <LinkRow icon="privacy-tip" title={t('passenger:privacy')} onPress={() => nav.navigate('Support', { section: 'privacy' })} />
             <Divider />
             <LinkRow
               icon="download"
               title={t('passenger:downloadData')}
-              onPress={() => toast.show(t('toast:exportQueued'), 'info')}
+              onPress={() => nav.navigate('Support', { section: 'data' })}
             />
           </Card>
         </Section>
@@ -646,8 +724,8 @@ function StatTile({ icon, value, label }) {
       >
         <MaterialIcons name={icon} size={18} color={colors.primary} />
       </View>
-      <Text variant="headlineSm">{value}</Text>
-      <Text variant="labelSm" color={colors.onSurfaceVariant}>{label}</Text>
+      <Text variant="headlineSm" numberOfLines={1} style={{ maxWidth: '100%' }}>{value}</Text>
+      <Text variant="labelSm" color={colors.onSurfaceVariant} numberOfLines={1}>{label}</Text>
     </Card>
   );
 }

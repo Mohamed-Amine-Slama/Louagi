@@ -217,7 +217,7 @@ export async function adminVerifyDriver({ actor, driverId, approve, reason }) {
     targetId: d.id,
     metadata: { reason },
   });
-  // SMS notification stub
+  // In-app notification for the driver's next app open.
   db.notifications.push({
     id: newId(),
     user_id: d.user_id,

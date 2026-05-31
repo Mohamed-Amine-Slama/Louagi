@@ -17,6 +17,7 @@ export const db = {
   notifications: [],
   messages: [],
   documents: [],
+  supportTickets: [],
 };
 
 function seed() {

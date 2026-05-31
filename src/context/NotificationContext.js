@@ -1,32 +1,41 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as Notifications from 'expo-notifications';
-import { useNavigation } from '@react-navigation/native';
-import { initNotifications, pushLocalNotification } from '../services/notifications.service';
+import {
+  initNotifications,
+  pushLocalNotification,
+  registerForRemoteNotifications,
+} from '../services/notifications.service';
 
 const NotificationCtx = createContext(null);
 
-export function NotificationProvider({ children }) {
+export function NotificationProvider({ children, navigationRef }) {
   const [granted, setGranted] = useState(false);
-  const nav = useNavigation();
+  const [pushToken, setPushToken] = useState(null);
 
   useEffect(() => {
-    initNotifications().then(setGranted);
+    initNotifications().then(async (allowed) => {
+      setGranted(allowed);
+      if (allowed) {
+        const token = await registerForRemoteNotifications();
+        setPushToken(token);
+      }
+    });
 
     // Listen for notification taps
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
       
       // Navigate based on notification payload data
-      if (data?.screen) {
-        nav.navigate(data.screen, data.params || {});
+      if (data?.screen && navigationRef?.isReady?.()) {
+        navigationRef.navigate(data.screen, data.params || {});
       }
     });
 
     return () => subscription.remove();
-  }, [nav]);
+  }, [navigationRef]);
 
   return (
-    <NotificationCtx.Provider value={{ granted, pushLocalNotification }}>
+    <NotificationCtx.Provider value={{ granted, pushToken, pushLocalNotification }}>
       {children}
     </NotificationCtx.Provider>
   );

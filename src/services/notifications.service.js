@@ -33,8 +33,7 @@ export async function initNotifications() {
 
 export async function registerForRemoteNotifications() {
   try {
-    // This requires a physical device and proper Expo config to work with FCM/APNs
-    // We fetch the token here as a stub for future remote push integration
+    // This requires a physical device and proper Expo config to work with FCM/APNs.
     const token = await Notifications.getExpoPushTokenAsync();
     return token.data;
   } catch (error) {

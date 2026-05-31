@@ -61,7 +61,11 @@ export default function ChatListScreen() {
         }
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => nav.navigate('Chat', { userId: item.other_user.id, userName: item.other_user.full_name })}
+            onPress={() => nav.navigate('Chat', {
+              userId: item.other_user.id,
+              userName: item.other_user.full_name,
+              phoneNumber: item.other_user.phone_number,
+            })}
           >
             <Card>
               <Row gap={spacing.md}>
