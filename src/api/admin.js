@@ -74,7 +74,7 @@ export async function adminSearchUsers({ actor, q }) {
   return db.users
     .map((u) => ({
       ...u,
-      phone_decrypted: decryptField(u.phone_number),
+      phone_number: decryptField(u.phone_number),
       driver: findDriverByUserId(u.id),
     }))
     .filter((u) => {
@@ -82,7 +82,7 @@ export async function adminSearchUsers({ actor, q }) {
       return (
         u.full_name.toLowerCase().includes(ql) ||
         u.email.toLowerCase().includes(ql) ||
-        (u.phone_decrypted || '').includes(ql)
+        (u.phone_number || '').includes(ql)
       );
     });
 }
@@ -112,9 +112,10 @@ export async function adminSetUserActive({ actor, userId, active }) {
   return { ok: true };
 }
 
-export async function adminImpersonate({ actor, userId }) {
-  if (!useMocks) return gql('AdminImpersonate', { userId });
+export async function adminImpersonate({ actor, userId, mfaCode }) {
+  if (!useMocks) return gql('AdminImpersonate', { userId, mfaCode });
   if (!can(actor?.role, 'admin:impersonate')) return { ok: false, error: 'Forbidden' };
+  if (!mfaCode) return { ok: false, error: 'Step-up verification required' };
   const target = findUserById(userId);
   if (!target) return { ok: false, error: 'Not found' };
   if (target.role === 'admin') return { ok: false, error: 'Cannot impersonate another admin' };

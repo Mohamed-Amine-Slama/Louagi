@@ -96,7 +96,7 @@ export default function AdminDrivers() {
                   {t('driver:vehicleSummary', { brand: d.vehicle_brand, model: d.vehicle_model, count: d.seat_count })}
                 </Text>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {t('driver:plateValue', { plate: d.plate_decrypted })}
+                  {t('driver:plateValue', { plate: d.plate_number })}
                 </Text>
               </Stack>
               <Badge label={d.status} variant={d.status === 'verified' ? 'success' : d.status === 'rejected' ? 'error' : 'warning'} />
@@ -117,19 +117,19 @@ export default function AdminDrivers() {
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
               {t('admin:idNumber')}
             </Text>
-            <Text variant="bodyMd">{maskId(selected.id_decrypted)}</Text>
+            <Text variant="bodyMd">{maskId(selected.id_card_number)}</Text>
           </Stack>
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
               {t('admin:license')}
             </Text>
-            <Text variant="bodyMd">{selected.license_decrypted}</Text>
+            <Text variant="bodyMd">{selected.license_number}</Text>
           </Stack>
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
               {t('driver:plate')}
             </Text>
-            <Text variant="bodyMd">{selected.plate_decrypted}</Text>
+            <Text variant="bodyMd">{selected.plate_number}</Text>
           </Stack>
           <Input
             label={t('admin:rejectReason')}

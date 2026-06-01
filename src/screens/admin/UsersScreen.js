@@ -28,6 +28,7 @@ export default function AdminUsers() {
   const [q, setQ] = useState('');
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [stepUpCode, setStepUpCode] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -56,9 +57,14 @@ export default function AdminUsers() {
 
   const impersonate = async () => {
     setBusy(true);
-    const res = await adminApi.adminImpersonate({ actor: user, userId: selected.id });
+    const res = await adminApi.adminImpersonate({
+      actor: user,
+      userId: selected.id,
+      mfaCode: stepUpCode.trim(),
+    });
     setBusy(false);
     if (!res.ok) return toast.show(res.error, 'error');
+    setStepUpCode('');
     toast.show(t('toast:impersonating'), 'warning');
     await applySession({
       accessToken: res.accessToken,
@@ -79,12 +85,18 @@ export default function AdminUsers() {
       />
 
       {rows.map((u) => (
-        <Card key={u.id} onPress={() => setSelected(u)}>
+        <Card
+          key={u.id}
+          onPress={() => {
+            setSelected(u);
+            setStepUpCode('');
+          }}
+        >
           <Row justify="space-between">
             <Stack gap={2} style={{ flex: 1 }}>
               <Text variant="bodyLg">{u.full_name}</Text>
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                {u.email} · {maskPhone(u.phone_decrypted)}
+                {u.email} · {maskPhone(u.phone_number)}
               </Text>
             </Stack>
             <Stack gap={4} style={{ alignItems: 'flex-end' }}>
@@ -110,7 +122,7 @@ export default function AdminUsers() {
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
               {t('admin:phone')}
             </Text>
-            <Text variant="bodyMd">{maskPhone(selected.phone_decrypted)}</Text>
+            <Text variant="bodyMd">{maskPhone(selected.phone_number)}</Text>
           </Stack>
           <Stack gap={4}>
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
@@ -128,6 +140,14 @@ export default function AdminUsers() {
               </Text>
             </Stack>
           ) : null}
+          <Input
+            label={t('admin:stepUpCode')}
+            value={stepUpCode}
+            onChangeText={setStepUpCode}
+            placeholder={t('admin:stepUpCodePlaceholder')}
+            autoCapitalize="none"
+            secureTextEntry
+          />
           <Row gap={spacing.sm}>
             <View style={{ flex: 1 }}>
               <Button
@@ -143,11 +163,18 @@ export default function AdminUsers() {
                 variant="outline"
                 onPress={impersonate}
                 loading={busy}
-                disabled={selected.role === 'admin'}
+                disabled={selected.role === 'admin' || !stepUpCode.trim()}
               />
             </View>
           </Row>
-          <Button label={t('common:close')} variant="ghost" onPress={() => setSelected(null)} />
+          <Button
+            label={t('common:close')}
+            variant="ghost"
+            onPress={() => {
+              setSelected(null);
+              setStepUpCode('');
+            }}
+          />
         </Card>
       ) : null}
     </Screen>

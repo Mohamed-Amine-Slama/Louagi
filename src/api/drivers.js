@@ -194,9 +194,9 @@ export async function adminListDrivers({ actor, status }) {
     .map((d) => ({
       ...d,
       user: findUserById(d.user_id),
-      plate_decrypted: decryptField(d.plate_number),
-      id_decrypted: decryptField(d.id_card_number),
-      license_decrypted: decryptField(d.license_number),
+      plate_number: decryptField(d.plate_number),
+      id_card_number: decryptField(d.id_card_number),
+      license_number: decryptField(d.license_number),
     }));
 }
 
