@@ -20,3 +20,5 @@ export const peekDevOtp = (...args) => impl.peekDevOtp(...args);
 export const logout = (...args) => impl.logout(...args);
 export const enrollBiometric = (...args) => impl.enrollBiometric(...args);
 export const biometricLogin = (...args) => impl.biometricLogin(...args);
+export const requestPasswordChangeOtp = (...args) => impl.requestPasswordChangeOtp(...args);
+export const verifyPasswordChangeOtp = (...args) => impl.verifyPasswordChangeOtp(...args);

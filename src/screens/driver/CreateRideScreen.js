@@ -18,7 +18,7 @@ import { Stack, Row, Section } from '../../components/Section';
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
-import { spacing, radius } from '../../theme';
+import { spacing, radius, withAlpha } from '../../theme';
 import { formatWeekday } from '../../i18n/format';
 
 export default function CreateRideScreen() {
@@ -40,6 +40,14 @@ export default function CreateRideScreen() {
   const [seats, setSeats] = useState(4);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [cities, setCities] = useState([]);
+  const [activeField, setActiveField] = useState(null);
+
+  useEffect(() => {
+    ridesApi.listCities().then((res) => {
+      if (Array.isArray(res)) setCities(res);
+    });
+  }, []);
 
   // Default suggestions for price based on nothing since free text
   const min = 5;
@@ -77,18 +85,58 @@ export default function CreateRideScreen() {
 
       <Section title={t('driver:route')}>
         <Stack gap={spacing.sm}>
-          <Input
-            label={t('landing:from')}
-            value={origin}
-            onChangeText={setOrigin}
-            placeholder="e.g. Tunis"
-          />
-          <Input
-            label={t('landing:to')}
-            value={destination}
-            onChangeText={setDestination}
-            placeholder="e.g. Sousse"
-          />
+          <View style={{ zIndex: activeField === 'origin' ? 2 : 1 }}>
+            <Input
+              label={t('landing:from')}
+              value={origin}
+              onChangeText={setOrigin}
+              onFocus={() => setActiveField('origin')}
+              onBlur={() => setTimeout(() => setActiveField(null), 100)} // Delay to allow press on suggestion
+              placeholder="e.g. Tunis"
+            />
+            {activeField === 'origin' && (
+              <View style={{ backgroundColor: colors.surfaceContainer, borderRadius: radius.md, marginTop: 4, overflow: 'hidden' }}>
+                {cities.filter(c => c.toLowerCase().includes(origin.toLowerCase()) && c.toLowerCase() !== origin.toLowerCase()).slice(0, 5).map(s => (
+                  <Pressable
+                    key={s}
+                    style={{ padding: spacing.md, borderBottomWidth: 1, borderBottomColor: withAlpha(colors.onSurface, 0.1) }}
+                    onPress={() => {
+                      setOrigin(s);
+                      setActiveField(null);
+                    }}
+                  >
+                    <Text variant="bodyMd" color={colors.onSurface}>{s}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+          <View style={{ zIndex: activeField === 'destination' ? 2 : 1 }}>
+            <Input
+              label={t('landing:to')}
+              value={destination}
+              onChangeText={setDestination}
+              onFocus={() => setActiveField('destination')}
+              onBlur={() => setTimeout(() => setActiveField(null), 100)} // Delay to allow press on suggestion
+              placeholder="e.g. Sousse"
+            />
+            {activeField === 'destination' && (
+              <View style={{ backgroundColor: colors.surfaceContainer, borderRadius: radius.md, marginTop: 4, overflow: 'hidden' }}>
+                {cities.filter(c => c.toLowerCase().includes(destination.toLowerCase()) && c.toLowerCase() !== destination.toLowerCase()).slice(0, 5).map(s => (
+                  <Pressable
+                    key={s}
+                    style={{ padding: spacing.md, borderBottomWidth: 1, borderBottomColor: withAlpha(colors.onSurface, 0.1) }}
+                    onPress={() => {
+                      setDestination(s);
+                      setActiveField(null);
+                    }}
+                  >
+                    <Text variant="bodyMd" color={colors.onSurface}>{s}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
         </Stack>
       </Section>
 

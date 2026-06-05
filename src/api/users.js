@@ -212,3 +212,41 @@ export async function deleteAccount({ actor, password }) {
   });
   return { ok: true };
 }
+
+export async function verifyCurrentPassword({ actor, password }) {
+  if (!useMocks) return gql('VerifyCurrentPassword', { password });
+  await sleep(120);
+  const u = findUserById(actor.id);
+  if (!u) return { ok: false, error: 'Not found' };
+  const ok = await verifyPassword(password || '', u.password_hash);
+  if (!ok) return { ok: false, error: 'Current password incorrect' };
+  return { ok: true };
+}
+
+export async function changePasswordSecure({ actor, currentPassword, newPassword }) {
+  if (!useMocks) return gql('ChangePasswordSecure', { currentPassword, newPassword });
+  await sleep(180);
+  const u = findUserById(actor.id);
+  if (!u) return { ok: false, error: 'Not found' };
+  const errs = {};
+  // Verify old password
+  const oldOk = await verifyPassword(currentPassword || '', u.password_hash);
+  if (!oldOk) errs.currentPassword = 'Current password incorrect';
+  // Validate new password
+  const pwErr = validatePassword(newPassword);
+  if (pwErr) errs.newPassword = pwErr;
+  // Ensure not reusing old password
+  if (newPassword && currentPassword && newPassword === currentPassword) {
+    errs.newPassword = 'New password must be different from current';
+  }
+  if (Object.keys(errs).length) return { ok: false, errors: errs };
+  u.password_hash = await hashPassword(newPassword);
+  appendAudit({
+    actorId: actor.id,
+    actorRole: actor.role,
+    action: 'password.changed_secure',
+    targetEntity: 'user',
+    targetId: u.id,
+  });
+  return { ok: true };
+}

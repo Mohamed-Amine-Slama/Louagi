@@ -262,3 +262,44 @@ export async function biometricLogin(ticket) {
     user: { id: user.id, name: user.full_name, role: user.role, driverStatus: sessionClaims.driverStatus },
   };
 }
+
+export async function requestPasswordChangeOtp({ userId }) {
+  await sleep(100);
+  const user = db.users.find((u) => u.id === userId);
+  if (!user || !user.is_active) return { ok: false, error: 'User not found' };
+  const otp = issueOtp(`pwchange:${userId}`);
+  appendAudit({
+    actorId: user.id,
+    actorRole: user.role,
+    action: 'password_change.otp_sent',
+    targetEntity: 'user',
+    targetId: user.id,
+  });
+  return { ok: true, devOtp: otp.code };
+}
+
+export async function verifyPasswordChangeOtp(userId, otp) {
+  await sleep(100);
+  const otpErr = validateOtp(otp);
+  if (otpErr) return { ok: false, error: otpErr };
+  const result = verifyOtp(`pwchange:${userId}`, otp);
+  if (!result.ok) {
+    const map = {
+      OTP_NOT_FOUND: 'OTP expired. Request a new one.',
+      OTP_EXPIRED: 'OTP expired. Request a new one.',
+      OTP_LOCKED: 'Too many wrong attempts.',
+      OTP_MISMATCH: `Wrong code. ${result.remaining} attempts left.`,
+    };
+    return { ok: false, error: map[result.reason] || 'OTP failed' };
+  }
+  // Issue a short-lived token authorizing the password change
+  const token = await signAccessToken({ sub: userId, purpose: 'pwchange' });
+  appendAudit({
+    actorId: userId,
+    actorRole: 'user',
+    action: 'password_change.otp_verified',
+    targetEntity: 'user',
+    targetId: userId,
+  });
+  return { ok: true, token };
+}

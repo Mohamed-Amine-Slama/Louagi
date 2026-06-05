@@ -15,21 +15,44 @@ export function normalizeTunisianPhone(raw) {
   return '+216' + c;
 }
 
+// Strict password policy: 10+ chars, 1 uppercase, 1 lowercase, 1 digit, 1 special character.
+export const PASSWORD_RULES = [
+  { key: 'minLength', test: (pw) => pw && pw.length >= 10, label: 'Min 10 characters' },
+  { key: 'uppercase', test: (pw) => /[A-Z]/.test(pw), label: 'Needs 1 uppercase letter' },
+  { key: 'lowercase', test: (pw) => /[a-z]/.test(pw), label: 'Needs 1 lowercase letter' },
+  { key: 'digit', test: (pw) => /\d/.test(pw), label: 'Needs 1 digit' },
+  { key: 'special', test: (pw) => /[^A-Za-z0-9]/.test(pw), label: 'Needs 1 special character' },
+];
+
 export function validatePassword(pw) {
-  if (!pw || pw.length < 8) return 'Min 8 characters';
+  if (!pw || pw.length < 10) return 'Min 10 characters';
   if (!/[A-Z]/.test(pw)) return 'Needs 1 uppercase letter';
+  if (!/[a-z]/.test(pw)) return 'Needs 1 lowercase letter';
   if (!/\d/.test(pw)) return 'Needs 1 digit';
+  if (!/[^A-Za-z0-9]/.test(pw)) return 'Needs 1 special character';
+  return null;
+}
+
+export function validatePasswordMatch(pw, confirm) {
+  if (!confirm) return 'Confirm your new password';
+  if (pw !== confirm) return 'Passwords do not match';
+  return null;
+}
+
+export function validatePasswordNotReused(newPw, oldPw) {
+  if (newPw && oldPw && newPw === oldPw) return 'New password must be different from current';
   return null;
 }
 
 export function passwordStrength(pw) {
   if (!pw) return { score: 0, label: 'Empty' };
   let score = 0;
-  if (pw.length >= 8) score++;
+  if (pw.length >= 10) score++;
   if (/[A-Z]/.test(pw)) score++;
+  if (/[a-z]/.test(pw)) score++;
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
-  if (pw.length >= 12) score++;
+  if (pw.length >= 14) score++;
   const labels = ['Very weak', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
   return { score, label: labels[Math.min(score, 5)] };
 }

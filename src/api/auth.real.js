@@ -43,3 +43,11 @@ export async function enrollBiometric({ userId }) {
 export async function biometricLogin(ticket) {
   return gql('BiometricLogin', { ticket });
 }
+
+export async function requestPasswordChangeOtp({ userId }) {
+  return gql('RequestPasswordChangeOtp', { userId });
+}
+
+export async function verifyPasswordChangeOtp(userId, otp) {
+  return gql('VerifyPasswordChangeOtp', { userId, otp });
+}
