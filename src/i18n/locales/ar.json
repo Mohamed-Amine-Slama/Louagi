@@ -380,7 +380,8 @@
     "license": "الرخصة",
     "vehicleSummary": "{{brand}} {{model}} · {{count}} مقعد",
     "plateValue": "اللوحة {{plate}}",
-    "callPassenger": "اتصل بالراكب"
+    "callPassenger": "اتصل بالراكب",
+    "tapForDetails": "انقر لعرض التفاصيل"
   },
   "admin": {
     "platformOverview": "نظرة عامة",

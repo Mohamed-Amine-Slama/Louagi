@@ -44,7 +44,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "supabase": "^2.105.0"
   },
   "private": true
 }

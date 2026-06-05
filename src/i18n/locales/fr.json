@@ -380,7 +380,8 @@
     "license": "Permis",
     "vehicleSummary": "{{brand}} {{model}} · {{count}} places",
     "plateValue": "Plaque {{plate}}",
-    "callPassenger": "Appeler le passager"
+    "callPassenger": "Appeler le passager",
+    "tapForDetails": "Appuyez pour voir les détails"
   },
   "admin": {
     "platformOverview": "Vue d'ensemble",

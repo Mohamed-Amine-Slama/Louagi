@@ -384,7 +384,8 @@
     "license": "License",
     "vehicleSummary": "{{brand}} {{model}} · {{count}} seats",
     "plateValue": "Plate {{plate}}",
-    "callPassenger": "Call passenger"
+    "callPassenger": "Call passenger",
+    "tapForDetails": "Tap to view details"
   },
   "admin": {
     "platformOverview": "Platform overview",

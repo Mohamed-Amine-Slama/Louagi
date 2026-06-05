@@ -3,6 +3,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
 import { View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { Screen } from '../../components/Screen';
 import { ScreenHeader } from '../../components/Header';
@@ -15,7 +16,7 @@ import { Row, Stack } from '../../components/Section';
 import { Tabs } from '../../components/Tabs';
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { spacing } from '../../theme';
+import { spacing, radius, withAlpha } from '../../theme';
 import { formatDateTime } from '../../i18n/format';
 
 const EMPTY_TITLE_KEY = {
@@ -85,6 +86,23 @@ export default function DriverRides() {
                   <Badge label={t('driver:seatsCount', { count: sold, total: r.total_seats })} variant="info" icon="event-seat" />
                 </Stack>
               </Row>
+              {/* Tap hint */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: spacing.sm,
+                paddingTop: spacing.sm,
+                borderTopWidth: 1,
+                borderTopColor: withAlpha(colors.outlineVariant, 0.3),
+                gap: 4,
+              }}>
+                <MaterialIcons name="touch-app" size={14} color={colors.onSurfaceVariant} />
+                <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                  {t('driver:tapForDetails', 'Tap to view details')}
+                </Text>
+                <MaterialIcons name="chevron-right" size={16} color={colors.onSurfaceVariant} />
+              </View>
             </Card>
           );
         })
