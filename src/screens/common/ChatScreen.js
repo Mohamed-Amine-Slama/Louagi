@@ -31,6 +31,7 @@ export default function ChatScreen() {
   const listRef = useRef(null);
 
   const load = useCallback(async () => {
+    if (!user?.id) return;
     const res = await messagesApi.getMessages({ actor: user, otherUserId: userId });
     setMessages(res);
   }, [user, userId]);
@@ -84,13 +85,13 @@ export default function ChatScreen() {
         borderBottomColor: colors.outlineVariant,
       }}>
         <Row gap={spacing.sm}>
-          <Pressable onPress={() => nav.goBack()} style={{ padding: 4 }}>
+          <Pressable onPress={() => nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')} style={{ padding: 4 }}>
             <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
           </Pressable>
           <Text variant="headlineSm">{userName}</Text>
         </Row>
         
-        {user.role === 'driver' && (
+        {user?.role === 'driver' && (
           <Pressable onPress={handleCall} style={{ padding: 8 }}>
             <MaterialIcons name="call" size={24} color={colors.primary} />
           </Pressable>
@@ -123,7 +124,7 @@ export default function ChatScreen() {
             </View>
           }
           renderItem={({ item }) => {
-            const isMe = item.sender_id === user.id;
+            const isMe = item.sender_id === user?.id;
             return (
               <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                 <View

@@ -26,8 +26,8 @@ export default function SearchScreen() {
   const route = useRoute();
   const params = route.params || {};
 
-  const [origin, setOrigin] = useState(params.origin || 'Tunis');
-  const [destination, setDestination] = useState(params.destination || 'Sfax');
+  const [origin, setOrigin] = useState(params.origin || '');
+  const [destination, setDestination] = useState(params.destination || '');
   const [seats, setSeats] = useState(String(params.seats || 1));
   const [date, setDate] = useState(new Date());
   const [filters, setFilters] = useState({ priceMax: null, ratingMin: 0 });

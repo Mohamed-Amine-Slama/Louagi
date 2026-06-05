@@ -28,6 +28,7 @@ export default function ChatListScreen() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    if (!user?.id) { setLoading(false); return; }
     try {
       const res = await messagesApi.listChats({ actor: user });
       setChats(res);
@@ -48,7 +49,7 @@ export default function ChatListScreen() {
       
       <FlatList
         data={chats}
-        keyExtractor={(item) => item.other_user.id}
+        keyExtractor={(item) => item.other_user?.id ?? String(Math.random())}
         contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
         ListEmptyComponent={
           !loading && (
@@ -62,18 +63,18 @@ export default function ChatListScreen() {
         renderItem={({ item }) => (
           <Pressable
             onPress={() => nav.navigate('Chat', {
-              userId: item.other_user.id,
-              userName: item.other_user.full_name,
-              phoneNumber: item.other_user.phone_number,
+              userId: item.other_user?.id,
+              userName: item.other_user?.full_name,
+              phoneNumber: item.other_user?.phone_number,
             })}
           >
             <Card>
               <Row gap={spacing.md}>
-                <Avatar name={item.other_user.full_name} size={48} />
+                <Avatar name={item.other_user?.full_name} size={48} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Row justify="space-between">
                     <Text variant="headlineSm" numberOfLines={1} style={{ flex: 1 }}>
-                      {item.other_user.full_name}
+                      {item.other_user?.full_name ?? 'Unknown'}
                     </Text>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
                       {formatTime(item.updated_at, { locale })}

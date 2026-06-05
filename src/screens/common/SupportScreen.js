@@ -69,7 +69,7 @@ export default function SupportScreen() {
     }
     setTicket(res.ticket);
     setMessage('');
-    toast.show(t('toast:supportTicketCreated', { id: res.ticket.id.slice(0, 6).toUpperCase() }), 'success');
+    toast.show(t('toast:supportTicketCreated', { id: res.ticket?.id?.slice(0, 6)?.toUpperCase() || '—' }), 'success');
   };
 
   const prepareExport = async () => {
@@ -176,7 +176,7 @@ function ContactPanel({ topic, setTopic, message, setMessage, errors, ticket, se
             <Banner
               variant="success"
               title={t('support:ticketCreated')}
-              body={t('support:ticketCreatedBody', { id: ticket.id.slice(0, 6).toUpperCase() })}
+              body={t('support:ticketCreatedBody', { id: ticket?.id?.slice(0, 6)?.toUpperCase() || '—' })}
             />
           ) : null}
           <Input

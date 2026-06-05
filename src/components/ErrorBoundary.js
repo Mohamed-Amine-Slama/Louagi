@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, ScrollView } from 'react-native';
-import { Text } from './Text';
-import { colors, spacing, radius } from '../theme';
+import { View, ScrollView, Text as RNText } from 'react-native';
+import { colors, spacing, radius, typography } from '../theme';
 
 export class ErrorBoundary extends React.Component {
   state = { error: null, info: null };
@@ -24,12 +23,12 @@ export class ErrorBoundary extends React.Component {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
       >
         <View style={{ marginTop: 80 }}>
-          <Text variant="headlineMd" color={colors.error}>
+          <RNText style={[typography.headlineMd, { color: colors.error }]}>
             Something crashed.
-          </Text>
-          <Text variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginTop: spacing.sm }}>
+          </RNText>
+          <RNText style={[typography.bodyMd, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>
             Stack trace below — share it back so we can patch the root cause.
-          </Text>
+          </RNText>
         </View>
         <View
           style={{
@@ -38,7 +37,7 @@ export class ErrorBoundary extends React.Component {
             borderRadius: radius.lg,
           }}
         >
-          <Text variant="labelMd">{String(this.state.error?.message || this.state.error)}</Text>
+          <RNText style={typography.labelMd}>{String(this.state.error?.message || this.state.error)}</RNText>
         </View>
         {this.state.error?.stack ? (
           <View
@@ -48,9 +47,9 @@ export class ErrorBoundary extends React.Component {
               borderRadius: radius.lg,
             }}
           >
-            <Text variant="bodySm" color={colors.onSurfaceVariant}>
+            <RNText style={[typography.bodySm, { color: colors.onSurfaceVariant }]}>
               {String(this.state.error.stack)}
-            </Text>
+            </RNText>
           </View>
         ) : null}
         {this.state.info?.componentStack ? (
@@ -61,9 +60,9 @@ export class ErrorBoundary extends React.Component {
               borderRadius: radius.lg,
             }}
           >
-            <Text variant="bodySm" color={colors.onSurfaceVariant}>
+            <RNText style={[typography.bodySm, { color: colors.onSurfaceVariant }]}>
               {String(this.state.info.componentStack)}
-            </Text>
+            </RNText>
           </View>
         ) : null}
       </ScrollView>

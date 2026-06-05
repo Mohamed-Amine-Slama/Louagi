@@ -180,9 +180,9 @@ export default function RideManagementScreen() {
                 <Row gap={spacing.xs}>
                   <Pressable
                     onPress={() => nav.navigate('Chat', {
-                      userId: p.user.id,
-                      userName: p.user.full_name,
-                      phoneNumber: p.user.phone_number,
+                      userId: p.user?.id,
+                      userName: p.user?.full_name,
+                      phoneNumber: p.user?.phone_number,
                     })}
                     accessibilityRole="button"
                     accessibilityLabel={t('driver:messagePassenger')}

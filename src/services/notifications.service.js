@@ -4,7 +4,8 @@ import { Platform } from 'react-native';
 // Configure how notifications behave when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -33,8 +34,22 @@ export async function initNotifications() {
 
 export async function registerForRemoteNotifications() {
   try {
-    // This requires a physical device and proper Expo config to work with FCM/APNs.
-    const token = await Notifications.getExpoPushTokenAsync();
+    // In bare/dev workflow, projectId must be passed explicitly.
+    // We attempt to read it from Expo constants; if absent, skip remote push.
+    let projectId;
+    try {
+      const Constants = require('expo-constants').default;
+      projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    } catch (_) {
+      // expo-constants not available
+    }
+
+    if (!projectId) {
+      console.warn('Push tokens: no EAS projectId configured – skipping remote push registration.');
+      return null;
+    }
+
+    const token = await Notifications.getExpoPushTokenAsync({ projectId });
     return token.data;
   } catch (error) {
     console.warn('Failed to get push token:', error);

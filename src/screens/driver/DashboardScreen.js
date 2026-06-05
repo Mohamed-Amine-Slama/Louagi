@@ -17,6 +17,7 @@ import { EmptyState } from '../../components/EmptyState';
 
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { usePush } from '../../context/NotificationContext';
 import { spacing, radius } from '../../theme';
 import { formatDateTime, dayLetter, formatDayOfMonth } from '../../i18n/format';
 
@@ -67,6 +68,7 @@ export default function DriverDashboard() {
   const { t, locale } = useLocale();
   const { user, signOut } = useAuth();
   const nav = useNavigation();
+  const { unreadCount } = usePush();
   const [rides, setRides] = useState([]);
   const [analytics, setAnalytics] = useState(EMPTY_ANALYTICS);
   const [period, setPeriod] = useState('week');
@@ -130,6 +132,26 @@ export default function DriverDashboard() {
               }}
             >
               <MaterialIcons name="chat" size={20} color={colors.onPrimary} />
+              {unreadCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    end: -4,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: colors.error,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text variant="labelSm" color={colors.onError} style={{ fontSize: 9, fontWeight: '700' }}>
+                    {unreadCount}
+                  </Text>
+                </View>
+              )}
             </Pressable>
             <Pressable
               onPress={() => nav.navigate('Settings')}

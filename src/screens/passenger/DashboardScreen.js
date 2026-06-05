@@ -18,6 +18,7 @@ import { RateDriverModal } from '../../components/RateDriverModal';
 
 import { reservationsApi, paymentsApi, deliveriesApi, reviewsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { usePush } from '../../context/NotificationContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
 import { formatDateTime, formatDate, countdownFrom } from '../../i18n/format';
@@ -28,6 +29,7 @@ export default function PassengerDashboard() {
   const { user, signOut } = useAuth();
   const toast = useToast();
   const nav = useNavigation();
+  const { unreadCount } = usePush();
 
   const [tab, setTab] = useState('upcoming');
   const [upcoming, setUpcoming] = useState([]);
@@ -37,6 +39,7 @@ export default function PassengerDashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    if (!user?.id) { setRefreshing(false); return; }
     setRefreshing(true);
     const [u, p, py, dl] = await Promise.all([
       reservationsApi.listReservations({ actor: user, status: 'confirmed' }),
@@ -123,6 +126,26 @@ export default function PassengerDashboard() {
               }}
             >
               <MaterialIcons name="chat" size={20} color={colors.onPrimary} />
+              {unreadCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    end: -4,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: colors.error,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text variant="labelSm" color={colors.onError} style={{ fontSize: 9, fontWeight: '700' }}>
+                    {unreadCount}
+                  </Text>
+                </View>
+              )}
             </Pressable>
             <Pressable
               onPress={() => toast.show(t('toast:noNewNotifications'), 'info')}

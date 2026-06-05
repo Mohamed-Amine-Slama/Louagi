@@ -25,7 +25,7 @@ export default function BookingConfirmScreen() {
   const nav = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
-  const { id } = route.params;
+  const { id } = route.params || {};
   const [pkg, setPkg] = useState(null);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function BookingConfirmScreen() {
           <MaterialIcons name="check" size={42} color={colors.success} />
         </View>
         <Text variant="headlineMd">{t('booking:youAreBooked')}</Text>
-        <Badge label={t('booking:ref', { id: reservation.id.slice(0, 8).toUpperCase() })} variant="info" icon="confirmation-number" />
+        <Badge label={t('booking:ref', { id: reservation?.id?.slice(0, 8)?.toUpperCase() || '—' })} variant="info" icon="confirmation-number" />
       </Card>
 
       <Card>

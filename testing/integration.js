@@ -91,7 +91,7 @@ test('Integration Test Suite', async (t) => {
     const appRes = await gql('RegisterDriverApplication', {
       idCardNumber: '12345678',
       licenseNumber: '87654321',
-      plateNumber: '123TU4567',
+      plateNumber: '123TU' + randomSuffix.slice(0, 4),
       brand: 'Peugeot',
       model: 'Partner',
       seatCount: 8
@@ -132,5 +132,43 @@ test('Integration Test Suite', async (t) => {
   await t.test('7. Passenger fetches non-existent ride', async () => {
     const ride = await gql('GetRideDetail', { rideId: crypto.randomUUID() }, passengerToken);
     assert.strictEqual(ride, null);
+  });
+
+  await t.test('8. Messaging: Driver sends message to Passenger', async () => {
+    const res = await gql('SendMessage', {
+      receiverId: passengerId,
+      text: 'Hello from the driver!'
+    }, driverToken);
+    assert.strictEqual(res.ok, true);
+    assert.ok(res.message);
+    assert.strictEqual(res.message.content, 'Hello from the driver!');
+    assert.strictEqual(res.message.senderId, driverId);
+    assert.strictEqual(res.message.receiverId, passengerId);
+  });
+
+  await t.test('9. Messaging: Passenger lists chats', async () => {
+    const chats = await gql('ListChats', {}, passengerToken);
+    assert.ok(Array.isArray(chats));
+    const driverChat = chats.find(c => c.partnerId === driverId);
+    assert.ok(driverChat);
+    assert.strictEqual(driverChat.partnerName, 'Test Driver');
+    assert.strictEqual(driverChat.lastMessage, 'Hello from the driver!');
+    assert.strictEqual(driverChat.unreadCount, 1);
+  });
+
+  await t.test('10. Messaging: Passenger fetches message thread', async () => {
+    const messages = await gql('GetMessages', { otherUserId: driverId }, passengerToken);
+    assert.ok(Array.isArray(messages));
+    assert.strictEqual(messages.length, 1);
+    assert.strictEqual(messages[0].content, 'Hello from the driver!');
+    assert.strictEqual(messages[0].isRead, true);
+  });
+
+  await t.test('11. Messaging: Passenger sends reply to Driver', async () => {
+    const res = await gql('SendMessage', {
+      receiverId: driverId,
+      text: 'Hello from the passenger!'
+    }, passengerToken);
+    assert.strictEqual(res.ok, true);
   });
 });

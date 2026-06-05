@@ -175,7 +175,7 @@ export default function CreateRideScreen() {
 
       <Row gap={spacing.sm}>
         <View style={{ flex: 1 }}>
-          <Button label={t('common:cancel')} variant="outline" onPress={() => nav.goBack()} />
+          <Button label={t('common:cancel')} variant="outline" onPress={() => nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')} />
         </View>
         <View style={{ flex: 1.5 }}>
           <Button label={t('driver:publishRide')} variant="secondary" loading={loading} onPress={submit} />

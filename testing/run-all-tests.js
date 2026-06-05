@@ -50,8 +50,9 @@ async function main() {
     console.log('🔄 Server not running. Starting local backend instance...');
     serverProc = spawn('npm', ['run', 'dev'], { 
       cwd: SERVER_DIR,
-      env: { ...process.env, USE_REDIS: 'false' },
-      stdio: 'pipe'
+      env: { ...process.env, USE_REDIS: 'false', GRAPHQL_RATE_LIMIT_MAX: '1500', RATE_LIMIT_MAX: '1500' },
+      stdio: 'pipe',
+      shell: true
     });
     
     serverProc.stdout.on('data', (d) => {

@@ -9,7 +9,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // List chats for a user (Inbox)
 export async function listChats({ actor }) {
-  if (!useMocks) return gqlList('ListChats');
+  if (!actor?.id) return [];
+  if (!useMocks) {
+    const rawChats = await gqlList('ListChats');
+    return rawChats.map((c) => ({
+      other_user: {
+        id: c.partnerId,
+        full_name: c.partnerName,
+        role: c.partnerRole,
+        phone_number: c.partnerPhone,
+      },
+      last_message: c.lastMessage,
+      updated_at: c.lastMessageTime,
+      unread_count: c.unreadCount,
+    }));
+  }
   await sleep(80);
   
   const myMessages = db.messages.filter(
@@ -49,7 +63,18 @@ export async function listChats({ actor }) {
 
 // Fetch messages for a specific conversation
 export async function getMessages({ actor, otherUserId }) {
-  if (!useMocks) return gqlList('GetMessages', { otherUserId });
+  if (!actor?.id) return [];
+  if (!useMocks) {
+    const rawMessages = await gqlList('GetMessages', { otherUserId });
+    return rawMessages.map((m) => ({
+      id: m.id,
+      sender_id: m.senderId,
+      receiver_id: m.receiverId,
+      content: m.content,
+      read: m.isRead,
+      created_at: m.createdAt,
+    }));
+  }
   await sleep(60);
 
   const thread = db.messages.filter(
@@ -71,7 +96,24 @@ export async function getMessages({ actor, otherUserId }) {
 
 // Send a message
 export async function sendMessage({ actor, receiverId, text }) {
-  if (!useMocks) return gql('SendMessage', { receiverId, text });
+  if (!actor?.id) return { ok: false, error: 'Not authenticated' };
+  if (!useMocks) {
+    const res = await gql('SendMessage', { receiverId, text });
+    if (!res || !res.ok) {
+      return { ok: false, error: res?.error || 'Failed to send message' };
+    }
+    return {
+      ok: true,
+      message: {
+        id: res.message.id,
+        sender_id: res.message.senderId,
+        receiver_id: res.message.receiverId,
+        content: res.message.content,
+        read: res.message.isRead,
+        created_at: res.message.createdAt,
+      },
+    };
+  }
   await sleep(100);
 
   if (!text.trim()) return { ok: false, error: 'Empty message' };
@@ -91,7 +133,7 @@ export async function sendMessage({ actor, receiverId, text }) {
 
   // Push local notification to the receiver
   pushLocalNotification({
-    title: `New message from ${actor.full_name || 'someone'}`,
+    title: `New message from ${actor.name || actor.full_name || 'someone'}`,
     body: 'Tap to view your new message.',
     data: { screen: 'ChatList' },
   });

@@ -8,6 +8,8 @@ import { useLocale } from '../context/LocaleContext';
 import { spacing } from '../theme';
 import { HeaderQuickToggles } from './HeaderQuickToggles';
 
+import { useAuth } from '../context/AuthContext';
+
 export function ScreenHeader({
   title,
   subtitle,
@@ -20,11 +22,25 @@ export function ScreenHeader({
   const nav = useNavigation();
   const { colors } = useTheme();
   const { isRTL, t } = useLocale();
+  const { user } = useAuth();
   const dark = variant === 'primary';
   const bg = dark ? colors.primary : colors.surface;
   const fg = dark ? colors.onPrimary : colors.onSurface;
   const subFg = dark ? colors.onPrimaryContainer : colors.onSurfaceVariant;
   const backIcon = isRTL ? 'arrow-forward' : 'arrow-back';
+
+  const handleBack = () => {
+    if (nav.canGoBack()) {
+      nav.goBack();
+    } else {
+      if (user) {
+        nav.navigate('Tabs');
+      } else {
+        nav.navigate('Landing');
+      }
+    }
+  };
+
   return (
     <View
       style={{
@@ -39,7 +55,7 @@ export function ScreenHeader({
     >
       {showBack ? (
         <Pressable
-          onPress={() => nav.goBack()}
+          onPress={handleBack}
           accessibilityRole="button"
           accessibilityLabel={t('common:back')}
           style={{
