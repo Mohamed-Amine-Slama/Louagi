@@ -82,9 +82,10 @@ export function NotificationProvider({ children, navigationRef }) {
       }
     };
 
-    // Run immediately and then every 5 seconds
+    // Run immediately, then every 90s. ListChats is heavy (aggregate over
+    // messages); polling more often than this just thrashes the DB.
     poll();
-    const interval = setInterval(poll, 5000);
+    const interval = setInterval(poll, 90000);
     return () => clearInterval(interval);
   }, [user, navigationRef]);
 

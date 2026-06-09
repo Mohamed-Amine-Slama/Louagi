@@ -1,19 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, Switch, Pressable, ScrollView } from 'react-native';
+import { View, Switch, Pressable, ScrollView, Modal, FlatList } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '../../components/Screen';
-import { ScreenHeader } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Text } from '../../components/Text';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
-import { Stack, Row, Section } from '../../components/Section';
+import { Row, Section } from '../../components/Section';
 
 import { driversApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -45,6 +45,7 @@ export default function DriverProfile() {
   const nav = useNavigation();
   const toast = useToast();
   
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState(null);
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -54,6 +55,12 @@ export default function DriverProfile() {
   const [biometric, setBiometric] = useState(false);
   const [biometricCap, setBiometricCap] = useState({ available: false, kind: BIOMETRIC_KIND.NONE, enrolled: false });
   const [biometricBusy, setBiometricBusy] = useState(false);
+  const [twoFA, setTwoFA] = useState(false);
+  const [twoFABusy, setTwoFABusy] = useState(false);
+  const [sessions, setSessions] = useState([]);
+  const [sessionsModal, setSessionsModal] = useState(false);
+  const [sessionsBusy, setSessionsBusy] = useState(false);
+  const [deletionBusy, setDeletionBusy] = useState(false);
 
   const load = useCallback(async () => {
     const p = await driversApi.getDriverProfile({ actor: user });
@@ -62,6 +69,8 @@ export default function DriverProfile() {
     setModel(p?.vehicle_model || '');
     setSeats(String(p?.seat_count ?? ''));
     setPayout(p?.payout_account || '');
+    const fa = await driversApi.get2FAStatus({ actor: user });
+    setTwoFA(fa?.enabled ?? false);
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -113,6 +122,55 @@ export default function DriverProfile() {
       }
     } finally {
       setBiometricBusy(false);
+    }
+  };
+
+  const onToggle2FA = async (next) => {
+    if (twoFABusy) return;
+    setTwoFABusy(true);
+    try {
+      if (next) {
+        const res = await driversApi.enable2FA({ actor: user });
+        if (!res.ok) { toast.show(res.error, 'error'); return; }
+        setTwoFA(true);
+        toast.show(t('driver:twoFAEnabled'), 'success');
+      } else {
+        const res = await driversApi.disable2FA({ actor: user });
+        if (!res.ok) { toast.show(res.error, 'error'); return; }
+        setTwoFA(false);
+        toast.show(t('driver:twoFADisabled'), 'info');
+      }
+    } finally {
+      setTwoFABusy(false);
+    }
+  };
+
+  const openSessions = async () => {
+    setSessionsBusy(true);
+    try {
+      const list = await driversApi.listSessions({ actor: user });
+      setSessions(list || []);
+      setSessionsModal(true);
+    } finally {
+      setSessionsBusy(false);
+    }
+  };
+
+  const onRevokeSession = async (sessionId) => {
+    const res = await driversApi.revokeSession({ actor: user, sessionId });
+    if (!res.ok) { toast.show(res.error, 'error'); return; }
+    setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, isRevoked: true } : s));
+    toast.show(t('driver:sessionRevoked'), 'success');
+  };
+
+  const onRequestDataDeletion = async () => {
+    setDeletionBusy(true);
+    try {
+      const res = await driversApi.requestDataDeletion({ actor: user, reason: 'user_request' });
+      if (!res.ok) { toast.show(res.error, 'error'); return; }
+      toast.show(res.message || t('driver:deletionRequested'), 'success');
+    } finally {
+      setDeletionBusy(false);
     }
   };
 
@@ -292,6 +350,45 @@ export default function DriverProfile() {
                 />
               }
             />
+            <Divider />
+            <SettingRow
+              icon="lock"
+              title={t('driver:twoStepVerification')}
+              subtitle={twoFA ? t('driver:twoFAEnabled') : t('driver:twoFADisabled')}
+              right={
+                <Switch
+                  value={twoFA}
+                  onValueChange={onToggle2FA}
+                  disabled={twoFABusy}
+                />
+              }
+            />
+          </Card>
+        </Section>
+
+        <Section title={t('driver:activeSessions')}>
+          <Card>
+            <LinkRow
+              icon="devices"
+              title={t('driver:sessionsCount', { count: sessions.filter((s) => !s.isRevoked).length })}
+              onPress={openSessions}
+            />
+          </Card>
+        </Section>
+
+        <Section title={t('driver:privacyAndData')}>
+          <Card>
+            <LinkRow icon="download" title={t('driver:exportMyData')} onPress={() => nav.navigate('Support', { section: 'data' })} />
+            <Divider />
+            <LinkRow icon="delete-forever" title={t('driver:deleteAccount')} onPress={onRequestDataDeletion} />
+          </Card>
+        </Section>
+
+        <Section title={t('driver:policies')}>
+          <Card>
+            <LinkRow icon="gavel" title={t('driver:termsOfService')} onPress={() => nav.navigate('Support', { section: 'terms' })} />
+            <Divider />
+            <LinkRow icon="policy" title={t('driver:privacyPolicy')} onPress={() => nav.navigate('Support', { section: 'privacy' })} />
           </Card>
         </Section>
 
@@ -310,6 +407,12 @@ export default function DriverProfile() {
           </Text>
         </View>
       </ScrollView>
+      <SessionsModal
+        visible={sessionsModal}
+        sessions={sessions}
+        onRevoke={onRevokeSession}
+        onClose={() => setSessionsModal(false)}
+      />
     </Screen>
   );
 }
@@ -405,4 +508,64 @@ function LinkRow({ icon, title, onPress }) {
 function Divider() {
   const { colors } = useTheme();
   return <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginVertical: 4 }} />;
+}
+
+function SessionsModal({ visible, sessions, onRevoke, onClose }) {
+  const { colors } = useTheme();
+  const { t } = useLocale();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={{ flex: 1, backgroundColor: withAlpha('#000', 0.5) }}>
+        <View
+          style={{
+            flex: 1,
+            marginTop: insets.top + 60,
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            padding: spacing.containerMargin,
+          }}
+        >
+          <Row justify="space-between" style={{ marginBottom: spacing.lg }}>
+            <Text variant="headlineSm">{t('driver:activeSessions')}</Text>
+            <Pressable onPress={onClose}>
+              <MaterialIcons name="close" size={24} color={colors.onSurfaceVariant} />
+            </Pressable>
+          </Row>
+          <FlatList
+            data={sessions}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <SettingRow
+                icon={item.isRevoked ? 'block' : 'devices'}
+                title={item.deviceName || t('driver:unknownDevice')}
+                subtitle={`${t('driver:lastActive')}: ${new Date(item.lastActiveAt).toLocaleDateString()}${item.isRevoked ? ` · ${t('driver:revoked')}` : ''}`}
+                right={
+                  !item.isRevoked ? (
+                    <Pressable
+                      onPress={() => onRevoke(item.id)}
+                      style={{
+                        paddingHorizontal: spacing.sm,
+                        paddingVertical: 6,
+                        borderRadius: radius.sm,
+                        backgroundColor: colors.errorContainer,
+                      }}
+                    >
+                      <Text variant="labelSm" color={colors.onErrorContainer}>{t('driver:revoke')}</Text>
+                    </Pressable>
+                  ) : null
+                }
+              />
+            )}
+            ListEmptyComponent={
+              <Text variant="bodyMd" color={colors.onSurfaceVariant} style={{ textAlign: 'center', marginTop: spacing.xl }}>
+                {t('driver:noSessions')}
+              </Text>
+            }
+          />
+        </View>
+      </View>
+    </Modal>
+  );
 }

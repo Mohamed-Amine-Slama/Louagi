@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, FlatList, TextInput, KeyboardAvoidingView, Platform, Linking, Pressable } from 'react-native';
+import { View, FlatList, TextInput, KeyboardAvoidingView, Platform, Linking, Pressable, Alert } from 'react-native';
 import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,6 +60,35 @@ export default function ChatScreen() {
     } else {
       toast.show(res.error, 'error');
     }
+  };
+
+  const deleteMsg = async (messageId, forEveryone) => {
+    const res = await messagesApi.deleteMessage({ actor: user, messageId, forEveryone });
+    if (res.ok) {
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    } else {
+      toast.show(res.error, 'error');
+    }
+  };
+
+  const handleLongPress = (msg) => {
+    Alert.alert(
+      t('chat:deleteMessageTitle', 'Delete Message'),
+      t('chat:deleteMessageBody', 'Are you sure you want to delete this message?'),
+      [
+        { text: t('common:cancel', 'Cancel'), style: 'cancel' },
+        { 
+          text: t('chat:deleteForMe', 'Delete for me'), 
+          style: 'destructive',
+          onPress: () => deleteMsg(msg.id, false)
+        },
+        ...(msg.sender_id === user?.id ? [{
+          text: t('chat:deleteForEveryone', 'Delete for everyone'), 
+          style: 'destructive',
+          onPress: () => deleteMsg(msg.id, true)
+        }] : [])
+      ]
+    );
   };
 
   const handleCall = () => {
@@ -159,7 +188,10 @@ export default function ChatScreen() {
           renderItem={({ item }) => {
             const isMe = item.sender_id === user?.id;
             return (
-              <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
+              <Pressable 
+                onLongPress={() => handleLongPress(item)}
+                style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}
+              >
                 {isMe ? (
                   <LinearGradient
                     colors={[colors.primary, '#1a365d']}
@@ -219,7 +251,7 @@ export default function ChatScreen() {
                     </Text>
                   </View>
                 )}
-              </View>
+              </Pressable>
             );
           }}
         />

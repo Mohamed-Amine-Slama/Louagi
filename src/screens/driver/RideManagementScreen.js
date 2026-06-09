@@ -211,7 +211,7 @@ export default function RideManagementScreen() {
                 <View style={{ height: 1, backgroundColor: isDark ? colors.surfaceVariant : 'rgba(0,0,0,0.05)', marginVertical: spacing.sm }} />
                 
                 {p.status !== 'cancelled' && (
-                  <Row gap={spacing.sm}>
+                  <Row gap={spacing.md} style={{ justifyContent: 'flex-end', marginTop: spacing.sm }}>
                     <Pressable
                       onPress={() => nav.navigate('Chat', {
                         userId: p.user?.id,
@@ -219,20 +219,15 @@ export default function RideManagementScreen() {
                         phoneNumber: p.user?.phone_number,
                       })}
                       style={({ pressed }) => ({
-                        flex: 1,
-                        flexDirection: 'row',
+                        width: 44,
+                        height: 44,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: spacing.xs,
                         backgroundColor: pressed ? colors.secondaryFixed : colors.secondaryContainer,
-                        paddingVertical: spacing.sm,
-                        borderRadius: 100,
+                        borderRadius: 22,
                       })}
                     >
-                      <MaterialIcons name="chat" size={20} color={colors.onSecondaryContainer} />
-                      <Text variant="labelMedium" color={colors.onSecondaryContainer} style={{ fontWeight: '600' }}>
-                        {t('driver:messagePassenger')}
-                      </Text>
+                      <MaterialIcons name="chat" size={22} color={colors.onSecondaryContainer} />
                     </Pressable>
                     <Pressable
                       onPress={() => {
@@ -244,20 +239,15 @@ export default function RideManagementScreen() {
                         Linking.openURL(`tel:${phone}`);
                       }}
                       style={({ pressed }) => ({
-                        flex: 1,
-                        flexDirection: 'row',
+                        width: 44,
+                        height: 44,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: spacing.xs,
                         backgroundColor: pressed ? colors.primaryContainer : colors.primary,
-                        paddingVertical: spacing.sm,
-                        borderRadius: 100,
+                        borderRadius: 22,
                       })}
                     >
-                      <MaterialIcons name="call" size={20} color={colors.onPrimary} />
-                      <Text variant="labelMedium" color={colors.onPrimary} style={{ fontWeight: '600' }}>
-                        {t('driver:callPassenger')}
-                      </Text>
+                      <MaterialIcons name="call" size={22} color={colors.onPrimary} />
                     </Pressable>
                   </Row>
                 )}

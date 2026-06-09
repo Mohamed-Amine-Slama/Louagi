@@ -18,7 +18,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""
+          "node -e \"fetch('http://127.0.0.1:3000/graphql',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({operationName:'Health',query:'query Health { Health }'})}).then(r=>r.json()).then(j=>process.exit(j&&j.data&&j.data.Health&&j.data.Health.ok?0:1)).catch(()=>process.exit(1))\""
         ]
       interval: 15s
       timeout: 10s

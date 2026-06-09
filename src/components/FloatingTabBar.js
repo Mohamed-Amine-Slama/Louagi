@@ -41,6 +41,7 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
   return (
     <View
       pointerEvents="box-none"
+      importantForAccessibility="no"
       style={{
         position: 'absolute',
         left: 0,
@@ -50,6 +51,8 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
       }}
     >
       <View
+        accessibilityRole="tablist"
+        importantForAccessibility="yes"
         style={{
           width: screen.width * widthFrac,
           flexDirection: 'row',
@@ -85,7 +88,7 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
           return (
             <Pressable
               key={route.key}
-              accessibilityRole="button"
+              accessibilityRole="tab"
               accessibilityState={focused ? { selected: true } : {}}
               accessibilityLabel={meta.label}
               onPress={onPress}

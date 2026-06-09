@@ -230,3 +230,96 @@ export async function adminVerifyDriver({ actor, driverId, approve, reason }) {
   });
   return { ok: true };
 }
+
+// ─── 2FA ─────────────────────────────────────────────────────────────────
+
+export async function enable2FA({ actor }) {
+  if (!useMocks) return gql('Enable2FA', {});
+  await sleep(80);
+  const d = findDriverByUserId(actor.id);
+  if (!d) return { ok: false, error: 'Driver record not found' };
+  d.two_fa_enabled = true;
+  appendAudit({ actorId: actor.id, actorRole: actor.role, action: 'driver.2fa.enabled', targetEntity: 'driver', targetId: actor.id });
+  return { ok: true };
+}
+
+export async function disable2FA({ actor }) {
+  if (!useMocks) return gql('Disable2FA', {});
+  await sleep(80);
+  const d = findDriverByUserId(actor.id);
+  if (!d) return { ok: false, error: 'Driver record not found' };
+  d.two_fa_enabled = false;
+  appendAudit({ actorId: actor.id, actorRole: actor.role, action: 'driver.2fa.disabled', targetEntity: 'driver', targetId: actor.id });
+  return { ok: true };
+}
+
+export async function get2FAStatus({ actor }) {
+  if (!useMocks) return gql('Get2FAStatus', {});
+  await sleep(40);
+  const d = findDriverByUserId(actor.id);
+  return { enabled: d?.two_fa_enabled ?? false };
+}
+
+// ─── Sessions ────────────────────────────────────────────────────────────
+
+export async function listSessions({ actor }) {
+  if (!useMocks) return gqlList('ListDriverSessions', {});
+  await sleep(60);
+  const sessions = db.driverSessions?.filter((s) => s.driver_id === actor.id) || [];
+  return sessions.map((s) => ({
+    id: s.id,
+    deviceName: s.device_name,
+    osName: s.os_name,
+    ipAddress: s.ip_address,
+    isRevoked: s.is_revoked,
+    lastActiveAt: s.last_active_at,
+    createdAt: s.created_at,
+  }));
+}
+
+export async function revokeSession({ actor, sessionId }) {
+  if (!useMocks) return gql('RevokeDriverSession', { sessionId });
+  await sleep(80);
+  if (!db.driverSessions) db.driverSessions = [];
+  const s = db.driverSessions.find((s) => s.id === sessionId && s.driver_id === actor.id);
+  if (!s) return { ok: false, error: 'Session not found' };
+  s.is_revoked = true;
+  appendAudit({ actorId: actor.id, actorRole: actor.role, action: 'session.revoked', targetEntity: 'session', targetId: sessionId });
+  return { ok: true };
+}
+
+// ─── Policies ────────────────────────────────────────────────────────────
+
+export async function acceptTerms({ actor, version }) {
+  if (!useMocks) return gql('AcceptTerms', { version: version || '1.0' });
+  await sleep(60);
+  const d = findDriverByUserId(actor.id);
+  if (d) {
+    d.accepted_terms_version = version || '1.0';
+    d.accepted_terms_at = new Date().toISOString();
+  }
+  appendAudit({ actorId: actor.id, actorRole: actor.role, action: 'policies.terms_accepted', targetEntity: 'driver', targetId: actor.id, metadata: { version } });
+  return { ok: true };
+}
+
+export async function acceptPrivacy({ actor, version }) {
+  if (!useMocks) return gql('AcceptPrivacy', { version: version || '1.0' });
+  await sleep(60);
+  const d = findDriverByUserId(actor.id);
+  if (d) {
+    d.accepted_privacy_at = new Date().toISOString();
+  }
+  appendAudit({ actorId: actor.id, actorRole: actor.role, action: 'policies.privacy_accepted', targetEntity: 'driver', targetId: actor.id, metadata: { version } });
+  return { ok: true };
+}
+
+// ─── GDPR ────────────────────────────────────────────────────────────────
+
+export async function requestDataDeletion({ actor, reason }) {
+  if (!useMocks) return gql('RequestDataDeletion', { reason });
+  await sleep(80);
+  const d = findDriverByUserId(actor.id);
+  if (d) d.data_deletion_requested = true;
+  appendAudit({ actorId: actor.id, actorRole: actor.role, action: 'gdpr.deletion_requested', targetEntity: 'user', targetId: actor.id, metadata: { reason } });
+  return { ok: true, message: 'Deletion request submitted. Our team will process it within 30 days.' };
+}

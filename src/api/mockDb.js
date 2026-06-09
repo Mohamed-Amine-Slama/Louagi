@@ -18,6 +18,7 @@ export const db = {
   messages: [],
   documents: [],
   supportTickets: [],
+  driverSessions: [],
 };
 
 function seed() {

@@ -17,7 +17,7 @@ import { Stack, Row, Section } from '../../components/Section';
 import { Stepper } from '../../components/Stepper';
 import { ScreenHeader } from '../../components/Header';
 
-import { usersApi, reservationsApi, authApi } from '../../api';
+import { usersApi, authApi } from '../../api';
 import { StepIndicator } from '../../components/StepIndicator';
 import { PasswordStrength } from '../../components/PasswordStrength';
 import { validatePassword, validatePasswordMatch, validatePasswordNotReused } from '../../validation/schemas';
@@ -83,10 +83,7 @@ export default function PassengerProfile() {
   const load = useCallback(async () => {
     if (!user) return;
     try {
-      const [p, all] = await Promise.all([
-        usersApi.getProfile({ actor: user }),
-        reservationsApi.listReservations({ actor: user }),
-      ]);
+      const p = await usersApi.getProfile({ actor: user });
       if (!p) {
         setLoadError(t('auth:sessionInvalid'));
         return;
@@ -100,19 +97,13 @@ export default function PassengerProfile() {
       setMarketing(p.notifications?.marketing ?? false);
       setDefaultSeats(p.preferences?.defaultSeats ?? 1);
       setPaymentAccount(p.payment_method?.account || '');
-
-      const trips = all.filter((r) => r.reservation.status === 'confirmed' || r.reservation.status === 'completed').length;
-      const spent = all
-        .filter((r) => r.reservation.status !== 'cancelled')
-        .reduce((sum, r) => sum + (r.reservation.total_price || 0), 0);
-      const routeCounts = new Map();
-      all.forEach((r) => {
-        if (!r.route) return;
-        const key = `${r.route.origin_city} → ${r.route.destination_city}`;
-        routeCounts.set(key, (routeCounts.get(key) || 0) + 1);
+      // Stats now come from the GetProfile resolver (server-side aggregate);
+      // we used to fetch full listReservations here just for these three numbers.
+      setStats({
+        trips: p.stats?.trips ?? 0,
+        spent: p.stats?.spent ?? 0,
+        favouriteRoute: p.stats?.favouriteRoute ?? null,
       });
-      const fav = [...routeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-      setStats({ trips, spent, favouriteRoute: fav });
     } catch (err) {
       setLoadError(err?.message || t('auth:profileLoadFailed'));
     }

@@ -16,7 +16,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { Avatar } from '../../components/Avatar';
 import { RateDriverModal } from '../../components/RateDriverModal';
 
-import { reservationsApi, paymentsApi, deliveriesApi, reviewsApi } from '../../api';
+import { reservationsApi, paymentsApi, reviewsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { usePush } from '../../context/NotificationContext';
 import { useToast } from '../../components/Toast';
@@ -35,22 +35,19 @@ export default function PassengerDashboard() {
   const [upcoming, setUpcoming] = useState([]);
   const [past, setPast] = useState([]);
   const [payments, setPayments] = useState([]);
-  const [deliveries, setDeliveries] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id) { setRefreshing(false); return; }
     setRefreshing(true);
-    const [u, p, py, dl] = await Promise.all([
+    const [u, p, py] = await Promise.all([
       reservationsApi.listReservations({ actor: user, status: 'confirmed' }),
       reservationsApi.listReservations({ actor: user, status: 'cancelled' }),
       paymentsApi.listPayments({ actor: user }),
-      deliveriesApi.listMyDeliveries({ actor: user }),
     ]);
     setUpcoming(u);
     setPast(p);
     setPayments(py);
-    setDeliveries(dl);
     setRefreshing(false);
   }, [user]);
 
@@ -209,7 +206,6 @@ export default function PassengerDashboard() {
             { key: 'upcoming', label: t('passenger:upcoming') },
             { key: 'past', label: t('passenger:past') },
             { key: 'payments', label: t('passenger:payments') },
-            { key: 'deliveries', label: t('passenger:deliveries') },
           ]}
         />
 
@@ -356,34 +352,6 @@ export default function PassengerDashboard() {
             ))
           ))}
 
-        {tab === 'deliveries' &&
-          (deliveries.length === 0 ? (
-            <EmptyState icon="local-shipping" title={t('delivery:noDeliveries')} />
-          ) : (
-            deliveries.map((d) => {
-              // Convert underscore status to camelCase for translation key (e.g., picked_up -> statusPickedUp)
-              const camelStatus = d.status.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-              const transKey = `delivery:status${camelStatus.charAt(0).toUpperCase() + camelStatus.slice(1)}`;
-              return (
-                <Card key={d.id}>
-                  <Row justify="space-between">
-                    <Stack gap={2}>
-                      <Text variant="bodyLg">
-                        {d.ride?.origin_city} → {d.ride?.destination_city}
-                      </Text>
-                      <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                        {t('delivery:title')} · {d.severity_label} · {formatDate(d.booked_at)}
-                      </Text>
-                    </Stack>
-                    <Badge
-                      label={t(transKey)}
-                      variant={d.status === 'delivered' ? 'success' : d.status === 'cancelled' ? 'error' : 'warning'}
-                    />
-                  </Row>
-                </Card>
-              );
-            })
-          ))}
       </View>
       
       <RateDriverModal

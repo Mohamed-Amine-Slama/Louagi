@@ -35,7 +35,6 @@ export default function SearchScreen() {
 
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
 
   const run = useCallback(async () => {
     setLoading(true);
@@ -86,19 +85,6 @@ export default function SearchScreen() {
               })}
             </Text>
           </View>
-          <Pressable
-            onPress={() => setFilterOpen((o) => !o)}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: colors.primaryContainer,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MaterialIcons name="tune" size={20} color={colors.onPrimary} />
-          </Pressable>
         </Row>
       </View>
 
@@ -136,7 +122,6 @@ export default function SearchScreen() {
         </ScrollView>
 
         <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
-        {filterOpen ? (
           <Card style={{ gap: spacing.md }}>
             <Text variant="labelMd">{t('search:filters')}</Text>
             <View>
@@ -202,7 +187,6 @@ export default function SearchScreen() {
               </View>
             </View>
           </Card>
-        ) : null}
 
         {loading ? (
           <ActivityIndicator color={colors.primary} />

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
 import { View, FlatList, Pressable, TextInput } from 'react-native';
@@ -90,110 +90,101 @@ export default function ChatListScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.other_user?.id ?? String(Math.random())}
+        keyExtractor={chatKeyExtractor}
         contentContainerStyle={{ paddingHorizontal: spacing.md, flexGrow: 1 }}
-        ItemSeparatorComponent={() => (
-          <View style={{
-            height: 1,
-            backgroundColor: withAlpha(colors.outlineVariant, 0.3),
-            marginLeft: 72, // align with text after avatar
-          }} />
-        )}
-        ListEmptyComponent={
-          !loading && (
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <EmptyState
-                icon="chat-bubble-outline"
-                title={t('driver:noMessagesTitle', 'No Messages Yet')}
-                body={t('driver:noMessagesBody', 'Your conversations will appear here.')}
-              />
-            </View>
-          )
-        }
-        renderItem={({ item }) => {
-          const hasUnread = item.unread_count > 0;
-          return (
-            <Pressable
-              onPress={() => nav.navigate('Chat', {
-                userId: item.other_user?.id,
-                userName: item.other_user?.full_name,
-                phoneNumber: item.other_user?.phone_number,
-              })}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: spacing.md,
-                gap: spacing.md,
-                backgroundColor: pressed
-                  ? withAlpha(colors.primary, 0.05)
-                  : 'transparent',
-                borderRadius: radius.lg,
-                paddingHorizontal: spacing.xs,
-              })}
-            >
-              {/* Avatar with online dot */}
-              <Avatar name={item.other_user?.full_name} size={52} badge />
-
-              {/* Text content */}
-              <View style={{ flex: 1, gap: 3 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text
-                    variant="headlineSm"
-                    numberOfLines={1}
-                    style={{
-                      flex: 1,
-                      fontWeight: hasUnread ? '700' : '500',
-                    }}
-                  >
-                    {item.other_user?.full_name ?? 'Unknown'}
-                  </Text>
-                  <Text
-                    variant="labelSm"
-                    color={hasUnread ? colors.primary : colors.onSurfaceVariant}
-                    style={{ fontWeight: hasUnread ? '600' : '400', marginLeft: spacing.sm }}
-                  >
-                    {formatTime(item.updated_at, { locale })}
-                  </Text>
-                </View>
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text
-                    variant="bodyMd"
-                    color={hasUnread ? colors.onSurface : colors.onSurfaceVariant}
-                    numberOfLines={1}
-                    style={{
-                      flex: 1,
-                      fontWeight: hasUnread ? '600' : '400',
-                    }}
-                  >
-                    {item.last_message || t('driver:noMessagesBody', 'No messages yet')}
-                  </Text>
-                  {hasUnread && (
-                    <View style={{
-                      minWidth: 22,
-                      height: 22,
-                      borderRadius: 11,
-                      backgroundColor: colors.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      paddingHorizontal: 6,
-                      marginLeft: spacing.sm,
-                    }}>
-                      <Text
-                        variant="labelSm"
-                        color={colors.onPrimary}
-                        style={{ fontSize: 11, fontWeight: '700' }}
-                      >
-                        {item.unread_count > 99 ? '99+' : item.unread_count}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </Pressable>
-          );
-        }}
+        ItemSeparatorComponent={ChatSeparator}
+        ListEmptyComponent={!loading ? <EmptyChatList /> : null}
+        renderItem={({ item }) => <ChatRow item={item} onPress={(userId, userName, phoneNumber) => nav.navigate('Chat', { userId, userName, phoneNumber })} />}
       />
     </Screen>
   );
 }
+
+const chatKeyExtractor = (item) => item.other_user?.id ?? item.other_user?.full_name ?? 'fallback';
+
+const ChatSeparator = memo(() => {
+  const { colors } = useTheme();
+  return (
+    <View style={{
+      height: 1,
+      backgroundColor: withAlpha(colors.outlineVariant, 0.3),
+      marginLeft: 72,
+    }} />
+  );
+});
+
+const EmptyChatList = memo(() => {
+  const { t } = useLocale();
+  return (
+    <View style={{ flex: 1, justifyContent: 'center' }}>
+      <EmptyState
+        icon="chat-bubble-outline"
+        title={t('driver:noMessagesTitle', 'No Messages Yet')}
+        body={t('driver:noMessagesBody', 'Your conversations will appear here.')}
+      />
+    </View>
+  );
+});
+
+const ChatRow = memo(({ item, onPress }) => {
+  const { colors } = useTheme();
+  const { t, locale } = useLocale();
+  const hasUnread = item.unread_count > 0;
+  return (
+    <Pressable
+      onPress={() => onPress(item.other_user?.id, item.other_user?.full_name, item.other_user?.phone_number)}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+        gap: spacing.md,
+        backgroundColor: pressed
+          ? withAlpha(colors.primary, 0.05)
+          : 'transparent',
+        borderRadius: radius.lg,
+        paddingHorizontal: spacing.xs,
+      })}
+    >
+      <Avatar name={item.other_user?.full_name} size={52} badge />
+      <View style={{ flex: 1, gap: 3 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text
+            variant="headlineSm"
+            numberOfLines={1}
+            style={{ flex: 1, fontWeight: hasUnread ? '700' : '500' }}
+          >
+            {item.other_user?.full_name ?? 'Unknown'}
+          </Text>
+          <Text
+            variant="labelSm"
+            color={hasUnread ? colors.primary : colors.onSurfaceVariant}
+            style={{ fontWeight: hasUnread ? '600' : '400', marginLeft: spacing.sm }}
+          >
+            {formatTime(item.updated_at, { locale })}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text
+            variant="bodyMd"
+            color={hasUnread ? colors.onSurface : colors.onSurfaceVariant}
+            numberOfLines={1}
+            style={{ flex: 1, fontWeight: hasUnread ? '600' : '400' }}
+          >
+            {item.last_message || t('driver:noMessagesBody', 'No messages yet')}
+          </Text>
+          {hasUnread && (
+            <View style={{
+              minWidth: 22, height: 22, borderRadius: 11,
+              backgroundColor: colors.primary, alignItems: 'center',
+              justifyContent: 'center', paddingHorizontal: 6, marginLeft: spacing.sm,
+            }}>
+              <Text variant="labelSm" color={colors.onPrimary} style={{ fontSize: 11, fontWeight: '700' }}>
+                {item.unread_count > 99 ? '99+' : item.unread_count}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Pressable>
+  );
+});
