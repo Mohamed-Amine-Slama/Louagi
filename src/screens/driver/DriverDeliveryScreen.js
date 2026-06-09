@@ -82,7 +82,7 @@ export default function DriverDeliveryScreen() {
                   {d.item_description && (
                     <Text variant="bodySm" color={colors.onSurfaceVariant}>{d.item_description}</Text>
                   )}
-                  <Text variant="bodyMd" color={colors.primary}>{d.driver_fee || 8} {t('common:tnd')}</Text>
+                  <Text variant="bodyMd" color={colors.primary}>{d.price ?? 0} {t('common:tnd')}</Text>
                 </Stack>
                 
                 <Row gap={spacing.sm}>

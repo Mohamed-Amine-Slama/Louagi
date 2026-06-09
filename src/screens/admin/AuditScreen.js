@@ -36,8 +36,8 @@ export default function AdminAudit() {
 
   const load = useCallback(async () => {
     const res = await adminApi.adminListAudit({ actor: user, filters: { actionType: q || undefined } });
-    setRows(res.rows);
-    setTotal(res.total);
+    setRows(res?.rows ?? []);
+    setTotal(res?.total ?? 0);
   }, [user, q]);
 
   useFocusEffect(

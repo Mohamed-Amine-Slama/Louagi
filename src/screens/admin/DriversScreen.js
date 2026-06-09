@@ -26,7 +26,6 @@ const EMPTY_DRIVER_KEY = {
   pending: 'admin:noDriversPending',
   verified: 'admin:noDriversVerified',
   rejected: 'admin:noDriversRejected',
-  suspended: 'admin:noDriversSuspended',
 };
 
 export default function AdminDrivers() {
@@ -80,7 +79,6 @@ export default function AdminDrivers() {
           { key: 'pending', label: t('admin:pending') },
           { key: 'verified', label: t('admin:verified') },
           { key: 'rejected', label: t('admin:rejected') },
-          { key: 'suspended', label: t('admin:suspended') },
         ]}
       />
 

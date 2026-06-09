@@ -10,6 +10,7 @@ import { ScreenHeader } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Text } from '../../components/Text';
 import { Badge } from '../../components/Badge';
+import { Avatar } from '../../components/Avatar';
 import { Stack, Row, Section } from '../../components/Section';
 import { Banner } from '../../components/Banner';
 
@@ -21,7 +22,7 @@ import { spacing, radius } from '../../theme';
 export default function AdminOverview() {
   const { colors } = useTheme();
   const { t } = useLocale();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const nav = useNavigation();
   const [stats, setStats] = useState(null);
   const [alerts, setAlerts] = useState([]);
@@ -75,34 +76,19 @@ export default function AdminOverview() {
           </Text>
           <Text variant="headlineMd">{t('admin:platformOverview')}</Text>
         </View>
-        <Row gap={spacing.xs}>
-          <Pressable
-            onPress={() => nav.navigate('Settings')}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: colors.surfaceContainer,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MaterialIcons name="settings" size={20} color={colors.onSurface} />
-          </Pressable>
-          <Pressable
-            onPress={signOut}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: colors.surfaceContainer,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MaterialIcons name="logout" size={20} color={colors.onSurface} />
-          </Pressable>
-        </Row>
+        <Pressable
+          onPress={() => nav.navigate('AdminProfile')}
+          accessibilityRole="button"
+          accessibilityLabel={t('admin:profileTitle')}
+          style={({ pressed }) => ({
+            borderRadius: 22,
+            borderWidth: 2,
+            borderColor: colors.outlineVariant,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Avatar name={user?.name} size={40} />
+        </Pressable>
       </Row>
 
       <Row gap={spacing.sm}>

@@ -85,7 +85,11 @@ export default function AdminPayments() {
                 <Badge
                   label={p.status}
                   variant={
-                    p.status === 'succeeded' ? 'success' : p.status === 'refunded' ? 'warning' : 'error'
+                    p.status === 'succeeded'
+                      ? 'success'
+                      : p.status === 'refunded' || p.status === 'flagged'
+                        ? 'warning'
+                        : 'error'
                   }
                 />
                 {p.flagged ? <Badge label={t('toast:flagged')} variant="error" icon="flag" /> : null}

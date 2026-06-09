@@ -140,3 +140,27 @@ export async function sendMessage({ actor, receiverId, text }) {
 
   return { ok: true, message: { ...msg, content: decryptMessage(msg.content) } };
 }
+
+// Delete a message — `forEveryone` is honored only when the actor is the sender.
+// The receiver can always hide their own copy.
+export async function deleteMessage({ actor, messageId, forEveryone = false }) {
+  if (!actor?.id) return { ok: false, error: 'Not authenticated' };
+  if (!useMocks) {
+    return gql('DeleteMessage', { messageId, forEveryone });
+  }
+  await sleep(60);
+  const msg = db.messages.find((m) => m.id === messageId);
+  if (!msg) return { ok: false, error: 'Not found' };
+  const isSender = msg.sender_id === actor.id;
+  const isReceiver = msg.receiver_id === actor.id;
+  if (!isSender && !isReceiver) return { ok: false, error: 'Forbidden' };
+  if (isSender && forEveryone) {
+    msg.deleted_by_sender = true;
+    msg.deleted_by_receiver = true;
+  } else if (isSender) {
+    msg.deleted_by_sender = true;
+  } else {
+    msg.deleted_by_receiver = true;
+  }
+  return { ok: true };
+}

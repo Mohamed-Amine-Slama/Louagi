@@ -51,6 +51,7 @@ export async function adminFlagPayment({ actor, paymentId, reason }) {
   const pay = db.payments.find((p) => p.id === paymentId);
   if (!pay) return { ok: false, error: 'Not found' };
   pay.flagged = true;
+  pay.status = 'flagged';
   pay.flag_reason = reason || 'flagged by admin';
   appendAudit({
     actorId: actor.id,

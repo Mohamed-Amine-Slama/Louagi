@@ -46,8 +46,10 @@ export async function createReservation({ actor, rideId, seats, paymentMethod = 
   if (!lock.ok) return { ok: false, error: 'Another booking is in progress' };
 
   // 2. Create pending reservation
-  const PLATFORM_FEE = 1.5;
-  const DRIVER_FEE = 1.5;
+  // Per the new government-pricing model: 3 TND flat surcharge on top of the
+  // government-set seat fare. Split: 1 TND platform / 2 TND driver.
+  const PLATFORM_FEE = 1.0;
+  const DRIVER_FEE = 2.0;
   const seatCost = ride.price_per_seat * seats;
   const total = seatCost + PLATFORM_FEE + DRIVER_FEE;
   const reservation = {

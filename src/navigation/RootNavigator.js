@@ -21,6 +21,7 @@ import BookingConfirmScreen from '../screens/passenger/BookingConfirmScreen';
 import CreateRideScreen from '../screens/driver/CreateRideScreen';
 import RideManagementScreen from '../screens/driver/RideManagementScreen';
 import DriverDeliveryScreen from '../screens/driver/DriverDeliveryScreen';
+import AdminProfileScreen from '../screens/admin/ProfileScreen';
 import { NotificationProvider } from '../context/NotificationContext';
 
 import SettingsScreen from '../screens/common/SettingsScreen';
@@ -104,6 +105,7 @@ function AdminStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="Tabs" component={AdminTabs} />
+      <Stack.Screen name="AdminProfile" component={AdminProfileScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Support" component={SupportScreen} />
     </Stack.Navigator>

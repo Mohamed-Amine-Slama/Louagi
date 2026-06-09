@@ -2,7 +2,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import DriverDashboard from '../screens/driver/DashboardScreen';
-import SearchScreen from '../screens/passenger/SearchScreen';
 import DriverProfile from '../screens/driver/ProfileScreen';
 import DriverRides from '../screens/driver/RidesListScreen';
 import DriverDeliveryScreen from '../screens/driver/DriverDeliveryScreen';
@@ -20,7 +19,6 @@ export function DriverTabs() {
       <Tab.Screen name="Dashboard" component={DriverDashboard} />
       <Tab.Screen name="Rides" component={DriverRides} />
       <Tab.Screen name="Delivery" component={DriverDeliveryScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Profile" component={DriverProfile} />
     </Tab.Navigator>
   );

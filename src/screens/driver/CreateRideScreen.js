@@ -36,22 +36,33 @@ export default function CreateRideScreen() {
     d.setHours(8, 30, 0, 0);
     return d;
   });
-  const [price, setPrice] = useState(20);
   const [seats, setSeats] = useState(4);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [cities, setCities] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [activeField, setActiveField] = useState(null);
 
   useEffect(() => {
     ridesApi.listCities().then((res) => {
       if (Array.isArray(res)) setCities(res);
     });
+    ridesApi.listRoutes().then((res) => {
+      if (Array.isArray(res)) setRoutes(res);
+    });
   }, []);
 
-  // Default suggestions for price based on nothing since free text
-  const min = 5;
-  const max = 50;
+  // Look up the government-set fare for the selected route. Returns null
+  // until both endpoints match a known route.
+  const govFare = (() => {
+    if (!origin || !destination) return null;
+    const r = routes.find(
+      (rt) =>
+        rt.origin_city?.toLowerCase() === origin.toLowerCase() &&
+        rt.destination_city?.toLowerCase() === destination.toLowerCase(),
+    );
+    return r ? Number(r.base_price) : null;
+  })();
 
   const submit = async () => {
     setError(null);
@@ -61,7 +72,6 @@ export default function CreateRideScreen() {
       origin,
       destination,
       departureTime: date,
-      pricePerSeat: Number(price),
       availableSeats: Number(seats),
     });
     setLoading(false);
@@ -198,14 +208,42 @@ export default function CreateRideScreen() {
 
       <Section title={t('driver:pricePerSeat')}>
         <Banner
-          variant="warning"
-          title={t('driver:suggestedRange')}
-          body={t('driver:suggestedRangeBody', { min, max, base: 20 })}
+          variant="info"
+          title={t('driver:govFareTitle', 'Government-set fare')}
+          body={t(
+            'driver:govFareBody',
+            'The Tunisian transport authority sets the per-seat fare for every route. Passengers also pay a 3 TND service fee — 2 TND goes to you, 1 TND to the platform.',
+          )}
         />
         <Card>
-          <Row justify="space-between">
-            <Text variant="bodyMd">{t('driver:priceTnd')}</Text>
-            <Stepper value={Number(price)} onChange={setPrice} min={min || 1} max={max || 50} large />
+          <Row justify="space-between" align="center">
+            <View style={{ flex: 1 }}>
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                {govFare != null
+                  ? t('driver:govFareLine', 'Fare for this route')
+                  : t('driver:govFarePending', 'Pick origin and destination to see the fare')}
+              </Text>
+              {govFare != null && (
+                <Text variant="headlineMd">
+                  {govFare} {t('common:tnd')}
+                  <Text variant="labelMd" color={colors.onSurfaceVariant}>
+                    {' '}/ {t('common:seat', 'seat')}
+                  </Text>
+                </Text>
+              )}
+            </View>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: colors.primaryFixed,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="account-balance" size={22} color={colors.primary} />
+            </View>
           </Row>
         </Card>
       </Section>

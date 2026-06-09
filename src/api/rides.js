@@ -155,12 +155,13 @@ export async function getRideDetail(rideId) {
     total_seats: ride.total_seats,
     price_per_seat: ride.price_per_seat,
     status: ride.status,
+    accepts_delivery: ride.accepts_delivery ?? true,
     created_at: ride.created_at,
   };
 }
 
-export async function createRide({ actor, origin, destination, departureTime, pricePerSeat, availableSeats }) {
-  if (!useMocks) return gql('CreateRide', { origin, destination, departureTime, pricePerSeat, availableSeats });
+export async function createRide({ actor, origin, destination, departureTime, availableSeats }) {
+  if (!useMocks) return gql('CreateRide', { origin, destination, departureTime, availableSeats });
   await sleep(180);
   if (!can(actor?.role, 'rides:create')) return { ok: false, error: 'Forbidden' };
   const driver = findDriverByUserId(actor.id);
@@ -186,9 +187,8 @@ export async function createRide({ actor, origin, destination, departureTime, pr
   if (availableSeats < 1 || availableSeats > driver.seat_count) {
     return { ok: false, error: `Seats must be 1-${driver.seat_count}` };
   }
-  if (pricePerSeat < 1 || pricePerSeat > 200) {
-    return { ok: false, error: `Price must be 1-200 TND` };
-  }
+  // Government-set fare. Drivers do not pick the price — every ride on the
+  // same route charges the same per-seat amount.
   const ride = {
     id: newId(),
     driver_id: driver.id,
@@ -196,7 +196,7 @@ export async function createRide({ actor, origin, destination, departureTime, pr
     departure_time: new Date(departureTime).toISOString(),
     available_seats: availableSeats,
     total_seats: availableSeats,
-    price_per_seat: pricePerSeat,
+    price_per_seat: route.base_price,
     status: 'scheduled',
     created_at: new Date().toISOString(),
   };
