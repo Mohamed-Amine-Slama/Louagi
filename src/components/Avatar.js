@@ -20,6 +20,14 @@ function colorFor(name = '') {
   return PALETTE[Math.abs(h) % PALETTE.length];
 }
 
+function onColorFor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? '#1a2b4a' : '#ffffff';
+}
+
 export function Avatar({ name, size = 40, badge }) {
   const { colors } = useTheme();
   const initials = (name || '?')
@@ -29,6 +37,7 @@ export function Avatar({ name, size = 40, badge }) {
     .map((p) => p[0]?.toUpperCase())
     .join('');
   const bg = colorFor(name);
+  const fg = onColorFor(bg);
   return (
     <View>
       <View
@@ -43,7 +52,7 @@ export function Avatar({ name, size = 40, badge }) {
       >
         <Text
           variant="labelMd"
-          color="#fff"
+          color={fg}
           style={{ fontSize: size * 0.42, lineHeight: size }}
         >
           {initials}
@@ -60,7 +69,7 @@ export function Avatar({ name, size = 40, badge }) {
             borderRadius: size,
             backgroundColor: colors.success,
             borderWidth: 2,
-            borderColor: '#fff',
+            borderColor: colors.surface,
           }}
         />
       ) : null}
@@ -77,7 +86,7 @@ export function AvatarStack({ names = [], size = 32, extra = 0 }) {
           <View
             style={{
               borderWidth: 2,
-              borderColor: '#fff',
+              borderColor: colors.surface,
               borderRadius: size,
             }}
           >
@@ -94,7 +103,7 @@ export function AvatarStack({ names = [], size = 32, extra = 0 }) {
             borderRadius: size / 2,
             backgroundColor: colors.surfaceContainerHigh,
             borderWidth: 2,
-            borderColor: '#fff',
+            borderColor: colors.surface,
             alignItems: 'center',
             justifyContent: 'center',
           }}

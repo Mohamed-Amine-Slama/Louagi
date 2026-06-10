@@ -2,6 +2,7 @@
 // Surface scale flips (light → dark), on-surface flips (dark → light).
 // Primary navy stays for brand consistency, but its on-* pairs invert.
 export const colorsDark = {
+  mode: 'dark',
   surface: '#131316',
   surfaceDim: '#131316',
   surfaceBright: '#39383c',
@@ -24,8 +25,10 @@ export const colorsDark = {
   inversePrimary: '#4e5e80',
   secondary: '#ffb955',
   onSecondary: '#452b00',
-  secondaryContainer: '#feae2c',
-  onSecondaryContainer: '#291800',
+  // Brand accent (louage red) — same in both modes for brand consistency.
+  secondaryContainer: '#DC2626',
+  onSecondaryContainer: '#ffffff',
+  secondaryContainerPressed: '#b91c1c',
   tertiary: '#c4c7ca',
   onTertiary: '#2c2f31',
   tertiaryContainer: '#44474a',
@@ -53,4 +56,8 @@ export const colorsDark = {
   successContainer: '#0d3a1f',
   onSuccess: '#003918',
   warning: '#ffb955',
+  onWarning: '#452b00',
+  warningContainer: '#5c4300',
+  onWarningContainer: '#ffdf9e',
+  shadow: '#000000',
 };

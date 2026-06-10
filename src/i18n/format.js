@@ -3,6 +3,16 @@ import i18n from './index';
 
 const LOCALE_MAP = { en: 'en-GB', fr: 'fr-FR', ar: 'ar-TN' };
 
+// Translate a raw backend status/method enum (e.g. 'in_progress', 'picked_up',
+// 'flagged', 'card') into a localized label from the `status` namespace.
+// snake_case is converted to the camelCase key; unknown values fall back to the
+// raw string so nothing is ever rendered blank.
+export function statusLabel(t, status) {
+  if (!status) return '';
+  const key = String(status).replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  return t(`status:${key}`, { defaultValue: String(status) });
+}
+
 function intlLocale(locale) {
   return LOCALE_MAP[locale ?? i18n.language] ?? 'en-GB';
 }

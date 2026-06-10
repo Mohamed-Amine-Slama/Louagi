@@ -19,7 +19,7 @@ import { driversApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius, withAlpha } from '../../theme';
-import { formatMonthYear } from '../../i18n/format';
+import { formatMonthYear, statusLabel } from '../../i18n/format';
 import {
   getBiometricCapability,
   promptBiometric,
@@ -249,7 +249,7 @@ export default function DriverProfile() {
               {user?.phone_number}
             </Text>
             <Row gap={spacing.xs} style={{ flexWrap: 'wrap', marginTop: 4 }}>
-              <BadgeChip icon="verified" label={profile.status === 'verified' ? t('driver:verified') : profile.status} />
+              <BadgeChip icon="verified" label={statusLabel(t, profile.status)} />
               <BadgeChip icon="calendar-today" label={t('common:since', { date: memberSince })} />
             </Row>
           </View>

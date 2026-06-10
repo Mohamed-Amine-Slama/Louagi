@@ -18,6 +18,8 @@ import { useLocale } from '../../context/LocaleContext';
 import { useToast } from '../../components/Toast';
 import { spacing } from '../../theme';
 
+const SEVERITY_TIER_KEY = { 1: 'delivery:tierStandard', 2: 'delivery:tierSensitive', 3: 'delivery:tierCritical' };
+
 export default function DriverDeliveryScreen() {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -78,7 +80,7 @@ export default function DriverDeliveryScreen() {
                 </Row>
                 
                 <Stack gap={4} style={{ marginBottom: spacing.md }}>
-                  <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('delivery:title')} - {d.severity_label}</Text>
+                  <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('delivery:title')} - {t(SEVERITY_TIER_KEY[d.severity_tier] || '', { defaultValue: d.severity_label })}</Text>
                   {d.item_description && (
                     <Text variant="bodySm" color={colors.onSurfaceVariant}>{d.item_description}</Text>
                   )}

@@ -21,7 +21,7 @@ import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius, typography } from '../../theme';
-import { formatDateTime } from '../../i18n/format';
+import { formatDateTime, statusLabel } from '../../i18n/format';
 
 function StatusBadge({ status, t }) {
   const map = {
@@ -203,7 +203,7 @@ export default function RideManagementScreen() {
                     </Row>
                   </View>
                   <Badge
-                    label={p.status}
+                    label={statusLabel(t, p.status)}
                     variant={p.status === 'confirmed' ? 'success' : p.status === 'cancelled' ? 'error' : 'info'}
                   />
                 </Row>
@@ -223,7 +223,7 @@ export default function RideManagementScreen() {
                         height: 44,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: pressed ? colors.secondaryFixed : colors.secondaryContainer,
+                        backgroundColor: pressed ? colors.secondaryContainerPressed : colors.secondaryContainer,
                         borderRadius: 22,
                       })}
                     >

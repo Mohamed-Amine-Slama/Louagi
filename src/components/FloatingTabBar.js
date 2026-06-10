@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './Text';
 import { useTheme } from '../context/ThemeContext';
+import { useLocale } from '../context/LocaleContext';
 import { radius, spacing, shadows, floatingTabBar } from '../theme';
 
 // Map navigation route names → MaterialIcons glyph + display label
@@ -35,6 +36,7 @@ function barWidthForTabs(count) {
 export function FloatingTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const screen = Dimensions.get('window');
   const widthFrac = barWidthForTabs(state.routes.length);
 
@@ -68,6 +70,7 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
         {state.routes.map((route, index) => {
           const focused = state.index === index;
           const meta = ROUTE_META[route.name] ?? { icon: 'circle', label: route.name };
+          const label = t(`tabs:${route.name}`, { defaultValue: meta.label });
 
           const onPress = () => {
             const event = navigation.emit({
@@ -90,7 +93,7 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
               key={route.key}
               accessibilityRole="tab"
               accessibilityState={focused ? { selected: true } : {}}
-              accessibilityLabel={meta.label}
+              accessibilityLabel={label}
               onPress={onPress}
               onLongPress={onLongPress}
               style={{
@@ -122,7 +125,7 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
                 numberOfLines={1}
                 style={{ fontSize: 10, fontWeight: focused ? '700' : '500' }}
               >
-                {meta.label}
+                {label}
               </Text>
             </Pressable>
           );

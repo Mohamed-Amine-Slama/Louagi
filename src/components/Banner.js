@@ -9,7 +9,7 @@ export function Banner({ variant = 'info', title, body, icon }) {
   const { colors } = useTheme();
   const variants = {
     info: { bg: withAlpha(colors.primary, 0.08), fg: colors.primary, icon: 'info' },
-    warning: { bg: withAlpha(colors.secondaryContainer, 0.18), fg: colors.onSecondaryContainer, icon: 'warning-amber' },
+    warning: { bg: withAlpha(colors.warning, 0.15), fg: colors.onWarningContainer, icon: 'warning-amber' },
     error: { bg: withAlpha(colors.error, 0.1), fg: colors.error, icon: 'error-outline' },
     success: { bg: withAlpha(colors.success, 0.12), fg: colors.success, icon: 'check-circle' },
   };

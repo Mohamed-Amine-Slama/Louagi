@@ -102,7 +102,7 @@ export default function CreateRideScreen() {
               onChangeText={setOrigin}
               onFocus={() => setActiveField('origin')}
               onBlur={() => setTimeout(() => setActiveField(null), 100)} // Delay to allow press on suggestion
-              placeholder="e.g. Tunis"
+              placeholder={t('driver:originPlaceholder')}
             />
             {activeField === 'origin' && (
               <View style={{ backgroundColor: colors.surfaceContainer, borderRadius: radius.md, marginTop: 4, overflow: 'hidden' }}>
@@ -128,7 +128,7 @@ export default function CreateRideScreen() {
               onChangeText={setDestination}
               onFocus={() => setActiveField('destination')}
               onBlur={() => setTimeout(() => setActiveField(null), 100)} // Delay to allow press on suggestion
-              placeholder="e.g. Sousse"
+              placeholder={t('driver:destinationPlaceholder')}
             />
             {activeField === 'destination' && (
               <View style={{ backgroundColor: colors.surfaceContainer, borderRadius: radius.md, marginTop: 4, overflow: 'hidden' }}>

@@ -1,4 +1,5 @@
 export const colorsLight = {
+  mode: 'light',
   surface: '#fbf8fc',
   surfaceDim: '#dbd9dc',
   surfaceBright: '#fbf8fc',
@@ -21,12 +22,14 @@ export const colorsLight = {
   inversePrimary: '#b6c6ee',
   secondary: '#835500',
   onSecondary: '#ffffff',
+  // Brand accent (louage red) — same in both modes for brand consistency.
   secondaryContainer: '#DC2626',
   onSecondaryContainer: '#ffffff',
+  secondaryContainerPressed: '#b91c1c',
   tertiary: '#14171a',
   onTertiary: '#ffffff',
-  tertiaryContainer: '#282c2e',
-  onTertiaryContainer: '#909396',
+  tertiaryContainer: '#e0e3e6',
+  onTertiaryContainer: '#191c1e',
   error: '#ba1a1a',
   onError: '#ffffff',
   errorContainer: '#ffdad6',
@@ -50,6 +53,10 @@ export const colorsLight = {
   successContainer: '#d1f1de',
   onSuccess: '#ffffff',
   warning: '#b88700',
+  onWarning: '#251a00',
+  warningContainer: '#ffdf9e',
+  onWarningContainer: '#5c4300',
+  shadow: '#1a2b4a',
 };
 
 // Live palette pointer — mutable so static `colors` imports always read the

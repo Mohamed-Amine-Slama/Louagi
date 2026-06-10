@@ -21,7 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePush } from '../../context/NotificationContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
-import { formatDateTime, formatDate, countdownFrom } from '../../i18n/format';
+import { formatDateTime, formatDate, countdownFrom, statusLabel } from '../../i18n/format';
 
 export default function PassengerDashboard() {
   const { colors } = useTheme();
@@ -309,7 +309,7 @@ export default function PassengerDashboard() {
                     </Text>
                   </Stack>
                   <View style={{ alignItems: 'flex-end', gap: spacing.sm }}>
-                    <Badge label={row.reservation.status} variant={row.reservation.status === 'cancelled' ? 'error' : 'success'} />
+                    <Badge label={statusLabel(t, row.reservation.status)} variant={row.reservation.status === 'cancelled' ? 'error' : 'success'} />
                     {row.reservation.status === 'completed' && (
                       <Button
                         label={t('passenger:rateDriver')}
@@ -338,11 +338,11 @@ export default function PassengerDashboard() {
                   <Stack gap={2}>
                     <Text variant="bodyLg">{p.amount} {t('common:tnd')}</Text>
                     <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      {p.method} · {formatDate(p.paid_at)}
+                      {statusLabel(t, p.method)} · {formatDate(p.paid_at)}
                     </Text>
                   </Stack>
                   <Badge
-                    label={p.status}
+                    label={statusLabel(t, p.status)}
                     variant={
                       p.status === 'succeeded' ? 'success' : p.status === 'refunded' ? 'warning' : 'error'
                     }

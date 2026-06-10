@@ -31,7 +31,8 @@
     "since": "منذ {{date}}",
     "new": "جديد",
     "ridesCount": "{{count}} رحلة",
-    "tnd": "د.ت"
+    "tnd": "د.ت",
+    "theDriver": "السائق"
   },
   "auth": {
     "welcomeBack": "مرحبا بعودتك",
@@ -116,7 +117,19 @@
     "passwordMinStrict": "10 أحرف كحد أدنى",
     "couldntLoadProfile": "تعذر تحميل الملف",
     "sessionInvalid": "جلستك لا تطابق أي حساب. سجل الدخول مجددا.",
-    "profileLoadFailed": "فشل تحميل ملفك."
+    "profileLoadFailed": "فشل تحميل ملفك.",
+    "strengthLabel": "القوة: {{label}}",
+    "pwVeryWeak": "ضعيفة جدًا",
+    "pwWeak": "ضعيفة",
+    "pwFair": "متوسطة",
+    "pwGood": "جيدة",
+    "pwStrong": "قوية",
+    "pwExcellent": "ممتازة",
+    "pwRuleMinLength": "10 أحرف على الأقل",
+    "pwRuleUppercase": "حرف كبير واحد على الأقل",
+    "pwRuleLowercase": "حرف صغير واحد على الأقل",
+    "pwRuleDigit": "رقم واحد على الأقل",
+    "pwRuleSpecial": "رمز خاص واحد على الأقل"
   },
   "landing": {
     "heroTitle": "تنقل في تونس،\nمقعدا تلو الآخر.",
@@ -159,7 +172,8 @@
     "results": "نتائج",
     "minRating": "أدنى تقييم",
     "anyRating": "الكل",
-    "reset": "إعادة تعيين"
+    "reset": "إعادة تعيين",
+    "ratingPlus": "{{rating}}★+"
   },
   "ride": {
     "trip": "الرحلة",
@@ -188,7 +202,9 @@
     "processingPayment": "جاري معالجة الدفع…",
     "reservationFee": "رسوم الحجز",
     "reservationFeeBreakdown": "1.5 د.ت للمنصة + 1.5 د.ت للسائق",
-    "feeNonRefundable": "رسوم الحجز البالغة 3 د.ت غير قابلة للاسترداد. سيتم إرجاع تكلفة المقعد فقط."
+    "feeNonRefundable": "رسوم الحجز البالغة 3 د.ت غير قابلة للاسترداد. سيتم إرجاع تكلفة المقعد فقط.",
+    "logout": "تسجيل الخروج",
+    "submit": "إرسال"
   },
   "booking": {
     "confirmedTitle": "تم تأكيد الحجز",
@@ -294,7 +310,9 @@
     "rateDriverTitle": "قيّم سائقك",
     "rateDriverBody": "كيف كانت رحلتك مع {{name}}؟",
     "rateDriverPlaceholder": "اكتب تعليقا اختياريا...",
-    "ratingSubmitted": "شكرا على ملاحظاتك!"
+    "ratingSubmitted": "شكرا على ملاحظاتك!",
+    "noPastRidesTitle": "لا توجد رحلات سابقة",
+    "noPastRidesBody": "ستظهر هنا الرحلات المكتملة أو الملغاة."
   },
   "driver": {
     "verified": "موثق",
@@ -427,7 +445,9 @@
     "termsOfService": "شروط الخدمة",
     "privacyPolicy": "سياسة الخصوصية",
     "deletionRequested": "تم تقديم طلب الحذف. سيعالج فريقنا الطلب خلال 30 يوماً.",
-    "sessionRevoked": "تم إلغاء الجلسة"
+    "sessionRevoked": "تم إلغاء الجلسة",
+    "originPlaceholder": "مثال: تونس",
+    "destinationPlaceholder": "مثال: سوسة"
   },
   "admin": {
     "platformOverview": "نظرة عامة",
@@ -544,7 +564,13 @@
     "contactSupport": "اتصل بالدعم",
     "terms": "شروط الخدمة",
     "privacy": "سياسة الخصوصية",
-    "versionFooter": "Louagi Admin · بيتا"
+    "versionFooter": "Louagi Admin · بيتا",
+    "alertPaymentFlagged": "تم الإبلاغ عن الدفعة",
+    "alertFailedPayment": "دفعة فاشلة",
+    "alertDriverPending": "سائق بانتظار التحقق",
+    "alertKindVerification": "تحقق",
+    "alertKindFlag": "إبلاغ",
+    "alertKindFail": "فشل"
   },
   "settings": {
     "title": "الإعدادات",
@@ -615,7 +641,9 @@
     "brandRequired": "الماركة مطلوبة",
     "modelRequired": "الموديل مطلوب",
     "seatRule": "1-{{max}} مقاعد",
-    "couldntCancel": "تعذر الإلغاء"
+    "couldntCancel": "تعذر الإلغاء",
+    "crashTitle": "حدث عُطل.",
+    "crashBody": "التتبّع أدناه — شاركه لنُصلح السبب الجذري."
   },
   "toast": {
     "savedAccount": "تم حفظ الحساب",
@@ -720,5 +748,48 @@
     "exportReadyBody": "يشمل {{bookings}} حجوزات و{{deliveries}} توصيلات و{{tickets}} تذاكر دعم.",
     "exportFailed": "تعذر تحضير التصدير",
     "noFavouriteRoute": "لا يوجد مسار مفضل بعد"
+  },
+  "chat": {
+    "online": "متصل",
+    "deleteMessageTitle": "حذف الرسالة",
+    "deleteMessageBody": "هل تريد حقًا حذف هذه الرسالة؟",
+    "deleteForMe": "حذف لديّ",
+    "deleteForEveryone": "حذف لدى الجميع",
+    "searchConversations": "البحث في المحادثات…",
+    "unknownContact": "غير معروف",
+    "noMessagesYet": "لا توجد رسائل بعد"
+  },
+  "tabs": {
+    "Home": "الرئيسية",
+    "Search": "بحث",
+    "Bookings": "الحجوزات",
+    "Delivery": "التوصيل",
+    "Profile": "الملف",
+    "Dashboard": "اللوحة",
+    "Rides": "الرحلات",
+    "Overview": "نظرة عامة",
+    "Drivers": "السائقون",
+    "Users": "المستخدمون",
+    "Payments": "الدفع",
+    "Audit": "التدقيق"
+  },
+  "status": {
+    "pending": "قيد الانتظار",
+    "verified": "موثّق",
+    "rejected": "مرفوض",
+    "suspended": "موقوف",
+    "confirmed": "مؤكَّد",
+    "cancelled": "ملغى",
+    "completed": "مكتمل",
+    "scheduled": "مجدول",
+    "inProgress": "جارٍ",
+    "succeeded": "ناجح",
+    "refunded": "مُسترَد",
+    "failed": "فاشل",
+    "flagged": "مُبلَّغ عنه",
+    "card": "بطاقة",
+    "cash": "نقدًا",
+    "flouci": "Flouci",
+    "unknown": "غير معروف"
   }
 }

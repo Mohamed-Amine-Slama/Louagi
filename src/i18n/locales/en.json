@@ -31,7 +31,8 @@
     "since": "Since {{date}}",
     "new": "new",
     "ridesCount": "{{count}} rides",
-    "tnd": "TND"
+    "tnd": "TND",
+    "theDriver": "the driver"
   },
   "auth": {
     "welcomeBack": "Welcome back",
@@ -116,7 +117,19 @@
     "passwordMinStrict": "Min 10 characters",
     "couldntLoadProfile": "Couldn't load profile",
     "sessionInvalid": "Your session no longer matches any account. Please sign in again.",
-    "profileLoadFailed": "Failed to load your profile."
+    "profileLoadFailed": "Failed to load your profile.",
+    "strengthLabel": "Strength: {{label}}",
+    "pwVeryWeak": "Very weak",
+    "pwWeak": "Weak",
+    "pwFair": "Fair",
+    "pwGood": "Good",
+    "pwStrong": "Strong",
+    "pwExcellent": "Excellent",
+    "pwRuleMinLength": "Min 10 characters",
+    "pwRuleUppercase": "Needs 1 uppercase letter",
+    "pwRuleLowercase": "Needs 1 lowercase letter",
+    "pwRuleDigit": "Needs 1 digit",
+    "pwRuleSpecial": "Needs 1 special character"
   },
   "landing": {
     "heroTitle": "Travel Tunisia,\nseat by seat.",
@@ -159,7 +172,8 @@
     "results": "results",
     "minRating": "Min rating",
     "anyRating": "Any",
-    "reset": "Reset"
+    "reset": "Reset",
+    "ratingPlus": "{{rating}}★+"
   },
   "ride": {
     "trip": "Trip",
@@ -431,7 +445,9 @@
     "vehicleSummary": "{{brand}} {{model}} · {{count}} seats",
     "plateValue": "Plate {{plate}}",
     "callPassenger": "Call passenger",
-    "tapForDetails": "Tap to view details"
+    "tapForDetails": "Tap to view details",
+    "originPlaceholder": "e.g. Tunis",
+    "destinationPlaceholder": "e.g. Sousse"
   },
   "admin": {
     "platformOverview": "Platform overview",
@@ -548,7 +564,13 @@
     "contactSupport": "Contact support",
     "terms": "Terms of service",
     "privacy": "Privacy policy",
-    "versionFooter": "Louagi Admin · Beta"
+    "versionFooter": "Louagi Admin · Beta",
+    "alertPaymentFlagged": "Payment flagged",
+    "alertFailedPayment": "Failed payment",
+    "alertDriverPending": "Driver pending verification",
+    "alertKindVerification": "Verification",
+    "alertKindFlag": "Flag",
+    "alertKindFail": "Failure"
   },
   "settings": {
     "title": "Settings",
@@ -619,7 +641,9 @@
     "brandRequired": "Brand required",
     "modelRequired": "Model required",
     "seatRule": "1-{{max}} seats only",
-    "couldntCancel": "Couldn't cancel"
+    "couldntCancel": "Couldn't cancel",
+    "crashTitle": "Something crashed.",
+    "crashBody": "Stack trace below — share it back so we can patch the root cause."
   },
   "toast": {
     "savedAccount": "Account info saved",
@@ -724,5 +748,48 @@
     "exportReadyBody": "{{bookings}} bookings, {{deliveries}} deliveries, {{tickets}} support tickets included.",
     "exportFailed": "Could not prepare your data export",
     "noFavouriteRoute": "No favourite route yet"
+  },
+  "chat": {
+    "online": "Online",
+    "deleteMessageTitle": "Delete message",
+    "deleteMessageBody": "Are you sure you want to delete this message?",
+    "deleteForMe": "Delete for me",
+    "deleteForEveryone": "Delete for everyone",
+    "searchConversations": "Search conversations…",
+    "unknownContact": "Unknown",
+    "noMessagesYet": "No messages yet"
+  },
+  "tabs": {
+    "Home": "Home",
+    "Search": "Search",
+    "Bookings": "Bookings",
+    "Delivery": "Delivery",
+    "Profile": "Profile",
+    "Dashboard": "Dashboard",
+    "Rides": "Rides",
+    "Overview": "Overview",
+    "Drivers": "Drivers",
+    "Users": "Users",
+    "Payments": "Pay",
+    "Audit": "Audit"
+  },
+  "status": {
+    "pending": "Pending",
+    "verified": "Verified",
+    "rejected": "Rejected",
+    "suspended": "Suspended",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "scheduled": "Scheduled",
+    "inProgress": "In progress",
+    "succeeded": "Succeeded",
+    "refunded": "Refunded",
+    "failed": "Failed",
+    "flagged": "Flagged",
+    "card": "Card",
+    "cash": "Cash",
+    "flouci": "Flouci",
+    "unknown": "Unknown"
   }
 }

@@ -12,7 +12,7 @@ function buildTones(colors) {
     success: { bg: colors.success, icon: 'check-circle', fg: colors.onPrimary },
     error: { bg: colors.error, icon: 'error', fg: colors.onPrimary },
     info: { bg: colors.primary, icon: 'info', fg: colors.onPrimary },
-    warning: { bg: colors.secondaryContainer, icon: 'warning-amber', fg: colors.onSecondaryContainer },
+    warning: { bg: colors.warning, icon: 'warning-amber', fg: colors.onWarning },
   };
 }
 

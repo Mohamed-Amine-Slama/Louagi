@@ -15,7 +15,7 @@ function buildPalette(colors) {
     secondary: {
       bg: colors.secondaryContainer,
       fg: colors.onSecondaryContainer,
-      pressed: colors.secondaryFixed,
+      pressed: colors.secondaryContainerPressed,
     },
     outline: {
       bg: 'transparent',
@@ -127,7 +127,7 @@ export function FAB({ icon, onPress, label }) {
           borderRadius: radius.xl,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: pressed ? colors.secondaryFixed : colors.secondaryContainer,
+          backgroundColor: pressed ? colors.secondaryContainerPressed : colors.secondaryContainer,
           position: 'absolute',
           end: spacing.lg,
           bottom: floatingTabBar.height + floatingTabBar.bottomGap + 8,

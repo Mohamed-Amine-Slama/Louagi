@@ -61,7 +61,7 @@ export function RateDriverModal({ visible, onClose, onSubmit, driverName }) {
               </Row>
 
               <Text variant="bodyMd" color={colors.onSurfaceVariant} style={{ marginBottom: spacing.lg, textAlign: 'center' }}>
-                {t('passenger:rateDriverBody', { name: driverName || 'the driver' })}
+                {t('passenger:rateDriverBody', { name: driverName || t('common:theDriver') })}
               </Text>
 
               {/* Stars */}

@@ -9,7 +9,7 @@ export function Badge({ label, variant = 'info', icon }) {
   const { colors } = useTheme();
   const tone = {
     success: { bg: withAlpha(colors.success, 0.12), fg: colors.success },
-    warning: { bg: withAlpha(colors.secondaryContainer, 0.18), fg: colors.onSecondaryContainer },
+    warning: { bg: withAlpha(colors.warning, 0.15), fg: colors.onWarningContainer },
     info: { bg: withAlpha(colors.primary, 0.1), fg: colors.primary },
     error: { bg: withAlpha(colors.error, 0.1), fg: colors.error },
     neutral: { bg: colors.surfaceContainerHigh, fg: colors.onSurfaceVariant },

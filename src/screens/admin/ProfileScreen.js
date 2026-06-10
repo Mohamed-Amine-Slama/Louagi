@@ -49,7 +49,7 @@ export default function AdminProfile() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const name = profile?.full_name || user?.name || 'Admin';
+  const name = profile?.full_name || user?.name || t('admin:administrator');
   const memberSince = formatMonthYear(profile?.created_at || new Date(), { locale });
   const goToTab = (screen) => nav.navigate('Tabs', { screen });
 

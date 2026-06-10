@@ -71,7 +71,7 @@ export default function ChatListScreen() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder={t('common:search', 'Search conversations...')}
+            placeholder={t('chat:searchConversations')}
             placeholderTextColor={colors.onSurfaceVariant}
             style={{
               flex: 1,
@@ -153,7 +153,7 @@ const ChatRow = memo(({ item, onPress }) => {
             numberOfLines={1}
             style={{ flex: 1, fontWeight: hasUnread ? '700' : '500' }}
           >
-            {item.other_user?.full_name ?? 'Unknown'}
+            {item.other_user?.full_name ?? t('chat:unknownContact')}
           </Text>
           <Text
             variant="labelSm"
@@ -170,7 +170,7 @@ const ChatRow = memo(({ item, onPress }) => {
             numberOfLines={1}
             style={{ flex: 1, fontWeight: hasUnread ? '600' : '400' }}
           >
-            {item.last_message || t('driver:noMessagesBody', 'No messages yet')}
+            {item.last_message || t('chat:noMessagesYet')}
           </Text>
           {hasUnread && (
             <View style={{

@@ -1,16 +1,27 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useLocale } from '../context/LocaleContext';
 import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Text } from './Text';
 import { passwordStrength, PASSWORD_RULES } from '../validation/schemas';
 import { radius, spacing } from '../theme';
 
-const palette = ['#ba1a1a', '#ba1a1a', '#feae2c', '#feae2c', '#198754', '#198754'];
+const STRENGTH_KEYS = ['pwVeryWeak', 'pwWeak', 'pwFair', 'pwGood', 'pwStrong', 'pwExcellent'];
+const RULE_KEYS = {
+  minLength: 'pwRuleMinLength',
+  uppercase: 'pwRuleUppercase',
+  lowercase: 'pwRuleLowercase',
+  digit: 'pwRuleDigit',
+  special: 'pwRuleSpecial',
+};
 
 export function PasswordStrength({ value }) {
   const { colors } = useTheme();
-  const { score, label } = passwordStrength(value);
+  const { t } = useLocale();
+  const palette = [colors.error, colors.error, colors.warning, colors.warning, colors.success, colors.success];
+  const { score } = passwordStrength(value);
+  const label = t(`auth:${STRENGTH_KEYS[Math.min(score, 5)]}`);
   return (
     <View style={{ gap: spacing.xs }}>
       {/* Strength bar */}
@@ -29,7 +40,7 @@ export function PasswordStrength({ value }) {
           ))}
         </View>
         <Text variant="labelSm" color={colors.onSurfaceVariant}>
-          Strength: {label}
+          {t('auth:strengthLabel', { label })}
         </Text>
       </View>
 
@@ -45,13 +56,13 @@ export function PasswordStrength({ value }) {
               <MaterialIcons
                 name={pass ? 'check-circle' : 'cancel'}
                 size={16}
-                color={pass ? '#198754' : colors.onSurfaceVariant}
+                color={pass ? colors.success : colors.onSurfaceVariant}
               />
               <Text
                 variant="labelSm"
-                color={pass ? '#198754' : colors.onSurfaceVariant}
+                color={pass ? colors.success : colors.onSurfaceVariant}
               >
-                {rule.label}
+                {t(`auth:${RULE_KEYS[rule.key] || ''}`, { defaultValue: rule.label })}
               </Text>
             </View>
           );

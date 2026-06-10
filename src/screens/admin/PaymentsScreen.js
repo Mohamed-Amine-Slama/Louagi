@@ -18,7 +18,7 @@ import { paymentsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing } from '../../theme';
-import { formatDateTime } from '../../i18n/format';
+import { formatDateTime, statusLabel } from '../../i18n/format';
 
 export default function AdminPayments() {
   const { colors } = useTheme();
@@ -78,12 +78,12 @@ export default function AdminPayments() {
               <Stack gap={2} style={{ flex: 1 }}>
                 <Text variant="bodyLg">{p.amount} {t('common:tnd')}</Text>
                 <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {p.method} · {p.gateway_reference} · {formatDateTime(p.paid_at)}
+                  {statusLabel(t, p.method)} · {p.gateway_reference} · {formatDateTime(p.paid_at)}
                 </Text>
               </Stack>
               <Stack gap={4} style={{ alignItems: 'flex-end' }}>
                 <Badge
-                  label={p.status}
+                  label={statusLabel(t, p.status)}
                   variant={
                     p.status === 'succeeded'
                       ? 'success'

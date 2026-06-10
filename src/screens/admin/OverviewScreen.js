@@ -19,6 +19,19 @@ import { useAuth } from '../../context/AuthContext';
 import { isAdminIpAllowed } from '../../security/rbac';
 import { spacing, radius } from '../../theme';
 
+// Admin alerts arrive from the API with English title/kind strings; map by the
+// stable `kind` to a localized label (falls back to the raw value if unknown).
+const ALERT_TITLE_KEY = {
+  verification: 'admin:alertDriverPending',
+  flag: 'admin:alertPaymentFlagged',
+  fail: 'admin:alertFailedPayment',
+};
+const ALERT_KIND_KEY = {
+  verification: 'admin:alertKindVerification',
+  flag: 'admin:alertKindFlag',
+  fail: 'admin:alertKindFail',
+};
+
 export default function AdminOverview() {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -146,13 +159,13 @@ export default function AdminOverview() {
             <Card key={a.id} accent={a.kind === 'verification' ? colors.secondaryContainer : colors.error}>
               <Row justify="space-between">
                 <Stack gap={2} style={{ flex: 1 }}>
-                  <Text variant="labelMd">{a.title}</Text>
+                  <Text variant="labelMd">{t(ALERT_TITLE_KEY[a.kind] || '', { defaultValue: a.title })}</Text>
                   <Text variant="labelSm" color={colors.onSurfaceVariant}>
                     {a.body}
                   </Text>
                 </Stack>
                 <Badge
-                  label={a.kind}
+                  label={t(ALERT_KIND_KEY[a.kind] || '', { defaultValue: a.kind })}
                   variant={a.kind === 'verification' ? 'warning' : 'error'}
                   icon={a.kind === 'verification' ? 'verified-user' : 'flag'}
                 />

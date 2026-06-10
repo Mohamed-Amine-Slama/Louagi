@@ -141,7 +141,7 @@ export default function ChatScreen() {
             </View>
             <View>
               <Text variant="headlineSm">{userName}</Text>
-              <Text variant="labelSm" color={colors.success}>Online</Text>
+              <Text variant="labelSm" color={colors.success}>{t('chat:online')}</Text>
             </View>
           </Row>
         </Row>

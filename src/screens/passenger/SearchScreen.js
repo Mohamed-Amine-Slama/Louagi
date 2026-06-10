@@ -359,7 +359,7 @@ export default function SearchScreen() {
                     key={String(rating)}
                     active={filters.ratingMin === rating}
                     onPress={() => setFilters((f) => ({ ...f, ratingMin: rating }))}
-                    label={rating === 0 ? t('search:anyRating', 'Any') : `${rating}★+`}
+                    label={rating === 0 ? t('search:anyRating', 'Any') : t('search:ratingPlus', { rating })}
                     colors={colors}
                   />
                 ))}

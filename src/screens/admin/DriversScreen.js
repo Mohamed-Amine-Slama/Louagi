@@ -21,6 +21,7 @@ import { driversApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing } from '../../theme';
+import { statusLabel } from '../../i18n/format';
 
 const EMPTY_DRIVER_KEY = {
   pending: 'admin:noDriversPending',
@@ -97,7 +98,7 @@ export default function AdminDrivers() {
                   {t('driver:plateValue', { plate: d.plate_number })}
                 </Text>
               </Stack>
-              <Badge label={d.status} variant={d.status === 'verified' ? 'success' : d.status === 'rejected' ? 'error' : 'warning'} />
+              <Badge label={statusLabel(t, d.status)} variant={d.status === 'verified' ? 'success' : d.status === 'rejected' ? 'error' : 'warning'} />
             </Row>
           </Card>
         ))

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Text as RNText } from 'react-native';
 import { colors, spacing, radius, typography } from '../theme';
+import i18n from '../i18n';
 
 export class ErrorBoundary extends React.Component {
   state = { error: null, info: null };
@@ -24,10 +25,10 @@ export class ErrorBoundary extends React.Component {
       >
         <View style={{ marginTop: 80 }}>
           <RNText style={[typography.headlineMd, { color: colors.error }]}>
-            Something crashed.
+            {i18n.t('errors:crashTitle')}
           </RNText>
           <RNText style={[typography.bodyMd, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>
-            Stack trace below — share it back so we can patch the root cause.
+            {i18n.t('errors:crashBody')}
           </RNText>
         </View>
         <View

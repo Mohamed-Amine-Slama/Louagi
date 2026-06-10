@@ -31,7 +31,8 @@
     "since": "Depuis {{date}}",
     "new": "nouveau",
     "ridesCount": "{{count}} trajets",
-    "tnd": "TND"
+    "tnd": "TND",
+    "theDriver": "le chauffeur"
   },
   "auth": {
     "welcomeBack": "Bon retour",
@@ -116,7 +117,19 @@
     "passwordMinStrict": "10 caractères minimum",
     "couldntLoadProfile": "Impossible de charger le profil",
     "sessionInvalid": "Votre session ne correspond plus à un compte. Reconnectez-vous.",
-    "profileLoadFailed": "Échec du chargement du profil."
+    "profileLoadFailed": "Échec du chargement du profil.",
+    "strengthLabel": "Force : {{label}}",
+    "pwVeryWeak": "Très faible",
+    "pwWeak": "Faible",
+    "pwFair": "Moyenne",
+    "pwGood": "Bonne",
+    "pwStrong": "Forte",
+    "pwExcellent": "Excellente",
+    "pwRuleMinLength": "Min. 10 caractères",
+    "pwRuleUppercase": "1 majuscule requise",
+    "pwRuleLowercase": "1 minuscule requise",
+    "pwRuleDigit": "1 chiffre requis",
+    "pwRuleSpecial": "1 caractère spécial requis"
   },
   "landing": {
     "heroTitle": "Voyagez en Tunisie,\nplace par place.",
@@ -159,7 +172,8 @@
     "results": "résultats",
     "minRating": "Note min",
     "anyRating": "Tous",
-    "reset": "Réinitialiser"
+    "reset": "Réinitialiser",
+    "ratingPlus": "{{rating}}★+"
   },
   "ride": {
     "trip": "Trajet",
@@ -188,7 +202,9 @@
     "processingPayment": "Paiement en cours…",
     "reservationFee": "Frais de réservation",
     "reservationFeeBreakdown": "1,5 TND plateforme + 1,5 TND chauffeur",
-    "feeNonRefundable": "Les frais de réservation de 3 TND sont non remboursables. Seul le prix de la place sera remboursé."
+    "feeNonRefundable": "Les frais de réservation de 3 TND sont non remboursables. Seul le prix de la place sera remboursé.",
+    "logout": "Se déconnecter",
+    "submit": "Envoyer"
   },
   "booking": {
     "confirmedTitle": "Réservation confirmée",
@@ -294,7 +310,9 @@
     "rateDriverTitle": "Noter votre chauffeur",
     "rateDriverBody": "Comment s'est passé le trajet avec {{name}} ?",
     "rateDriverPlaceholder": "Laissez un commentaire facultatif...",
-    "ratingSubmitted": "Merci pour votre avis !"
+    "ratingSubmitted": "Merci pour votre avis !",
+    "noPastRidesTitle": "Aucun trajet passé",
+    "noPastRidesBody": "Les trajets terminés ou annulés apparaîtront ici."
   },
   "driver": {
     "verified": "Vérifié",
@@ -427,7 +445,9 @@
     "termsOfService": "Conditions d'utilisation",
     "privacyPolicy": "Politique de confidentialité",
     "deletionRequested": "Demande de suppression soumise. Notre équipe la traitera sous 30 jours.",
-    "sessionRevoked": "Session révoquée"
+    "sessionRevoked": "Session révoquée",
+    "originPlaceholder": "ex. Tunis",
+    "destinationPlaceholder": "ex. Sousse"
   },
   "admin": {
     "platformOverview": "Vue d'ensemble",
@@ -544,7 +564,13 @@
     "contactSupport": "Contacter le support",
     "terms": "Conditions d'utilisation",
     "privacy": "Politique de confidentialité",
-    "versionFooter": "Louagi Admin · Bêta"
+    "versionFooter": "Louagi Admin · Bêta",
+    "alertPaymentFlagged": "Paiement signalé",
+    "alertFailedPayment": "Paiement échoué",
+    "alertDriverPending": "Chauffeur en attente de vérification",
+    "alertKindVerification": "Vérification",
+    "alertKindFlag": "Signalement",
+    "alertKindFail": "Échec"
   },
   "settings": {
     "title": "Réglages",
@@ -615,7 +641,9 @@
     "brandRequired": "Marque requise",
     "modelRequired": "Modèle requis",
     "seatRule": "1-{{max}} places",
-    "couldntCancel": "Annulation impossible"
+    "couldntCancel": "Annulation impossible",
+    "crashTitle": "Une erreur est survenue.",
+    "crashBody": "Trace ci-dessous — partagez-la pour corriger la cause."
   },
   "toast": {
     "savedAccount": "Compte enregistré",
@@ -720,5 +748,48 @@
     "exportReadyBody": "{{bookings}} réservations, {{deliveries}} livraisons, {{tickets}} tickets support inclus.",
     "exportFailed": "Impossible de préparer l'export",
     "noFavouriteRoute": "Aucun itinéraire favori pour l'instant"
+  },
+  "chat": {
+    "online": "En ligne",
+    "deleteMessageTitle": "Supprimer le message",
+    "deleteMessageBody": "Voulez-vous vraiment supprimer ce message ?",
+    "deleteForMe": "Supprimer pour moi",
+    "deleteForEveryone": "Supprimer pour tout le monde",
+    "searchConversations": "Rechercher des conversations…",
+    "unknownContact": "Inconnu",
+    "noMessagesYet": "Aucun message"
+  },
+  "tabs": {
+    "Home": "Accueil",
+    "Search": "Recherche",
+    "Bookings": "Réservations",
+    "Delivery": "Livraison",
+    "Profile": "Profil",
+    "Dashboard": "Tableau",
+    "Rides": "Trajets",
+    "Overview": "Aperçu",
+    "Drivers": "Chauffeurs",
+    "Users": "Utilisateurs",
+    "Payments": "Paiement",
+    "Audit": "Audit"
+  },
+  "status": {
+    "pending": "En attente",
+    "verified": "Vérifié",
+    "rejected": "Rejeté",
+    "suspended": "Suspendu",
+    "confirmed": "Confirmé",
+    "cancelled": "Annulé",
+    "completed": "Terminé",
+    "scheduled": "Planifié",
+    "inProgress": "En cours",
+    "succeeded": "Réussi",
+    "refunded": "Remboursé",
+    "failed": "Échoué",
+    "flagged": "Signalé",
+    "card": "Carte",
+    "cash": "Espèces",
+    "flouci": "Flouci",
+    "unknown": "Inconnu"
   }
 }
