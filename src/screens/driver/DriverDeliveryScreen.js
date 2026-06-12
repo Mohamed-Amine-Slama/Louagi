@@ -10,6 +10,8 @@ import { Badge } from '../../components/Badge';
 import { Avatar } from '../../components/Avatar';
 import { Stack, Row } from '../../components/Section';
 import { EmptyState } from '../../components/EmptyState';
+import { SkeletonList } from '../../components/Skeleton';
+import { FadeSlideIn } from '../../components/motion';
 
 import { deliveriesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -30,10 +32,12 @@ export default function DriverDeliveryScreen() {
 
   const [deliveries, setDeliveries] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     const res = await deliveriesApi.listRideDeliveries({ actor: user, rideId });
     setDeliveries(res);
+    setLoading(false);
   }, [rideId, user]);
 
   useFocusEffect(
@@ -58,15 +62,18 @@ export default function DriverDeliveryScreen() {
     <Screen padded={false}>
       <ScreenHeader title={t('passenger:deliveries')} showBack={!!rideId} />
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-        {deliveries.length === 0 ? (
+        {loading ? (
+          <SkeletonList count={3} />
+        ) : deliveries.length === 0 ? (
           <EmptyState icon="local-shipping" title={t('delivery:noDeliveries')} />
         ) : (
-          deliveries.map(d => {
+          deliveries.map((d, i) => {
             const camelStatus = d.status.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
             const transKey = `delivery:status${camelStatus.charAt(0).toUpperCase() + camelStatus.slice(1)}`;
-            
+
             return (
-              <Card key={d.id}>
+              <FadeSlideIn key={d.id} index={Math.min(i, 8)}>
+              <Card>
                 <Row gap={spacing.md} style={{ marginBottom: spacing.md }}>
                   <Avatar name={d.user?.full_name} size={42} />
                   <View style={{ flex: 1 }}>
@@ -109,6 +116,7 @@ export default function DriverDeliveryScreen() {
                   ) : null}
                 </Row>
               </Card>
+              </FadeSlideIn>
             );
           })
         )}

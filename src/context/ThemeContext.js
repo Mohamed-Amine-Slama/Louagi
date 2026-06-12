@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Appearance } from 'react-native';
-import { colorsLight, colorsDark, setActivePalette } from '../theme';
+import { colorsLight, setActivePalette } from '../theme/colors';
+import { colorsDark } from '../theme/colors-dark';
 import { getSecure, setSecure } from '../security/secureStorage';
 
 const KEY = 'louagi.themeMode';

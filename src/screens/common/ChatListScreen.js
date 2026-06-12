@@ -10,6 +10,8 @@ import { ScreenHeader } from '../../components/Header';
 import { Text } from '../../components/Text';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
+import { SkeletonList } from '../../components/Skeleton';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { messagesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -53,7 +55,7 @@ export default function ChatListScreen() {
       <ScreenHeader title={t('passenger:messages')} showBack />
 
       {/* Search Bar */}
-      <View style={{
+      <FadeSlideIn index={0} style={{
         paddingHorizontal: spacing.md,
         paddingTop: spacing.sm,
         paddingBottom: spacing.md,
@@ -76,7 +78,7 @@ export default function ChatListScreen() {
             style={{
               flex: 1,
               color: colors.onSurface,
-              fontSize: 15,
+              fontSize: 16,
               paddingVertical: 0,
             }}
           />
@@ -86,15 +88,19 @@ export default function ChatListScreen() {
             </Pressable>
           )}
         </View>
-      </View>
+      </FadeSlideIn>
 
       <FlatList
         data={filtered}
         keyExtractor={chatKeyExtractor}
         contentContainerStyle={{ paddingHorizontal: spacing.md, flexGrow: 1 }}
         ItemSeparatorComponent={ChatSeparator}
-        ListEmptyComponent={!loading ? <EmptyChatList /> : null}
-        renderItem={({ item }) => <ChatRow item={item} onPress={(userId, userName, phoneNumber) => nav.navigate('Chat', { userId, userName, phoneNumber })} />}
+        ListEmptyComponent={loading ? <ChatListSkeleton /> : <EmptyChatList />}
+        renderItem={({ item, index }) => (
+          <FadeSlideIn index={Math.min(index, 8)}>
+            <ChatRow item={item} onPress={(userId, userName, phoneNumber) => nav.navigate('Chat', { userId, userName, phoneNumber })} />
+          </FadeSlideIn>
+        )}
       />
     </Screen>
   );
@@ -108,10 +114,14 @@ const ChatSeparator = memo(() => {
     <View style={{
       height: 1,
       backgroundColor: withAlpha(colors.outlineVariant, 0.3),
-      marginLeft: 72,
+      marginStart: 72,
     }} />
   );
 });
+
+const ChatListSkeleton = memo(() => (
+  <SkeletonList count={6} lines={0} gap={spacing.sm} style={{ paddingTop: spacing.xs }} />
+));
 
 const EmptyChatList = memo(() => {
   const { t } = useLocale();
@@ -131,19 +141,16 @@ const ChatRow = memo(({ item, onPress }) => {
   const { t, locale } = useLocale();
   const hasUnread = item.unread_count > 0;
   return (
-    <Pressable
+    <PressableScale
       onPress={() => onPress(item.other_user?.id, item.other_user?.full_name, item.other_user?.phone_number)}
-      style={({ pressed }) => ({
+      style={{
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: spacing.md,
         gap: spacing.md,
-        backgroundColor: pressed
-          ? withAlpha(colors.primary, 0.05)
-          : 'transparent',
         borderRadius: radius.lg,
         paddingHorizontal: spacing.xs,
-      })}
+      }}
     >
       <Avatar name={item.other_user?.full_name} size={52} badge />
       <View style={{ flex: 1, gap: 3 }}>
@@ -158,7 +165,7 @@ const ChatRow = memo(({ item, onPress }) => {
           <Text
             variant="labelSm"
             color={hasUnread ? colors.primary : colors.onSurfaceVariant}
-            style={{ fontWeight: hasUnread ? '600' : '400', marginLeft: spacing.sm }}
+            style={{ fontWeight: hasUnread ? '600' : '400', marginStart: spacing.sm }}
           >
             {formatTime(item.updated_at, { locale })}
           </Text>
@@ -174,17 +181,17 @@ const ChatRow = memo(({ item, onPress }) => {
           </Text>
           {hasUnread && (
             <View style={{
-              minWidth: 22, height: 22, borderRadius: 11,
-              backgroundColor: colors.primary, alignItems: 'center',
-              justifyContent: 'center', paddingHorizontal: 6, marginLeft: spacing.sm,
+              minWidth: 22, height: 22, borderRadius: radius.full,
+              backgroundColor: colors.secondaryContainer, alignItems: 'center',
+              justifyContent: 'center', paddingHorizontal: 6, marginStart: spacing.sm,
             }}>
-              <Text variant="labelSm" color={colors.onPrimary} style={{ fontSize: 11, fontWeight: '700' }}>
+              <Text variant="labelSm" color={colors.onSecondaryContainer} style={{ fontWeight: '700' }}>
                 {item.unread_count > 99 ? '99+' : item.unread_count}
               </Text>
             </View>
           )}
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 });

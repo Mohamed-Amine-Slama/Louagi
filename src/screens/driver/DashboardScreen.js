@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -14,11 +15,14 @@ import { AvatarStack, Avatar } from '../../components/Avatar';
 import { RouteTimeline } from '../../components/RouteTimeline';
 import { Stack, Row, Section } from '../../components/Section';
 import { EmptyState } from '../../components/EmptyState';
+import { Chip } from '../../components/Chip';
+import { KpiTile } from '../../components/KpiTile';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { usePush } from '../../context/NotificationContext';
-import { spacing, radius } from '../../theme';
+import { spacing, radius, typography, withAlpha } from '../../theme';
 import { formatDateTime, dayLetter, formatDayOfMonth } from '../../i18n/format';
 
 const PERIODS = [
@@ -63,8 +67,13 @@ function delta(current, prev, t) {
   return { sign: Math.sign(pct), label: `${pct > 0 ? '+' : ''}${pct}%` };
 }
 
+function pctDelta(current, prev) {
+  if (!prev) return undefined;
+  return Math.round(((current - prev) / prev) * 100);
+}
+
 export default function DriverDashboard() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t, locale } = useLocale();
   const { user, signOut } = useAuth();
   const nav = useNavigation();
@@ -94,44 +103,48 @@ export default function DriverDashboard() {
   );
 
   const earningsDelta = delta(periodEarnings(analytics, period), analytics.earningsPrev, t);
+  const heroFg = isDark ? colors.onSurface : colors.onPrimary;
 
   return (
     <Screen padded={false}>
-      <View
+      <LinearGradient
+        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: colors.primary,
           paddingHorizontal: spacing.containerMargin,
           paddingTop: spacing.md,
           paddingBottom: spacing.lg,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
+          borderBottomLeftRadius: radius.xxl,
+          borderBottomRightRadius: radius.xxl,
         }}
       >
         <Row justify="space-between">
           <Row gap={spacing.sm}>
             <Avatar name={user?.name} size={42} />
             <View>
-              <Text variant="labelSm" color={colors.onPrimaryContainer}>
+              <Text variant="labelSm" color={withAlpha(heroFg, 0.8)}>
                 {t('driver:goodDay')},
               </Text>
-              <Text variant="headlineSm" color={colors.onPrimary}>
+              <Text variant="headlineSm" color={heroFg}>
                 {user?.name?.split(' ')[0]}
               </Text>
             </View>
           </Row>
           <Row gap={spacing.xs}>
-            <Pressable
+            <PressableScale
               onPress={() => nav.navigate('ChatList')}
+              scaleTo={0.9}
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 20,
-                backgroundColor: colors.primaryContainer,
+                borderRadius: radius.full,
+                backgroundColor: withAlpha(heroFg, 0.2),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="chat" size={20} color={colors.onPrimary} />
+              <MaterialIcons name="chat" size={20} color={heroFg} />
               {unreadCount > 0 && (
                 <View
                   style={{
@@ -147,256 +160,253 @@ export default function DriverDashboard() {
                     paddingHorizontal: 4,
                   }}
                 >
-                  <Text variant="labelSm" color={colors.onError} style={{ fontSize: 9, fontWeight: '700' }}>
+                  <Text variant="labelXs" color={colors.onError}>
                     {unreadCount}
                   </Text>
                 </View>
               )}
-            </Pressable>
-            <Pressable
+            </PressableScale>
+            <PressableScale
               onPress={() => nav.navigate('Settings')}
+              scaleTo={0.9}
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 20,
-                backgroundColor: colors.primaryContainer,
+                borderRadius: radius.full,
+                backgroundColor: withAlpha(heroFg, 0.2),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="settings" size={20} color={colors.onPrimary} />
-            </Pressable>
-            <Pressable
+              <MaterialIcons name="settings" size={20} color={heroFg} />
+            </PressableScale>
+            <PressableScale
               onPress={signOut}
+              scaleTo={0.9}
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 20,
-                backgroundColor: colors.primaryContainer,
+                borderRadius: radius.full,
+                backgroundColor: withAlpha(heroFg, 0.2),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="logout" size={20} color={colors.onPrimary} />
-            </Pressable>
+              <MaterialIcons name="logout" size={20} color={heroFg} />
+            </PressableScale>
           </Row>
         </Row>
 
         <Row gap={spacing.sm} style={{ marginTop: spacing.md, flexWrap: 'wrap' }}>
           <KpiTile
             icon="route"
+            tone="primary"
             label={t('driver:tripsKpi')}
             value={String(analytics.tripsThisPeriod)}
-            delta={delta(analytics.tripsThisPeriod, analytics.tripsPrevPeriod, t)}
-            dark
+            delta={pctDelta(analytics.tripsThisPeriod, analytics.tripsPrevPeriod)}
           />
           <KpiTile
             icon="event-seat"
+            tone="primary"
             label={t('driver:seatsSold')}
             value={String(analytics.seatsSold)}
-            delta={delta(analytics.seatsSold, analytics.seatsPrev, t)}
-            dark
+            delta={pctDelta(analytics.seatsSold, analytics.seatsPrev)}
           />
           <KpiTile
             icon="donut-large"
+            tone="neutral"
             label={t('driver:occupancy')}
             value={`${analytics.occupancyPct}%`}
-            delta={delta(analytics.occupancyPct, analytics.occupancyPrevPct, t)}
-            dark
+            delta={pctDelta(analytics.occupancyPct, analytics.occupancyPrevPct)}
           />
           <KpiTile
             icon="payments"
+            tone="success"
             label={t('driver:avgFare')}
-            value={`${formatTnd(analytics.avgFare)}`}
-            suffix={` ${t('common:tnd')}`}
-            delta={delta(analytics.avgFare, analytics.avgFarePrev, t)}
-            dark
+            value={`${formatTnd(analytics.avgFare)} ${t('common:tnd')}`}
+            delta={pctDelta(analytics.avgFare, analytics.avgFarePrev)}
           />
         </Row>
-      </View>
+      </LinearGradient>
 
       <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.md, gap: spacing.md }}>
-        <Section title={t('driver:todaysRide')}>
-          {today ? (
-            <Card
-              style={{
-                backgroundColor: colors.secondaryContainer,
-                gap: spacing.sm,
-                padding: spacing.lg,
-              }}
-            >
-              <Row justify="space-between" align="flex-start">
-                <Badge label={t('driver:scheduled')} variant="info" icon="schedule" />
-                <Text variant="headlineMd" color={colors.onSecondaryContainer}>
-                  {(today.total_seats - today.available_seats) * today.price_per_seat} {t('common:tnd')}
-                </Text>
-              </Row>
-              <RouteTimeline
-                origin={today.route.origin_city}
-                destination={today.route.destination_city}
-                departureLabel={formatDateTime(today.departure_time)}
-                arrivalLabel={t('common:minutes', { count: today.route.estimated_duration_min })}
-              />
-              <Row justify="space-between" align="center">
-                <AvatarStack
-                  names={['Ahmed M.', 'Sarra B.', 'Leila K.']}
-                  size={28}
-                  extra={Math.max(0, today.total_seats - today.available_seats - 3)}
-                />
-                <Button
-                  label={t('driver:manageRide')}
-                  variant="primary"
-                  fullWidth={false}
-                  small
-                  iconRight="arrow-forward"
-                  onPress={() => nav.navigate('RideManagement', { id: today.id })}
-                />
-              </Row>
-            </Card>
-          ) : (
-            <EmptyState
-              icon="event-busy"
-              title={t('driver:noRidesTitle')}
-              body={t('driver:noRidesBody')}
-              actionLabel={t('driver:createRide')}
-              onAction={() => nav.navigate('CreateRide')}
-            />
-          )}
-        </Section>
-
-        <Section
-          title={t('driver:earnings')}
-          action={
-            <Row gap={4}>
-              {PERIODS.map((p) => {
-                const active = p.key === period;
-                const label = p.key === 'week' ? t('driver:thisWeek') : t('driver:thisMonth');
-                return (
-                  <Pressable
-                    key={p.key}
-                    onPress={() => setPeriod(p.key)}
-                    style={{
-                      paddingHorizontal: spacing.sm,
-                      paddingVertical: 4,
-                      borderRadius: radius.full,
-                      backgroundColor: active ? colors.primary : colors.surfaceContainer,
-                    }}
-                  >
-                    <Text
-                      variant="labelSm"
-                      color={active ? colors.onPrimary : colors.onSurface}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </Row>
-          }
-        >
-          <Card>
-            <Row justify="space-between" align="flex-end" style={{ marginBottom: spacing.md }}>
-              <Stack gap={2}>
-                <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {period === 'week' ? t('driver:thisWeek') : t('driver:thisMonth')}
-                </Text>
-                <Text variant="displayLg">
-                  {formatTnd(periodEarnings(analytics, period))} {t('common:tnd')}
-                </Text>
-              </Stack>
-              <Badge
-                label={earningsDelta.label}
-                variant={earningsDelta.sign >= 0 ? 'success' : 'error'}
-                icon={earningsDelta.sign >= 0 ? 'trending-up' : 'trending-down'}
-              />
-            </Row>
-            <Row gap={period === 'month' ? 2 : spacing.xs} align="flex-end" style={{ height: 96 }}>
-              {analytics.history.map((v, i) => {
-                const h = Math.max(6, (v / max) * 84);
-                const active = i === analytics.history.length - 1;
-                return (
-                  <View
-                    key={i}
-                    style={{
-                      flex: 1,
-                      height: h,
-                      borderRadius: radius.sm,
-                      backgroundColor: active ? colors.secondaryContainer : colors.primaryFixedDim,
-                    }}
-                  />
-                );
-              })}
-            </Row>
-            <Row justify="space-between" style={{ marginTop: spacing.xs }}>
-              {labels.map((d, i) => (
-                <Text key={i} variant="labelSm" color={colors.onSurfaceVariant}>
-                  {d}
-                </Text>
-              ))}
-            </Row>
-          </Card>
-        </Section>
-
-        <Row gap={spacing.sm}>
-          <View style={{ flex: 1 }}>
-            <Card style={{ gap: spacing.xs }}>
-              <Row gap={spacing.xs} align="center">
-                <MaterialIcons name="star" size={20} color={colors.secondaryContainer} />
-                <Text variant="headlineSm">
-                  {analytics.rating != null ? analytics.rating.toFixed(1) : '—'}
-                </Text>
-              </Row>
-              <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                {t('driver:ratingLifetime', { count: analytics.tripsCompleted ?? 0 })}
-              </Text>
-            </Card>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Card style={{ gap: spacing.xs }}>
-              <Row gap={spacing.xs} align="center">
-                <MaterialIcons name="cancel" size={20} color={colors.error} />
-                <Text variant="headlineSm">{analytics.cancelRatePct}%</Text>
-              </Row>
-              <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                {period === 'week'
-                  ? t('driver:cancellationRateThisWeek')
-                  : t('driver:cancellationRateThisMonth')}
-              </Text>
-            </Card>
-          </View>
-        </Row>
-
-        {analytics.topRoute ? (
-          <Card>
-            <Row gap={spacing.sm} align="center">
-              <View
+        <FadeSlideIn index={0}>
+          <Section title={t('driver:todaysRide')}>
+            {today ? (
+              <Card
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: radius.lg,
-                  backgroundColor: colors.primaryFixed,
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  backgroundColor: colors.secondaryContainer,
+                  gap: spacing.sm,
+                  padding: spacing.lg,
                 }}
               >
-                <MaterialIcons name="trending-up" size={20} color={colors.primary} />
-              </View>
-              <Stack gap={2} style={{ flex: 1 }}>
-                <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {period === 'week' ? t('driver:topRouteThisWeek') : t('driver:topRouteThisMonth')}
-                </Text>
-                <Text variant="bodyMd">
-                  {analytics.topRoute.origin_city} → {analytics.topRoute.destination_city}
-                </Text>
-              </Stack>
-              <Stack gap={2} style={{ alignItems: 'flex-end' }}>
-                <Text variant="labelMd">{t('common:ridesCount', { count: analytics.topRoute.count })}</Text>
-                <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                  {formatTnd(analytics.topRoute.revenue)} {t('common:tnd')}
-                </Text>
-              </Stack>
-            </Row>
-          </Card>
+                <Row justify="space-between" align="flex-start">
+                  <Badge label={t('driver:scheduled')} variant="neutral" icon="schedule" />
+                  <Text variant="headlineMd" color={colors.onSecondaryContainer}>
+                    {(today.total_seats - today.available_seats) * today.price_per_seat} {t('common:tnd')}
+                  </Text>
+                </Row>
+                <View
+                  style={{
+                    backgroundColor: colors.surfaceContainerLowest,
+                    borderRadius: radius.lg,
+                    padding: spacing.md,
+                  }}
+                >
+                  <RouteTimeline
+                    origin={today.route.origin_city}
+                    destination={today.route.destination_city}
+                    departureLabel={formatDateTime(today.departure_time)}
+                    arrivalLabel={t('common:minutes', { count: today.route.estimated_duration_min })}
+                  />
+                </View>
+                <Row justify="space-between" align="center">
+                  <AvatarStack
+                    names={['Ahmed M.', 'Sarra B.', 'Leila K.']}
+                    size={28}
+                    extra={Math.max(0, today.total_seats - today.available_seats - 3)}
+                  />
+                  <Button
+                    label={t('driver:manageRide')}
+                    variant="primary"
+                    fullWidth={false}
+                    small
+                    iconRight="arrow-forward"
+                    onPress={() => nav.navigate('RideManagement', { id: today.id })}
+                  />
+                </Row>
+              </Card>
+            ) : (
+              <EmptyState
+                icon="event-busy"
+                title={t('driver:noRidesTitle')}
+                body={t('driver:noRidesBody')}
+                actionLabel={t('driver:createRide')}
+                onAction={() => nav.navigate('CreateRide')}
+              />
+            )}
+          </Section>
+        </FadeSlideIn>
+
+        <FadeSlideIn index={1}>
+          <Section
+            title={t('driver:earnings')}
+            action={
+              <Row gap={4}>
+                {PERIODS.map((p) => {
+                  const active = p.key === period;
+                  const label = p.key === 'week' ? t('driver:thisWeek') : t('driver:thisMonth');
+                  return (
+                    <Chip
+                      key={p.key}
+                      label={label}
+                      selected={active}
+                      onPress={() => setPeriod(p.key)}
+                      style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}
+                    />
+                  );
+                })}
+              </Row>
+            }
+          >
+            <Card>
+              <Row justify="space-between" align="flex-end" style={{ marginBottom: spacing.md }}>
+                <Stack gap={2}>
+                  <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                    {period === 'week' ? t('driver:thisWeek') : t('driver:thisMonth')}
+                  </Text>
+                  <Text variant="displayLg">
+                    {formatTnd(periodEarnings(analytics, period))} {t('common:tnd')}
+                  </Text>
+                </Stack>
+                <Badge
+                  label={earningsDelta.label}
+                  variant={earningsDelta.sign >= 0 ? 'success' : 'error'}
+                  icon={earningsDelta.sign >= 0 ? 'trending-up' : 'trending-down'}
+                />
+              </Row>
+              <Row gap={period === 'month' ? 2 : spacing.xs} align="flex-end" style={{ height: 96 }}>
+                {analytics.history.map((v, i) => {
+                  const h = Math.max(6, (v / max) * 84);
+                  const active = i === analytics.history.length - 1;
+                  return (
+                    <FadeSlideIn key={`${period}-${i}`} index={Math.min(i, 8)} style={{ flex: 1 }}>
+                      <View
+                        style={{
+                          height: h,
+                          borderRadius: radius.sm,
+                          backgroundColor: active ? colors.secondaryContainer : colors.primaryFixedDim,
+                        }}
+                      />
+                    </FadeSlideIn>
+                  );
+                })}
+              </Row>
+              <Row justify="space-between" style={{ marginTop: spacing.xs }}>
+                {labels.map((d, i) => (
+                  <Text key={i} variant="labelSm" color={colors.onSurfaceVariant}>
+                    {d}
+                  </Text>
+                ))}
+              </Row>
+            </Card>
+          </Section>
+        </FadeSlideIn>
+
+        <FadeSlideIn index={2}>
+          <Row gap={spacing.sm}>
+            <KpiTile
+              icon="star"
+              tone="warning"
+              value={analytics.rating != null ? analytics.rating.toFixed(1) : '—'}
+              label={t('driver:ratingLifetime', { count: analytics.tripsCompleted ?? 0 })}
+            />
+            <KpiTile
+              icon="cancel"
+              tone="neutral"
+              value={`${analytics.cancelRatePct}%`}
+              label={
+                period === 'week'
+                  ? t('driver:cancellationRateThisWeek')
+                  : t('driver:cancellationRateThisMonth')
+              }
+            />
+          </Row>
+        </FadeSlideIn>
+
+        {analytics.topRoute ? (
+          <FadeSlideIn index={3}>
+            <Card>
+              <Row gap={spacing.sm} align="center">
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: radius.lg,
+                    backgroundColor: colors.primaryFixed,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MaterialIcons name="trending-up" size={20} color={colors.primary} />
+                </View>
+                <Stack gap={2} style={{ flex: 1 }}>
+                  <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                    {period === 'week' ? t('driver:topRouteThisWeek') : t('driver:topRouteThisMonth')}
+                  </Text>
+                  <Text variant="bodyMd">
+                    {analytics.topRoute.origin_city} → {analytics.topRoute.destination_city}
+                  </Text>
+                </Stack>
+                <Stack gap={2} style={{ alignItems: 'flex-end' }}>
+                  <Text variant="labelMd">{t('common:ridesCount', { count: analytics.topRoute.count })}</Text>
+                  <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                    {formatTnd(analytics.topRoute.revenue)} {t('common:tnd')}
+                  </Text>
+                </Stack>
+              </Row>
+            </Card>
+          </FadeSlideIn>
         ) : null}
       </View>
       <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
@@ -427,50 +437,4 @@ function buildLabels(period, historyStartIso, bins, locale) {
     }
   }
   return out;
-}
-
-function KpiTile({ icon, label, value, suffix, delta, dark }) {
-  const { colors } = useTheme();
-  const fg = dark ? colors.onPrimary : colors.onSurface;
-  const subFg = dark ? colors.onPrimaryContainer : colors.onSurfaceVariant;
-  const tileBg = dark ? colors.primaryContainer : colors.surfaceContainer;
-  const deltaColor =
-    delta.sign > 0 ? colors.success : delta.sign < 0 ? colors.error : subFg;
-  return (
-    <View
-      style={{
-        flex: 1,
-        minWidth: '45%',
-        backgroundColor: tileBg,
-        borderRadius: radius.lg,
-        padding: spacing.sm,
-        gap: 2,
-      }}
-    >
-      <Row gap={4} align="center">
-        <MaterialIcons name={icon} size={14} color={subFg} />
-        <Text variant="labelSm" color={subFg}>
-          {label}
-        </Text>
-      </Row>
-      <Text variant="headlineSm" color={fg}>
-        {value}
-        {suffix ? (
-          <Text variant="labelSm" color={subFg}>
-            {suffix}
-          </Text>
-        ) : null}
-      </Text>
-      <Row gap={2} align="center">
-        <MaterialIcons
-          name={delta.sign > 0 ? 'arrow-upward' : delta.sign < 0 ? 'arrow-downward' : 'remove'}
-          size={11}
-          color={deltaColor}
-        />
-        <Text variant="labelSm" color={deltaColor}>
-          {delta.label}
-        </Text>
-      </Row>
-    </View>
-  );
 }

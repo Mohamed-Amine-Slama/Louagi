@@ -7,7 +7,7 @@ import { Card } from './Card';
 import { Text } from './Text';
 import { Badge } from './Badge';
 import { Avatar } from './Avatar';
-import { spacing } from '../theme';
+import { spacing, radius, withAlpha } from '../theme';
 import { formatTime } from '../i18n/format';
 
 function fmtDuration(mins) {
@@ -19,21 +19,35 @@ function fmtDuration(mins) {
 
 export function RideCard({ ride, onPress }) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { t, isRTL } = useLocale();
   const r = ride.route;
   const d = ride.driver;
-  const seatTone = ride.available_seats <= 1 ? 'warning' : 'info';
+  const seatTone = ride.available_seats <= 2 ? 'warning' : 'info';
+  const arrow = isRTL ? 'arrow-back' : 'arrow-forward';
+  const duration = fmtDuration(r?.estimated_duration_min);
   return (
-    <Card onPress={onPress} style={{ marginBottom: spacing.md }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+    <Card onPress={onPress} accent={colors.secondaryContainer} style={{ marginBottom: spacing.md }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: spacing.sm,
+        }}
+      >
         <View>
-          <Text variant="headlineMd">{formatTime(ride.departure_time)}</Text>
-          <Text variant="bodySm" color={colors.onSurfaceVariant}>
-            {fmtDuration(r?.estimated_duration_min)}
-          </Text>
+          <Text variant="headlineSm">{formatTime(ride.departure_time)}</Text>
+          {duration ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <MaterialIcons name="schedule" size={13} color={colors.onSurfaceVariant} />
+              <Text variant="bodySm" color={colors.onSurfaceVariant}>
+                {duration}
+              </Text>
+            </View>
+          ) : null}
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Text variant="headlineMd" color={colors.primary}>
+          <Text variant="headlineMd">
             {ride.price_per_seat} {t('common:tnd')}
           </Text>
           <Text variant="labelSm" color={colors.onSurfaceVariant}>
@@ -44,16 +58,45 @@ export function RideCard({ ride, onPress }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
         <View
           style={{
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-            borderWidth: 2,
-            borderColor: colors.secondaryContainer,
+            width: 18,
+            height: 18,
+            borderRadius: radius.full,
+            backgroundColor: withAlpha(colors.secondaryContainer, 0.15),
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
+        >
+          <View
+            style={{
+              width: 11,
+              height: 11,
+              borderRadius: radius.full,
+              borderWidth: 2.5,
+              borderColor: colors.secondaryContainer,
+            }}
+          />
+        </View>
         <Text variant="bodyMd">{r?.origin_city}</Text>
-        <MaterialIcons name="arrow-forward" size={16} color={colors.onSurfaceVariant} />
-        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />
+        <MaterialIcons name={arrow} size={16} color={colors.onSurfaceVariant} />
+        <View
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: radius.full,
+            backgroundColor: withAlpha(colors.primary, 0.12),
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <View
+            style={{
+              width: 11,
+              height: 11,
+              borderRadius: radius.full,
+              backgroundColor: colors.primary,
+            }}
+          />
+        </View>
         <Text variant="bodyMd">{r?.destination_city}</Text>
       </View>
       <View
@@ -69,8 +112,8 @@ export function RideCard({ ride, onPress }) {
         <Avatar name={d?.full_name} size={36} badge={d?.status === 'verified'} />
         <View style={{ flex: 1 }}>
           <Text variant="labelMd">{d?.full_name ?? t('ride:driver')}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <MaterialIcons name="star" size={14} color={colors.secondaryContainer} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <MaterialIcons name="star" size={14} color={colors.warning} />
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
               {(d?.rating ?? 0).toFixed(1)} · {d?.vehicle_brand} {d?.vehicle_model}
             </Text>

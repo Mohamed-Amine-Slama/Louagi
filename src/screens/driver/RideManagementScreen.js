@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Pressable, Linking, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, Linking, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,11 +16,13 @@ import { Badge } from '../../components/Badge';
 import { Avatar } from '../../components/Avatar';
 import { Row, Section } from '../../components/Section';
 import { Banner } from '../../components/Banner';
+import { SkeletonList } from '../../components/Skeleton';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
-import { spacing, radius, typography } from '../../theme';
+import { spacing, radius, typography, withAlpha } from '../../theme';
 import { formatDateTime, statusLabel } from '../../i18n/format';
 
 function StatusBadge({ status, t }) {
@@ -73,9 +75,7 @@ export default function RideManagementScreen() {
   if (!ride) {
     return (
       <Screen>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <SkeletonList count={4} lines={2} />
       </Screen>
     );
   }
@@ -121,15 +121,15 @@ export default function RideManagementScreen() {
           <View style={styles.topNav}>
             <Pressable
               onPress={() => nav.goBack()}
-              style={[styles.backButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+              style={[styles.backButton, { backgroundColor: withAlpha(isDark ? colors.onSurface : colors.onPrimary, 0.2) }]}
             >
-              <MaterialIcons name="arrow-back" size={24} color="#fff" />
+              <MaterialIcons name="arrow-back" size={24} color={isDark ? colors.onSurface : colors.onPrimary} />
             </Pressable>
             <View style={styles.navTitleContainer}>
-              <Text style={styles.navTitle} numberOfLines={1}>
+              <Text style={[styles.navTitle, { color: isDark ? colors.onSurface : colors.onPrimary }]} numberOfLines={1}>
                 {ride.route.origin_city} → {ride.route.destination_city}
               </Text>
-              <Text style={styles.navSubtitle}>{formatDateTime(ride.departure_time)}</Text>
+              <Text style={[styles.navSubtitle, { color: withAlpha(isDark ? colors.onSurface : colors.onPrimary, 0.8) }]}>{formatDateTime(ride.departure_time)}</Text>
             </View>
             <View style={styles.headerSpacer} />
           </View>
@@ -137,23 +137,24 @@ export default function RideManagementScreen() {
 
         {/* Content overlapping header */}
         <View style={styles.contentWrapper}>
-          <Card style={[styles.overlapCard, { shadowColor: isDark ? '#000' : colors.primary }]}>
+          <FadeSlideIn index={0}>
+          <Card style={[styles.overlapCard, { shadowColor: colors.shadow }]}>
             <Row justify="space-between" style={{ marginBottom: spacing.md }}>
               <StatusBadge status={ride.status} t={t} />
-              <View style={styles.earningsBadge}>
-                <MaterialIcons name="payments" size={16} color={colors.success} style={{ marginRight: 4 }} />
-                <Text variant="labelMedium" color={colors.success} style={{ fontWeight: '700' }}>
+              <View style={[styles.earningsBadge, { backgroundColor: withAlpha(colors.success, 0.1) }]}>
+                <MaterialIcons name="payments" size={16} color={colors.success} style={{ marginEnd: 4 }} />
+                <Text variant="labelMd" color={colors.success}>
                   {earnings.toFixed(2)} {t('common:tnd')}
                 </Text>
               </View>
             </Row>
 
             <View style={{ marginBottom: spacing.sm }}>
-              <Row justify="space-between" style={{ marginBottom: 8 }}>
-                <Text variant="labelMedium" color={colors.onSurfaceVariant}>
+              <Row justify="space-between" style={{ marginBottom: spacing.sm }}>
+                <Text variant="labelMd" color={colors.onSurfaceVariant}>
                   {t('driver:seatsCount', { count: sold, total: ride.total_seats })}
                 </Text>
-                <Text variant="labelMedium" color={colors.primary} style={{ fontWeight: '600' }}>
+                <Text variant="labelMd" color={colors.primary}>
                   {Math.round((sold / Math.max(1, ride.total_seats)) * 100)}% {t('driver:occupancy')}
                 </Text>
               </Row>
@@ -180,24 +181,27 @@ export default function RideManagementScreen() {
               />
             )}
           </Card>
+          </FadeSlideIn>
 
+          <FadeSlideIn index={1}>
           <Section title={t('driver:passengers', { count: passengers.length })} style={{ marginTop: spacing.sm }}>
             {passengers.length === 0 ? (
               <Banner variant="info" title={t('driver:noBookingsTitle')} body={t('driver:noBookingsBody')} />
             ) : (
-              passengers.map((p) => (
-                <Card key={p.id} style={[styles.passengerCard, { borderColor: isDark ? colors.outlineVariant : 'transparent', borderWidth: isDark ? 1 : 0, shadowColor: colors.primary, shadowOpacity: 0.06, shadowRadius: 10, elevation: 4 }]}>
+              passengers.map((p, i) => (
+                <FadeSlideIn key={p.id} index={Math.min(i, 8)}>
+                <Card style={[styles.passengerCard, { borderColor: isDark ? colors.outlineVariant : 'transparent', borderWidth: isDark ? 1 : 0, shadowColor: colors.primary, shadowOpacity: 0.06, shadowRadius: 10, elevation: 4 }]}>
                 <Row gap={spacing.md} style={{ alignItems: 'center', marginBottom: spacing.md }}>
                   <Avatar name={p.user?.full_name} size={56} />
                   <View style={{ flex: 1 }}>
-                    <Text variant="titleMedium" style={{ fontWeight: '700' }}>{p.user?.full_name}</Text>
+                    <Text variant="bodyLg">{p.user?.full_name}</Text>
                     <Row gap={spacing.xs} style={{ marginTop: 4, alignItems: 'center' }}>
                       <MaterialIcons name="event-seat" size={14} color={colors.primary} />
-                      <Text variant="labelMedium" color={colors.primary} style={{ fontWeight: '600' }}>
+                      <Text variant="labelMd" color={colors.primary}>
                         {t('common:seatsCount', { count: p.seats_booked })}
                       </Text>
-                      <Text variant="labelMedium" color={colors.onSurfaceVariant}> · </Text>
-                      <Text variant="labelMedium" color={colors.onSurfaceVariant} style={{ fontWeight: '600' }}>
+                      <Text variant="labelMd" color={colors.onSurfaceVariant}> · </Text>
+                      <Text variant="labelMd" color={colors.onSurfaceVariant}>
                         {p.total_price} {t('common:tnd')}
                       </Text>
                     </Row>
@@ -208,28 +212,29 @@ export default function RideManagementScreen() {
                   />
                 </Row>
                 
-                <View style={{ height: 1, backgroundColor: isDark ? colors.surfaceVariant : 'rgba(0,0,0,0.05)', marginVertical: spacing.sm }} />
+                <View style={{ height: 1, backgroundColor: isDark ? colors.surfaceVariant : withAlpha(colors.scrim, 0.05), marginVertical: spacing.sm }} />
                 
                 {p.status !== 'cancelled' && (
                   <Row gap={spacing.md} style={{ justifyContent: 'flex-end', marginTop: spacing.sm }}>
-                    <Pressable
+                    <PressableScale
                       onPress={() => nav.navigate('Chat', {
                         userId: p.user?.id,
                         userName: p.user?.full_name,
                         phoneNumber: p.user?.phone_number,
                       })}
-                      style={({ pressed }) => ({
+                      scaleTo={0.9}
+                      style={{
                         width: 44,
                         height: 44,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: pressed ? colors.secondaryContainerPressed : colors.secondaryContainer,
-                        borderRadius: 22,
-                      })}
+                        backgroundColor: colors.secondaryContainer,
+                        borderRadius: radius.full,
+                      }}
                     >
                       <MaterialIcons name="chat" size={22} color={colors.onSecondaryContainer} />
-                    </Pressable>
-                    <Pressable
+                    </PressableScale>
+                    <PressableScale
                       onPress={() => {
                         const phone = p.user?.phone_number;
                         if (!phone) {
@@ -238,23 +243,26 @@ export default function RideManagementScreen() {
                         }
                         Linking.openURL(`tel:${phone}`);
                       }}
-                      style={({ pressed }) => ({
+                      scaleTo={0.9}
+                      style={{
                         width: 44,
                         height: 44,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: pressed ? colors.primaryContainer : colors.primary,
-                        borderRadius: 22,
-                      })}
+                        backgroundColor: colors.primary,
+                        borderRadius: radius.full,
+                      }}
                     >
                       <MaterialIcons name="call" size={22} color={colors.onPrimary} />
-                    </Pressable>
+                    </PressableScale>
                   </Row>
                 )}
               </Card>
+              </FadeSlideIn>
               ))
             )}
           </Section>
+          </FadeSlideIn>
         </View>
       </ScrollView>
 
@@ -266,6 +274,7 @@ export default function RideManagementScreen() {
             {
               backgroundColor: colors.surface,
               borderTopColor: colors.outlineVariant,
+              shadowColor: colors.shadow,
               paddingBottom: Math.max(insets.bottom, spacing.md),
             },
           ]}
@@ -306,11 +315,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   hero: {
     position: 'absolute',
     top: 0,
@@ -327,7 +331,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -337,12 +341,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   navTitle: {
-    color: '#fff',
     ...typography.titleMedium,
     fontWeight: '700',
   },
   navSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
     ...typography.labelSmall,
   },
   headerSpacer: {
@@ -363,10 +365,9 @@ const styles = StyleSheet.create({
   earningsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.md,
   },
   progressBarContainer: {
     height: 8,
@@ -385,7 +386,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(150, 150, 150, 0.2)',
   },
   actionButton: {
     flex: 1,
@@ -404,7 +404,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     borderTopWidth: 1,
     elevation: 16,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,

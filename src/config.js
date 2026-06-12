@@ -52,6 +52,14 @@ function resolveApiUrl() {
 
 export const apiUrl = resolveApiUrl();
 
+// Production builds must never talk to the API over cleartext — tokens and
+// PII transit every request. Fail fast at startup rather than leak quietly.
+if (!__DEV__ && apiUrl.startsWith('http://')) {
+  throw new Error(
+    `Insecure API URL in production build: ${apiUrl}. Set EXPO_PUBLIC_API_URL to an https:// endpoint.`
+  );
+}
+
 export const useMocks =
   (process.env.EXPO_PUBLIC_USE_MOCKS ?? 'false') === 'true';
 

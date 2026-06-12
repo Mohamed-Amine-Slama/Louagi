@@ -27,6 +27,10 @@ export function LocaleProvider({ children }) {
   // Guards setLocale from being called repeatedly while a change is in flight
   // (avoids racing the RTL reload).
   const switchingRef = useRef(false);
+  const [switching, setSwitching] = useState(false);
+  const reloadTimerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(reloadTimerRef.current), []);
 
   useEffect(() => {
     (async () => {
@@ -61,6 +65,8 @@ export function LocaleProvider({ children }) {
       if (clamped === locale) return;
       if (switchingRef.current) return;
       switchingRef.current = true;
+      setSwitching(true);
+      let reloadScheduled = false;
       try {
         await setSecure(KEY, clamped);
         await i18n.changeLanguage(clamped);
@@ -73,11 +79,22 @@ export function LocaleProvider({ children }) {
           if (!skipReload) {
             // Give React a tick to commit the state before reloading so the
             // user briefly sees translations in the new locale before reload.
-            setTimeout(() => reloadApp(t), 250);
+            // The guard stays held until the reload actually fires so a
+            // second tap during the window can't flip RTL again.
+            reloadScheduled = true;
+            reloadTimerRef.current = setTimeout(() => {
+              reloadTimerRef.current = null;
+              switchingRef.current = false;
+              setSwitching(false);
+              reloadApp(t);
+            }, 250);
           }
         }
       } finally {
-        switchingRef.current = false;
+        if (!reloadScheduled) {
+          switchingRef.current = false;
+          setSwitching(false);
+        }
       }
     },
     [locale, t]
@@ -87,11 +104,12 @@ export function LocaleProvider({ children }) {
     () => ({
       locale,
       setLocale,
+      switching,
       t,
       isRTL: RTL_LOCALES.has(locale),
       ready,
     }),
-    [locale, setLocale, t, ready]
+    [locale, setLocale, switching, t, ready]
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;

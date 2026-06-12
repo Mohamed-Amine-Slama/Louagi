@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Pressable, Dimensions } from 'react-native';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './Text';
 import { useTheme } from '../context/ThemeContext';
 import { useLocale } from '../context/LocaleContext';
-import { radius, spacing, shadows, floatingTabBar } from '../theme';
+import { radius, spacing, shadows, floatingTabBar, withAlpha } from '../theme';
+import { SPRING } from './motion';
 
 // Map navigation route names → MaterialIcons glyph + display label
 const ROUTE_META = {
@@ -33,12 +40,76 @@ function barWidthForTabs(count) {
   return 0.94;
 }
 
+function TabItem({ focused, meta, label, onPress, onLongPress, colors, inactiveColor }) {
+  const focus = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    focus.value = withSpring(focused ? 1 : 0, SPRING);
+  }, [focused, focus]);
+
+  const transparentSecondary = withAlpha(colors.secondaryContainer, 0);
+
+  const circleStyle = useAnimatedStyle(() => {
+    const size = INACTIVE_SIZE + (ACTIVE_SIZE - INACTIVE_SIZE) * focus.value;
+    return {
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: interpolateColor(
+        focus.value,
+        [0, 1],
+        [transparentSecondary, colors.secondaryContainer]
+      ),
+    };
+  });
+
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={focused ? { selected: true } : {}}
+      accessibilityLabel={label}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        gap: 2,
+      }}
+    >
+      <Animated.View
+        style={[
+          {
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          circleStyle,
+        ]}
+      >
+        <MaterialIcons
+          name={meta.icon}
+          size={focused ? 26 : 20}
+          color={focused ? colors.onSecondaryContainer : inactiveColor}
+        />
+      </Animated.View>
+      <Text
+        variant="labelXs"
+        color={focused ? colors.onPrimary : inactiveColor}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export function FloatingTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t } = useLocale();
   const screen = Dimensions.get('window');
   const widthFrac = barWidthForTabs(state.routes.length);
+  const inactiveColor = isDark ? withAlpha(colors.onPrimary, 0.75) : colors.onPrimaryContainer;
 
   return (
     <View
@@ -87,47 +158,17 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
             navigation.emit({ type: 'tabLongPress', target: route.key });
           };
 
-          const size = focused ? ACTIVE_SIZE : INACTIVE_SIZE;
           return (
-            <Pressable
+            <TabItem
               key={route.key}
-              accessibilityRole="tab"
-              accessibilityState={focused ? { selected: true } : {}}
-              accessibilityLabel={label}
+              focused={focused}
+              meta={meta}
+              label={label}
               onPress={onPress}
               onLongPress={onLongPress}
-              style={{
-                flex: 1,
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              <View
-                style={{
-                  width: size,
-                  height: size,
-                  borderRadius: size / 2,
-                  overflow: 'hidden',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: focused ? colors.secondaryContainer : 'transparent',
-                }}
-              >
-                <MaterialIcons
-                  name={meta.icon}
-                  size={focused ? 26 : 20}
-                  color={focused ? colors.onSecondaryContainer : colors.onPrimaryContainer}
-                />
-              </View>
-              <Text
-                variant="labelSm"
-                color={focused ? colors.onPrimary : colors.onPrimaryContainer}
-                numberOfLines={1}
-                style={{ fontSize: 10, fontWeight: focused ? '700' : '500' }}
-              >
-                {label}
-              </Text>
-            </Pressable>
+              colors={colors}
+              inactiveColor={inactiveColor}
+            />
           );
         })}
       </View>

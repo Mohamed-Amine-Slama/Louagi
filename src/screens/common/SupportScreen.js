@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -10,7 +10,9 @@ import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Banner } from '../../components/Banner';
+import { Chip } from '../../components/Chip';
 import { Section, Row, Stack } from '../../components/Section';
+import { FadeSlideIn } from '../../components/motion';
 
 import { usersApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -92,33 +94,19 @@ export default function SupportScreen() {
         showBack
       />
 
-      <View style={{ gap: spacing.sm }}>
+      <FadeSlideIn index={0}>
         <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-          {TABS.map((tab) => {
-            const active = tab.key === section;
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => setSection(tab.key)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: 8,
-                  borderRadius: radius.full,
-                  backgroundColor: active ? colors.primary : colors.surfaceContainer,
-                }}
-              >
-                <MaterialIcons name={tab.icon} size={16} color={active ? colors.onPrimary : colors.primary} />
-                <Text variant="labelSm" color={active ? colors.onPrimary : colors.onSurface}>
-                  {t(tab.label)}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {TABS.map((tab) => (
+            <Chip
+              key={tab.key}
+              icon={tab.icon}
+              label={t(tab.label)}
+              selected={tab.key === section}
+              onPress={() => setSection(tab.key)}
+            />
+          ))}
         </Row>
-      </View>
+      </FadeSlideIn>
 
       {section === 'help' ? <HelpPanel /> : null}
       {section === 'contact' ? (
@@ -156,54 +144,60 @@ function HelpPanel() {
     { icon: 'verified-user', title: t('support:faqSafetyTitle'), body: t('support:faqSafetyBody') },
   ];
   return (
-    <Section title={t('support:helpIntro')}>
-      <Stack gap={spacing.sm}>
-        {items.map((item) => (
-          <InfoCard key={item.title} icon={item.icon} title={item.title} body={item.body} />
-        ))}
-      </Stack>
-    </Section>
+    <FadeSlideIn index={1}>
+      <Section title={t('support:helpIntro')}>
+        <Stack gap={spacing.sm}>
+          {items.map((item, i) => (
+            <FadeSlideIn key={item.title} index={Math.min(i, 8)}>
+              <InfoCard icon={item.icon} title={item.title} body={item.body} />
+            </FadeSlideIn>
+          ))}
+        </Stack>
+      </Section>
+    </FadeSlideIn>
   );
 }
 
 function ContactPanel({ topic, setTopic, message, setMessage, errors, ticket, sending, submitTicket }) {
   const { t } = useLocale();
   return (
-    <Section title={t('support:contactIntro')}>
-      <Card>
-        <Stack gap={spacing.md}>
-          {ticket ? (
-            <Banner
-              variant="success"
-              title={t('support:ticketCreated')}
-              body={t('support:ticketCreatedBody', { id: ticket?.id?.slice(0, 6)?.toUpperCase() || '—' })}
+    <FadeSlideIn index={1}>
+      <Section title={t('support:contactIntro')}>
+        <Card>
+          <Stack gap={spacing.md}>
+            {ticket ? (
+              <Banner
+                variant="success"
+                title={t('support:ticketCreated')}
+                body={t('support:ticketCreatedBody', { id: ticket?.id?.slice(0, 6)?.toUpperCase() || '—' })}
+              />
+            ) : null}
+            <Input
+              label={t('support:topic')}
+              value={topic}
+              onChangeText={setTopic}
+              iconLeft="subject"
+              error={errors.topic}
             />
-          ) : null}
-          <Input
-            label={t('support:topic')}
-            value={topic}
-            onChangeText={setTopic}
-            iconLeft="subject"
-            error={errors.topic}
-          />
-          <Input
-            label={t('support:message')}
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            iconLeft="message"
-            error={errors.message}
-          />
-          <Button
-            label={t('support:sendMessage')}
-            variant="secondary"
-            iconRight="send"
-            loading={sending}
-            onPress={submitTicket}
-          />
-        </Stack>
-      </Card>
-    </Section>
+            <Input
+              label={t('support:message')}
+              value={message}
+              onChangeText={setMessage}
+              multiline
+              iconLeft="message"
+              error={errors.message}
+            />
+            <Button
+              label={t('support:sendMessage')}
+              variant="secondary"
+              iconRight="send"
+              loading={sending}
+              onPress={submitTicket}
+            />
+          </Stack>
+        </Card>
+      </Section>
+    </FadeSlideIn>
   );
 }
 
@@ -221,18 +215,22 @@ function LegalPanel({ mode }) {
   ];
   const items = mode === 'terms' ? terms : privacy;
   return (
-    <Section title={mode === 'terms' ? t('passenger:terms') : t('passenger:privacy')}>
-      <Stack gap={spacing.sm}>
-        {items.map((item) => (
-          <Card key={item.title}>
-            <Stack gap={spacing.xs}>
-              <Text variant="labelMd">{item.title}</Text>
-              <Text variant="bodySm">{item.body}</Text>
-            </Stack>
-          </Card>
-        ))}
-      </Stack>
-    </Section>
+    <FadeSlideIn index={1}>
+      <Section title={mode === 'terms' ? t('passenger:terms') : t('passenger:privacy')}>
+        <Stack gap={spacing.sm}>
+          {items.map((item, i) => (
+            <FadeSlideIn key={item.title} index={Math.min(i, 8)}>
+              <Card>
+                <Stack gap={spacing.xs}>
+                  <Text variant="labelMd">{item.title}</Text>
+                  <Text variant="bodySm">{item.body}</Text>
+                </Stack>
+              </Card>
+            </FadeSlideIn>
+          ))}
+        </Stack>
+      </Section>
+    </FadeSlideIn>
   );
 }
 
@@ -240,46 +238,48 @@ function DataPanel({ exportData, exportSummary, exporting, prepareExport }) {
   const { colors } = useTheme();
   const { t } = useLocale();
   return (
-    <Section title={t('support:dataIntro')}>
-      <Card>
-        <Stack gap={spacing.md}>
-          <Text variant="bodyMd" color={colors.onSurfaceVariant}>
-            {t('support:dataBody')}
-          </Text>
-          <Button
-            label={exportData ? t('support:refreshExport') : t('support:prepareExport')}
-            variant="secondary"
-            iconRight="download"
-            loading={exporting}
-            onPress={prepareExport}
-          />
-          {exportData ? (
-            <>
-              <Banner
-                variant="success"
-                title={t('support:exportReady')}
-                body={t('support:exportReadyBody', {
-                  bookings: exportSummary.bookings,
-                  deliveries: exportSummary.deliveries,
-                  tickets: exportSummary.tickets,
-                })}
-              />
-              <View
-                style={{
-                  backgroundColor: colors.surfaceContainer,
-                  borderRadius: radius.lg,
-                  padding: spacing.md,
-                }}
-              >
-                <Text variant="labelSm" selectable numberOfLines={8}>
-                  {JSON.stringify(exportData, null, 2)}
-                </Text>
-              </View>
-            </>
-          ) : null}
-        </Stack>
-      </Card>
-    </Section>
+    <FadeSlideIn index={1}>
+      <Section title={t('support:dataIntro')}>
+        <Card>
+          <Stack gap={spacing.md}>
+            <Text variant="bodyMd" color={colors.onSurfaceVariant}>
+              {t('support:dataBody')}
+            </Text>
+            <Button
+              label={exportData ? t('support:refreshExport') : t('support:prepareExport')}
+              variant="secondary"
+              iconRight="download"
+              loading={exporting}
+              onPress={prepareExport}
+            />
+            {exportData ? (
+              <>
+                <Banner
+                  variant="success"
+                  title={t('support:exportReady')}
+                  body={t('support:exportReadyBody', {
+                    bookings: exportSummary.bookings,
+                    deliveries: exportSummary.deliveries,
+                    tickets: exportSummary.tickets,
+                  })}
+                />
+                <View
+                  style={{
+                    backgroundColor: colors.surfaceContainer,
+                    borderRadius: radius.lg,
+                    padding: spacing.md,
+                  }}
+                >
+                  <Text variant="labelSm" selectable numberOfLines={8}>
+                    {JSON.stringify(exportData, null, 2)}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+          </Stack>
+        </Card>
+      </Section>
+    </FadeSlideIn>
   );
 }
 
@@ -292,13 +292,13 @@ function InfoCard({ icon, title, body }) {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 20,
+            borderRadius: radius.full,
             backgroundColor: colors.primaryFixed,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <MaterialIcons name={icon} size={20} color={colors.primary} />
+          <MaterialIcons name={icon} size={20} color={colors.onPrimaryFixed} />
         </View>
         <Stack gap={4} style={{ flex: 1 }}>
           <Text variant="labelMd">{title}</Text>

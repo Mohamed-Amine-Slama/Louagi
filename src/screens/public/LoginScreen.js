@@ -4,6 +4,7 @@ import { useLocale } from '../../context/LocaleContext';
 import { View, Pressable, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -12,11 +13,13 @@ import { Button } from '../../components/Button';
 import { Input, PhoneInput, OtpInput } from '../../components/Input';
 import { Banner } from '../../components/Banner';
 import { Stack, Row } from '../../components/Section';
+import { SkeletonCard } from '../../components/Skeleton';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { authApi } from '../../api';
-import { spacing, radius } from '../../theme';
+import { spacing, radius, withAlpha } from '../../theme';
 import {
   getBiometricCapability,
   promptBiometric,
@@ -27,8 +30,8 @@ import {
 } from '../../security/biometric';
 
 export default function LoginScreen() {
-  const { colors } = useTheme();
-  const { t } = useLocale();
+  const { colors, isDark } = useTheme();
+  const { t, isRTL } = useLocale();
   const nav = useNavigation();
   const { applySession } = useAuth();
   const toast = useToast();
@@ -151,34 +154,40 @@ export default function LoginScreen() {
 
   const lockSecs = lockedUntil > Date.now() ? Math.ceil((lockedUntil - Date.now()) / 1000) : 0;
 
+  const heroText = isDark ? colors.onSurface : colors.onPrimary;
+  const heroSub = withAlpha(heroText, 0.8);
+
   return (
     <Screen padded={false}>
-      <View
+      <LinearGradient
+        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: colors.primary,
           paddingHorizontal: spacing.containerMargin,
           paddingTop: spacing.xl,
           paddingBottom: spacing.xl,
-          alignItems: 'center',
-          gap: spacing.sm,
-          borderBottomLeftRadius: 28,
-          borderBottomRightRadius: 28,
+          borderBottomLeftRadius: radius.xxl,
+          borderBottomRightRadius: radius.xxl,
         }}
       >
-        <Logo size={56} />
-        <Text variant="displayLg" color={colors.onPrimary}>
-          {t('common:appName')}
-        </Text>
-        <Text variant="bodyMd" color={colors.onPrimaryContainer}>
-          {t('landing:heroSubtitle')}
-        </Text>
-      </View>
+        <FadeSlideIn index={0} style={{ alignItems: 'center', gap: spacing.sm }}>
+          <Logo size={56} />
+          <Text variant="displayLg" color={heroText}>
+            {t('common:appName')}
+          </Text>
+          <Text variant="bodyMd" color={heroSub}>
+            {t('landing:heroSubtitle')}
+          </Text>
+        </FadeSlideIn>
+      </LinearGradient>
       <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.lg, gap: spacing.md }}>
         {!biometricChecked ? (
-          <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-            <ActivityIndicator color={colors.primary} />
-          </View>
+          <FadeSlideIn index={1}>
+            <SkeletonCard lines={3} />
+          </FadeSlideIn>
         ) : step === 'biometric' ? (
+          <FadeSlideIn index={1}>
           <Stack gap={spacing.md}>
             <Text variant="headlineMd">
               {biometricInfo.credential?.userName
@@ -191,31 +200,34 @@ export default function LoginScreen() {
                 : t('auth:biometricSignInBody')}
             </Text>
 
-            <Pressable
+            <PressableScale
               onPress={runBiometricLogin}
               disabled={loading}
-              style={({ pressed }) => ({
-                alignSelf: 'center',
-                width: 132,
-                height: 132,
-                borderRadius: 66,
-                backgroundColor: colors.primaryFixed,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed || loading ? 0.7 : 1,
-                marginVertical: spacing.md,
-              })}
+              scaleTo={0.93}
+              style={[
+                {
+                  alignSelf: 'center',
+                  width: 132,
+                  height: 132,
+                  borderRadius: radius.full,
+                  backgroundColor: colors.primaryFixed,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginVertical: spacing.md,
+                },
+                loading ? { opacity: 0.7 } : null,
+              ]}
             >
               {loading ? (
-                <ActivityIndicator color={colors.primary} size="large" />
+                <ActivityIndicator color={colors.onPrimaryFixed} size="large" />
               ) : (
                 <MaterialIcons
                   name={biometricInfo.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}
                   size={72}
-                  color={colors.primary}
+                  color={colors.onPrimaryFixed}
                 />
               )}
-            </Pressable>
+            </PressableScale>
 
             {error ? (
               <Text variant="labelSm" color={colors.error} style={{ textAlign: 'center' }}>
@@ -229,23 +241,24 @@ export default function LoginScreen() {
               onPress={runBiometricLogin}
               loading={loading}
             />
-            <Pressable
+            <PressableScale
               onPress={() => {
                 setError(null);
                 setStep('credentials');
               }}
-              style={({ pressed }) => ({
+              style={{
                 alignSelf: 'center',
                 paddingVertical: spacing.sm,
-                opacity: pressed ? 0.7 : 1,
-              })}
+              }}
             >
               <Text variant="labelMd" color={colors.primary}>
                 {t('auth:usePhonePassword')}
               </Text>
-            </Pressable>
+            </PressableScale>
           </Stack>
+          </FadeSlideIn>
         ) : step === 'credentials' ? (
+          <FadeSlideIn index={1}>
           <Stack gap={spacing.md}>
             <Text variant="headlineMd">{t('auth:welcomeBack')}</Text>
             {lockSecs > 0 ? (
@@ -276,7 +289,7 @@ export default function LoginScreen() {
               loading={loading}
               disabled={lockSecs > 0}
             />
-            <Row justify="center" gap={4}>
+            <Row justify="center" gap={spacing.xs}>
               <Text variant="bodySm" color={colors.onSurfaceVariant}>
                 {t('auth:noAccount')}
               </Text>
@@ -287,23 +300,26 @@ export default function LoginScreen() {
               </Pressable>
             </Row>
           </Stack>
+          </FadeSlideIn>
         ) : (
+          <FadeSlideIn index={1}>
           <Stack gap={spacing.md}>
-            <Pressable
+            <PressableScale
               onPress={() => setStep('credentials')}
               accessibilityRole="button"
               accessibilityLabel={t('common:back')}
+              scaleTo={0.9}
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 20,
+                borderRadius: radius.full,
                 backgroundColor: colors.surfaceContainer,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="arrow-back" size={20} color={colors.onSurface} />
-            </Pressable>
+              <MaterialIcons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={20} color={colors.onSurface} />
+            </PressableScale>
             <Text variant="headlineMd">{t('auth:verifyPhone')}</Text>
             <Text variant="bodyMd" color={colors.onSurfaceVariant}>
               {t('auth:verifyPhoneSubtitle', { phone: phone.replace(/\D/g, '') })}
@@ -336,6 +352,7 @@ export default function LoginScreen() {
             </Row>
             <Button label={t('auth:verify')} onPress={onOtp} loading={loading} disabled={otp.length !== 6} />
           </Stack>
+          </FadeSlideIn>
         )}
       </View>
     </Screen>

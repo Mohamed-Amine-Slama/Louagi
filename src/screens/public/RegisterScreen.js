@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -15,11 +15,15 @@ import { PasswordStrength } from '../../components/PasswordStrength';
 import { Banner } from '../../components/Banner';
 import { Stack, Row } from '../../components/Section';
 import { ScreenHeader } from '../../components/Header';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
+import { Badge } from '../../components/Badge';
 
 import { authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
+import { LegalDocModal } from './LegalDocModal';
+import { validateName, validateTunisianPhone, validateEmail, validatePassword } from '../../validation/schemas';
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
@@ -39,21 +43,49 @@ export default function RegisterScreen() {
   const [userId, setUserId] = useState(null);
   const [devOtp, setDevOtp] = useState(null);
 
+  // Legal agreement state
+  const [readToS, setReadToS] = useState(false);
+  const [readPrivacy, setReadPrivacy] = useState(false);
+  const [readRefunds, setReadRefunds] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [modalKey, setModalKey] = useState(null);
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const onSubmitDetails = async () => {
+  const onSubmitDetails = () => {
+    const errs = {};
+    const nameErr = validateName(fullName);
+    const phoneErr = validateTunisianPhone(phone);
+    const emailErr = validateEmail(email);
+    const pwErr = validatePassword(password);
+
+    if (nameErr) errs.fullName = t('errors:nameShort');
+    if (phoneErr) errs.phone = t('errors:phoneFormat');
+    if (emailErr) errs.email = t('errors:emailInvalid');
+    if (pwErr) errs.password = t('errors:passwordMin');
+
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
+    setErrors({});
+    setStep(1); // Advance to legal agreement step
+  };
+
+  const onAgreeAndRegister = async () => {
     setErrors({});
     setLoading(true);
     const res = await authApi.register({ fullName, phone, email, password, role });
     setLoading(false);
     if (!res.ok) {
-      setErrors(res.errors || {});
+      setErrors(res.errors || { general: res.error });
+      setStep(0); // Go back to details to fix mistakes
       return;
     }
     setUserId(res.userId);
     setDevOtp(res.devOtp);
-    setStep(1);
+    setStep(2); // Advance to OTP verification
   };
 
   const onVerify = async () => {
@@ -72,14 +104,26 @@ export default function RegisterScreen() {
     }
   };
 
+  const allRead = readToS && readPrivacy && readRefunds;
+  const canContinueLegal = allRead && agreed;
+
   return (
     <Screen>
       <ScreenHeader title={t('auth:createAccount')} subtitle={t('auth:createAccountSubtitle')} showBack />
       <View style={{ paddingHorizontal: 0, gap: spacing.lg }}>
-        <StepIndicator steps={['1', '2', '3']} current={step} />
+        <FadeSlideIn index={0}>
+          <StepIndicator 
+            steps={[t('auth:stepDetails'), t('auth:stepLegal'), t('auth:stepVerify')]} 
+            current={step} 
+          />
+        </FadeSlideIn>
 
         {step === 0 ? (
+          <FadeSlideIn index={1}>
           <Stack gap={spacing.md}>
+            {errors.general ? (
+              <Banner variant="error" title={t('errors:otpFailed')} body={errors.general} />
+            ) : null}
             <Input
               label={t('auth:fullName')}
               value={fullName}
@@ -116,7 +160,82 @@ export default function RegisterScreen() {
               loading={loading}
             />
           </Stack>
+          </FadeSlideIn>
+        ) : step === 1 ? (
+          <FadeSlideIn index={1}>
+          <Stack gap={spacing.md}>
+            <Text variant="headlineMd">{t('auth:stepLegalTitle')}</Text>
+            <Text variant="bodyMd" color={colors.onSurfaceVariant}>
+              {t('auth:stepLegalSubtitle')}
+            </Text>
+
+            <Card onPress={() => setModalKey('terms')}>
+              <Row justify="space-between" align="center">
+                <Text variant="labelLg">{t('passenger:terms')}</Text>
+                <Badge
+                  label={readToS ? t('auth:read') : t('auth:unread')}
+                  variant={readToS ? 'success' : 'warning'}
+                  icon={readToS ? 'check' : 'error'}
+                />
+              </Row>
+            </Card>
+
+            <Card onPress={() => setModalKey('privacy')}>
+              <Row justify="space-between" align="center">
+                <Text variant="labelLg">{t('passenger:privacy')}</Text>
+                <Badge
+                  label={readPrivacy ? t('auth:read') : t('auth:unread')}
+                  variant={readPrivacy ? 'success' : 'warning'}
+                  icon={readPrivacy ? 'check' : 'error'}
+                />
+              </Row>
+            </Card>
+
+            <Card onPress={() => setModalKey('refunds')}>
+              <Row justify="space-between" align="center">
+                <Text variant="labelLg">{t('auth:refundPolicy')}</Text>
+                <Badge
+                  label={readRefunds ? t('auth:read') : t('auth:unread')}
+                  variant={readRefunds ? 'success' : 'warning'}
+                  icon={readRefunds ? 'check' : 'error'}
+                />
+              </Row>
+            </Card>
+
+            <PressableScale onPress={() => setAgreed(!agreed)}>
+              <Row gap={spacing.sm} align="center" style={{ paddingVertical: spacing.xs }}>
+                <MaterialIcons
+                  name={agreed ? 'check-box' : 'check-box-outline-blank'}
+                  size={24}
+                  color={agreed ? colors.primary : colors.outline}
+                />
+                <Text variant="bodyMd" style={{ flex: 1 }}>{t('auth:agreeCheckbox')}</Text>
+              </Row>
+            </PressableScale>
+
+            <Row gap={spacing.sm}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label={t('common:back')}
+                  variant="outline"
+                  onPress={() => setStep(0)}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label={t('common:continue')}
+                  variant="primary"
+                  iconRight="arrow-forward"
+                  onPress={onAgreeAndRegister}
+                  loading={loading}
+                  disabled={!canContinueLegal}
+                />
+              </View>
+            </Row>
+          </Stack>
+          </FadeSlideIn>
         ) : (
+          <FadeSlideIn index={1}>
           <Stack gap={spacing.md}>
             <Text variant="headlineMd">{t('auth:verifyPhone')}</Text>
             <Text variant="bodyMd" color={colors.onSurfaceVariant}>
@@ -138,8 +257,22 @@ export default function RegisterScreen() {
               disabled={otp.length !== 6}
             />
           </Stack>
+          </FadeSlideIn>
         )}
       </View>
+
+      <LegalDocModal
+        visible={!!modalKey}
+        docKey={modalKey}
+        onClose={(accepted) => {
+          if (accepted) {
+            if (modalKey === 'terms') setReadToS(true);
+            if (modalKey === 'privacy') setReadPrivacy(true);
+            if (modalKey === 'refunds') setReadRefunds(true);
+          }
+          setModalKey(null);
+        }}
+      />
     </Screen>
   );
 }
@@ -159,9 +292,10 @@ function RoleSelector({ role, onChange }) {
         ].map((opt) => {
           const selected = opt.key === role;
           return (
-            <Pressable
+            <PressableScale
               key={opt.key}
               onPress={() => onChange(opt.key)}
+              scaleTo={0.95}
               style={{
                 flex: 1,
                 padding: spacing.md,
@@ -184,7 +318,7 @@ function RoleSelector({ role, onChange }) {
               >
                 {opt.label}
               </Text>
-            </Pressable>
+            </PressableScale>
           );
         })}
       </View>

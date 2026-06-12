@@ -60,4 +60,5 @@ export const colorsDark = {
   warningContainer: '#5c4300',
   onWarningContainer: '#ffdf9e',
   shadow: '#000000',
+  scrim: '#000000',
 };

@@ -1,11 +1,61 @@
 import React, { useState } from 'react';
 import { View, Modal, Pressable, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLocale } from '../context/LocaleContext';
 import { Text } from './Text';
 import { Button } from './Button';
 import { spacing, radius, withAlpha } from '../theme';
+import { SPRING } from './motion';
+
+const sheetEntering = () => {
+  'worklet';
+  return {
+    initialValues: {
+      opacity: 0,
+      transform: [{ translateY: 48 }, { scale: 0.95 }],
+    },
+    animations: {
+      opacity: withTiming(1, { duration: 180 }),
+      transform: [
+        { translateY: withSpring(0, SPRING) },
+        { scale: withSpring(1, SPRING) },
+      ],
+    },
+  };
+};
+
+function Star({ filled, onSelect }) {
+  const { colors } = useTheme();
+  const scale = useSharedValue(1);
+  const starStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  return (
+    <Pressable
+      onPress={() => {
+        scale.value = withSequence(withTiming(1.25, { duration: 90 }), withSpring(1, SPRING));
+        onSelect();
+      }}
+      style={{ padding: 4 }}
+    >
+      <Animated.View style={starStyle}>
+        <MaterialIcons
+          name={filled ? 'star' : 'star-border'}
+          size={48}
+          color={filled ? colors.warning : colors.outline}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export function RateDriverModal({ visible, onClose, onSubmit, driverName }) {
   const { colors, isDark } = useTheme();
@@ -39,16 +89,17 @@ export function RateDriverModal({ visible, onClose, onSubmit, driverName }) {
         <View
           style={{
             flex: 1,
-            backgroundColor: withAlpha('#000000', 0.5),
+            backgroundColor: withAlpha(colors.scrim, 0.5),
             justifyContent: 'flex-end',
           }}
         >
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <View
+            <Animated.View
+              entering={sheetEntering}
               style={{
                 backgroundColor: colors.surface,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
+                borderTopStartRadius: radius.xxl,
+                borderTopEndRadius: radius.xxl,
                 padding: spacing.lg,
                 paddingBottom: Platform.OS === 'ios' ? 40 : spacing.lg,
               }}
@@ -67,20 +118,7 @@ export function RateDriverModal({ visible, onClose, onSubmit, driverName }) {
               {/* Stars */}
               <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.xl }}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Pressable
-                    key={star}
-                    onPress={() => setRating(star)}
-                    style={({ pressed }) => ({
-                      transform: [{ scale: pressed ? 0.9 : 1 }],
-                      padding: 4,
-                    })}
-                  >
-                    <MaterialIcons
-                      name={star <= rating ? 'star' : 'star-border'}
-                      size={48}
-                      color={star <= rating ? colors.primary : colors.outline}
-                    />
-                  </Pressable>
+                  <Star key={star} filled={star <= rating} onSelect={() => setRating(star)} />
                 ))}
               </View>
 
@@ -110,7 +148,7 @@ export function RateDriverModal({ visible, onClose, onSubmit, driverName }) {
                 disabled={rating === 0}
                 variant="primary"
               />
-            </View>
+            </Animated.View>
           </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>

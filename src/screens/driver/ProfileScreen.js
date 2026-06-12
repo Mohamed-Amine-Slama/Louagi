@@ -5,6 +5,7 @@ import { View, Switch, Pressable, ScrollView, Modal, FlatList } from 'react-nati
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
 import { Card } from '../../components/Card';
@@ -14,6 +15,9 @@ import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
 import { Row, Section } from '../../components/Section';
+import { KpiTile } from '../../components/KpiTile';
+import { SkeletonList } from '../../components/Skeleton';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { driversApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -39,7 +43,7 @@ function expiryWarning(iso, t) {
 }
 
 export default function DriverProfile() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t, locale } = useLocale();
   const { user, signOut } = useAuth();
   const nav = useNavigation();
@@ -190,27 +194,36 @@ export default function DriverProfile() {
     toast.show(t('toast:payoutSaved'), 'success');
   };
 
-  if (!profile) return <Screen />;
+  if (!profile) {
+    return (
+      <Screen>
+        <SkeletonList count={4} lines={2} />
+      </Screen>
+    );
+  }
 
   const lic = expiryWarning(profile.license_expires_at, t);
   const idc = expiryWarning(profile.id_expires_at, t);
   const memberSince = formatMonthYear(profile.created_at || new Date(), { locale });
+  const heroFg = isDark ? colors.onSurface : colors.onPrimary;
 
   return (
     <Screen padded={false}>
-      <View
+      <LinearGradient
+        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: colors.primary,
           paddingHorizontal: spacing.containerMargin,
           paddingTop: spacing.md,
           paddingBottom: spacing.xl,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
+          borderBottomLeftRadius: radius.xxl,
+          borderBottomRightRadius: radius.xxl,
           gap: spacing.md,
         }}
       >
         <Row justify="space-between">
-          <Text variant="headlineMd" color={colors.onPrimary}>
+          <Text variant="headlineMd" color={heroFg}>
             {t('driver:driverProfile')}
           </Text>
           <View
@@ -218,10 +231,10 @@ export default function DriverProfile() {
               paddingHorizontal: spacing.sm,
               paddingVertical: 4,
               borderRadius: radius.full,
-              backgroundColor: withAlpha(colors.onPrimary, 0.12),
+              backgroundColor: withAlpha(heroFg, 0.12),
             }}
           >
-            <Text variant="labelSm" color={colors.onPrimary}>
+            <Text variant="labelSm" color={heroFg}>
               {t('passenger:driverShort')}
             </Text>
           </View>
@@ -231,21 +244,21 @@ export default function DriverProfile() {
             style={{
               width: 72,
               height: 72,
-              borderRadius: 36,
+              borderRadius: radius.full,
               backgroundColor: colors.secondaryContainer,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text variant="displaySm" color={colors.onSecondaryContainer}>
+            <Text variant="headlineMd" color={colors.onSecondaryContainer}>
               {profile.full_name?.charAt(0) || user?.name?.charAt(0) || 'D'}
             </Text>
           </View>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="headlineSm" color={colors.onPrimary}>
+            <Text variant="headlineSm" color={heroFg}>
               {profile.full_name || user?.name}
             </Text>
-            <Text variant="bodySm" color={withAlpha(colors.onPrimary, 0.8)}>
+            <Text variant="bodySm" color={withAlpha(heroFg, 0.8)}>
               {user?.phone_number}
             </Text>
             <Row gap={spacing.xs} style={{ flexWrap: 'wrap', marginTop: 4 }}>
@@ -254,7 +267,7 @@ export default function DriverProfile() {
             </Row>
           </View>
         </Row>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         contentContainerStyle={{
@@ -263,11 +276,14 @@ export default function DriverProfile() {
           paddingBottom: 100,
         }}
       >
-        <Row gap={spacing.sm}>
-          <StatTile icon="star" value={(profile.rating ?? 0).toFixed(1)} label={t('driver:ratingLifetime', { count: profile.trips_completed ?? 0 })} />
-          <StatTile icon="route" value={profile.trips_completed ?? 0} label={t('driver:tripsCompleted', { count: profile.trips_completed ?? 0 })} />
-        </Row>
+        <FadeSlideIn index={0}>
+          <Row gap={spacing.sm}>
+            <KpiTile icon="star" tone="warning" value={(profile.rating ?? 0).toFixed(1)} label={t('driver:ratingLifetime', { count: profile.trips_completed ?? 0 })} />
+            <KpiTile icon="route" tone="primary" value={String(profile.trips_completed ?? 0)} label={t('driver:tripsCompleted', { count: profile.trips_completed ?? 0 })} />
+          </Row>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={1}>
         <Section title={t('driver:vehicle')}>
           <Card>
             <Row gap={spacing.sm} style={{ marginBottom: spacing.sm }}>
@@ -290,7 +306,9 @@ export default function DriverProfile() {
             <Button label={t('driver:saveVehicle')} variant="secondary" onPress={saveVehicle} loading={busy} />
           </Card>
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={2}>
         <Section title={t('driver:documents')}>
           <Card>
             <SettingRow
@@ -313,7 +331,9 @@ export default function DriverProfile() {
             />
           ) : null}
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={3}>
         <Section title={t('driver:payout')}>
           <Card>
             <Input
@@ -327,7 +347,9 @@ export default function DriverProfile() {
             </View>
           </Card>
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={4}>
         <Section title={t('passenger:security')}>
           <Card>
             <SettingRow
@@ -365,7 +387,9 @@ export default function DriverProfile() {
             />
           </Card>
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={5}>
         <Section title={t('driver:activeSessions')}>
           <Card>
             <LinkRow
@@ -375,7 +399,9 @@ export default function DriverProfile() {
             />
           </Card>
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={6}>
         <Section title={t('driver:privacyAndData')}>
           <Card>
             <LinkRow icon="download" title={t('driver:exportMyData')} onPress={() => nav.navigate('Support', { section: 'data' })} />
@@ -383,7 +409,9 @@ export default function DriverProfile() {
             <LinkRow icon="delete-forever" title={t('driver:deleteAccount')} onPress={onRequestDataDeletion} />
           </Card>
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={7}>
         <Section title={t('driver:policies')}>
           <Card>
             <LinkRow icon="gavel" title={t('driver:termsOfService')} onPress={() => nav.navigate('Support', { section: 'terms' })} />
@@ -391,7 +419,9 @@ export default function DriverProfile() {
             <LinkRow icon="policy" title={t('driver:privacyPolicy')} onPress={() => nav.navigate('Support', { section: 'privacy' })} />
           </Card>
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={8}>
         <Section title={t('passenger:support')}>
           <Card>
             <LinkRow icon="help" title={t('passenger:helpCentre')} onPress={() => nav.navigate('Support', { section: 'help' })} />
@@ -399,13 +429,16 @@ export default function DriverProfile() {
             <LinkRow icon="mail" title={t('passenger:contactSupport')} onPress={() => nav.navigate('Support', { section: 'contact' })} />
           </Card>
         </Section>
+        </FadeSlideIn>
 
+        <FadeSlideIn index={8}>
         <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
           <Button label={t('common:logout')} variant="outline" iconLeft="logout" onPress={signOut} />
           <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ textAlign: 'center' }}>
             {t('passenger:versionFooter')}
           </Text>
         </View>
+        </FadeSlideIn>
       </ScrollView>
       <SessionsModal
         visible={sessionsModal}
@@ -419,7 +452,8 @@ export default function DriverProfile() {
 
 // Reusable components matching PassengerProfile
 function BadgeChip({ icon, label }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const fg = isDark ? colors.onSurface : colors.onPrimary;
   return (
     <View
       style={{
@@ -429,35 +463,16 @@ function BadgeChip({ icon, label }) {
         paddingHorizontal: spacing.sm,
         paddingVertical: 6,
         borderRadius: radius.full,
-        backgroundColor: withAlpha(colors.onPrimary, 0.14),
+        backgroundColor: withAlpha(fg, 0.14),
         maxWidth: '100%',
         flexShrink: 1,
       }}
     >
-      <MaterialIcons name={icon} size={14} color={colors.onPrimary} />
-      <Text variant="labelSm" color={colors.onPrimary} numberOfLines={1} style={{ flexShrink: 1 }}>
+      <MaterialIcons name={icon} size={14} color={fg} />
+      <Text variant="labelSm" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
         {label}
       </Text>
     </View>
-  );
-}
-
-function StatTile({ icon, value, label }) {
-  const { colors } = useTheme();
-  return (
-    <Card style={{ flex: 1, paddingVertical: spacing.md, alignItems: 'flex-start', gap: 6 }}>
-      <View
-        style={{
-          width: 36, height: 36, borderRadius: radius.lg,
-          backgroundColor: colors.primaryFixed,
-          alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <MaterialIcons name={icon} size={18} color={colors.primary} />
-      </View>
-      <Text variant="headlineSm">{value}</Text>
-      <Text variant="labelSm" color={colors.onSurfaceVariant}>{label}</Text>
-    </Card>
   );
 }
 
@@ -467,7 +482,7 @@ function SettingRow({ icon, title, subtitle, right, onPress }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}>
       <View
         style={{
-          width: 40, height: 40, borderRadius: 20,
+          width: 40, height: 40, borderRadius: radius.full,
           backgroundColor: colors.surfaceContainer,
           alignItems: 'center', justifyContent: 'center',
         }}
@@ -485,9 +500,9 @@ function SettingRow({ icon, title, subtitle, right, onPress }) {
   );
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+      <PressableScale onPress={onPress} scaleTo={0.98}>
         {node}
-      </Pressable>
+      </PressableScale>
     );
   }
   return node;
@@ -516,14 +531,14 @@ function SessionsModal({ visible, sessions, onRevoke, onClose }) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={{ flex: 1, backgroundColor: withAlpha('#000', 0.5) }}>
+      <View style={{ flex: 1, backgroundColor: withAlpha(colors.scrim, 0.5) }}>
         <View
           style={{
             flex: 1,
             marginTop: insets.top + 60,
             backgroundColor: colors.surface,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
+            borderTopLeftRadius: radius.xxl,
+            borderTopRightRadius: radius.xxl,
             padding: spacing.containerMargin,
           }}
         >
@@ -543,8 +558,9 @@ function SessionsModal({ visible, sessions, onRevoke, onClose }) {
                 subtitle={`${t('driver:lastActive')}: ${new Date(item.lastActiveAt).toLocaleDateString()}${item.isRevoked ? ` · ${t('driver:revoked')}` : ''}`}
                 right={
                   !item.isRevoked ? (
-                    <Pressable
+                    <PressableScale
                       onPress={() => onRevoke(item.id)}
+                      scaleTo={0.94}
                       style={{
                         paddingHorizontal: spacing.sm,
                         paddingVertical: 6,
@@ -553,7 +569,7 @@ function SessionsModal({ visible, sessions, onRevoke, onClose }) {
                       }}
                     >
                       <Text variant="labelSm" color={colors.onErrorContainer}>{t('driver:revoke')}</Text>
-                    </Pressable>
+                    </PressableScale>
                   ) : null
                 }
               />

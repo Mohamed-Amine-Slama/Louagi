@@ -137,6 +137,143 @@ export async function adminImpersonate({ actor, userId, mfaCode }) {
   return { ok: true, accessToken: token, target };
 }
 
+export async function adminTimeSeries({ actor, days = 14 }) {
+  if (!useMocks) {
+    const result = await gql('AdminTimeSeries', { days });
+    return Array.isArray(result?.revenue) ? result : null;
+  }
+  if (!can(actor?.role, 'admin:read')) return null;
+  await sleep(100);
+  const span = [7, 14, 30].includes(Number(days)) ? Number(days) : 14;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (span - 1));
+  const dayIndex = (iso) => {
+    const d = new Date(iso);
+    d.setHours(0, 0, 0, 0);
+    return Math.floor((d.getTime() - start.getTime()) / 86400000);
+  };
+  const zeros = () => Array.from({ length: span }, () => 0);
+  const series = { days: span, start: start.toISOString(), rides: zeros(), bookings: zeros(), revenue: zeros(), newUsers: zeros() };
+  db.rides.forEach((r) => {
+    const i = dayIndex(r.created_at);
+    if (i >= 0 && i < span) series.rides[i] += 1;
+  });
+  db.reservations.forEach((r) => {
+    const i = dayIndex(r.booked_at);
+    if (i >= 0 && i < span) series.bookings[i] += 1;
+  });
+  db.payments.forEach((p) => {
+    if (p.status !== 'succeeded') return;
+    const i = dayIndex(p.paid_at);
+    if (i >= 0 && i < span) series.revenue[i] += p.amount;
+  });
+  db.users.forEach((u) => {
+    const i = dayIndex(u.created_at);
+    if (i >= 0 && i < span) series.newUsers[i] += 1;
+  });
+  return series;
+}
+
+export async function adminPaymentsSummary({ actor }) {
+  if (!useMocks) {
+    const result = await gql('AdminPaymentsSummary');
+    return result?.revenue7d != null ? result : null;
+  }
+  if (!can(actor?.role, 'admin:read')) return null;
+  await sleep(80);
+  const weekAgo = Date.now() - 7 * 86400000;
+  const succeeded = db.payments.filter((p) => p.status === 'succeeded');
+  const refunded = db.payments.filter((p) => p.status === 'refunded');
+  return {
+    succeededCount: succeeded.length,
+    succeededSum: succeeded.reduce((a, p) => a + p.amount, 0),
+    revenue7d: succeeded
+      .filter((p) => new Date(p.paid_at).getTime() >= weekAgo)
+      .reduce((a, p) => a + p.amount, 0),
+    failedCount: db.payments.filter((p) => p.status === 'failed').length,
+    flaggedCount: db.payments.filter((p) => p.flagged).length,
+    refundedCount: refunded.length,
+    refundedSum: refunded.reduce((a, p) => a + (p.refunded_amount || 0), 0),
+    driverFees: succeeded.reduce((a, p) => a + (p.driver_fee ?? 1.5), 0),
+    platformFees: succeeded.reduce((a, p) => a + (p.platform_fee ?? 1.5), 0),
+  };
+}
+
+export async function adminDriverPayouts({ actor, limit = 50 }) {
+  if (!useMocks) return gqlList('AdminDriverPayouts', { limit });
+  if (!can(actor?.role, 'admin:read')) return [];
+  await sleep(100);
+  const byDriver = new Map();
+  db.payments
+    .filter((p) => p.status === 'succeeded' && p.reservation_id)
+    .forEach((p) => {
+      const res = db.reservations.find((r) => r.id === p.reservation_id);
+      const ride = res && db.rides.find((r) => r.id === res.ride_id);
+      const driver = ride && db.drivers.find((d) => d.id === ride.driver_id);
+      if (!driver) return;
+      const row = byDriver.get(driver.id) || {
+        driver_id: driver.id,
+        full_name: findUserById(driver.user_id)?.full_name ?? '—',
+        payout_account: driver.payout_account ?? null,
+        payments_count: 0,
+        driver_fees: 0,
+        platform_fees: 0,
+        last_payment_at: null,
+      };
+      row.payments_count += 1;
+      row.driver_fees += p.driver_fee ?? 1.5;
+      row.platform_fees += p.platform_fee ?? 1.5;
+      if (!row.last_payment_at || p.paid_at > row.last_payment_at) row.last_payment_at = p.paid_at;
+      byDriver.set(driver.id, row);
+    });
+  return [...byDriver.values()]
+    .sort((a, b) => b.driver_fees - a.driver_fees)
+    .slice(0, limit);
+}
+
+export async function adminListUserDocuments({ actor, userId }) {
+  if (!useMocks) return gqlList('AdminListUserDocuments', { userId });
+  if (!can(actor?.role, 'admin:read')) return [];
+  await sleep(60);
+  return db.documents
+    .filter((d) => d.user_id === userId)
+    .sort((a, b) => (a.uploaded_at < b.uploaded_at ? 1 : -1));
+}
+
+// ─── Admin TOTP (step-up factor for impersonation) ──────────────────────────
+
+export async function adminTotpStatus({ actor }) {
+  if (!useMocks) {
+    const result = await gql('AdminTotpStatus');
+    return result?.enabled != null ? result : null;
+  }
+  if (!can(actor?.role, 'admin:read')) return null;
+  await sleep(40);
+  return { enabled: false, pending: false };
+}
+
+export async function adminSetupTotp({ actor }) {
+  if (!useMocks) return gql('AdminSetupTotp');
+  if (!can(actor?.role, 'admin:read')) return { ok: false, error: 'Forbidden' };
+  await sleep(80);
+  return { ok: false, error: 'Not available in mock mode' };
+}
+
+export async function adminActivateTotp({ actor, code }) {
+  if (!useMocks) return gql('AdminActivateTotp', { code });
+  if (!can(actor?.role, 'admin:read')) return { ok: false, error: 'Forbidden' };
+  await sleep(80);
+  return { ok: false, error: 'Not available in mock mode' };
+}
+
+export async function adminDisableTotp({ actor, code }) {
+  if (!useMocks) return gql('AdminDisableTotp', { code });
+  if (!can(actor?.role, 'admin:read')) return { ok: false, error: 'Forbidden' };
+  await sleep(80);
+  return { ok: false, error: 'Not available in mock mode' };
+}
+
 export async function adminListAudit({ actor, filters = {} }) {
   if (!useMocks) return gql('AdminListAudit', { filters });
   if (!can(actor?.role, 'admin:read')) return { total: 0, rows: [] };

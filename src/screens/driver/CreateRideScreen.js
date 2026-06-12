@@ -14,6 +14,9 @@ import { Input } from '../../components/Input';
 import { Stepper } from '../../components/Stepper';
 import { Banner } from '../../components/Banner';
 import { Stack, Row, Section } from '../../components/Section';
+import { Chip } from '../../components/Chip';
+import { CityPicker } from '../../components/CityPicker';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -93,86 +96,51 @@ export default function CreateRideScreen() {
     <Screen>
       <ScreenHeader title={t('driver:createNewRide')} subtitle={t('driver:createNewRideSubtitle')} showBack />
 
+      <FadeSlideIn index={0}>
       <Section title={t('driver:route')}>
         <Stack gap={spacing.sm}>
-          <View style={{ zIndex: activeField === 'origin' ? 2 : 1 }}>
-            <Input
+          <View style={{ zIndex: 2 }}>
+            <CityPicker
               label={t('landing:from')}
-              value={origin}
-              onChangeText={setOrigin}
-              onFocus={() => setActiveField('origin')}
-              onBlur={() => setTimeout(() => setActiveField(null), 100)} // Delay to allow press on suggestion
-              placeholder={t('driver:originPlaceholder')}
+              value={origin || ''}
+              onChange={(val) => {
+                setOrigin(val);
+                setActiveField(null);
+              }}
+              cities={cities}
             />
-            {activeField === 'origin' && (
-              <View style={{ backgroundColor: colors.surfaceContainer, borderRadius: radius.md, marginTop: 4, overflow: 'hidden' }}>
-                {cities.filter(c => c.toLowerCase().includes(origin.toLowerCase()) && c.toLowerCase() !== origin.toLowerCase()).slice(0, 5).map(s => (
-                  <Pressable
-                    key={s}
-                    style={{ padding: spacing.md, borderBottomWidth: 1, borderBottomColor: withAlpha(colors.onSurface, 0.1) }}
-                    onPress={() => {
-                      setOrigin(s);
-                      setActiveField(null);
-                    }}
-                  >
-                    <Text variant="bodyMd" color={colors.onSurface}>{s}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
           </View>
-          <View style={{ zIndex: activeField === 'destination' ? 2 : 1 }}>
-            <Input
+          <View style={{ zIndex: 1 }}>
+            <CityPicker
               label={t('landing:to')}
-              value={destination}
-              onChangeText={setDestination}
-              onFocus={() => setActiveField('destination')}
-              onBlur={() => setTimeout(() => setActiveField(null), 100)} // Delay to allow press on suggestion
-              placeholder={t('driver:destinationPlaceholder')}
+              value={destination || ''}
+              onChange={(val) => {
+                setDestination(val);
+                setActiveField(null);
+              }}
+              cities={cities}
             />
-            {activeField === 'destination' && (
-              <View style={{ backgroundColor: colors.surfaceContainer, borderRadius: radius.md, marginTop: 4, overflow: 'hidden' }}>
-                {cities.filter(c => c.toLowerCase().includes(destination.toLowerCase()) && c.toLowerCase() !== destination.toLowerCase()).slice(0, 5).map(s => (
-                  <Pressable
-                    key={s}
-                    style={{ padding: spacing.md, borderBottomWidth: 1, borderBottomColor: withAlpha(colors.onSurface, 0.1) }}
-                    onPress={() => {
-                      setDestination(s);
-                      setActiveField(null);
-                    }}
-                  >
-                    <Text variant="bodyMd" color={colors.onSurface}>{s}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
           </View>
         </Stack>
       </Section>
+      </FadeSlideIn>
 
+      <FadeSlideIn index={1}>
       <Section title={t('driver:departure')}>
         <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
           {days.map((d) => {
             const same = d.toDateString() === date.toDateString();
             return (
-              <Pressable
+              <Chip
                 key={d.toISOString()}
+                label={`${formatWeekday(d, { locale })} ${d.getDate()}`}
+                selected={same}
                 onPress={() => {
                   const nd = new Date(d);
                   nd.setHours(date.getHours(), date.getMinutes());
                   setDate(nd);
                 }}
-                style={{
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: spacing.sm,
-                  borderRadius: radius.full,
-                  backgroundColor: same ? colors.primary : colors.surfaceContainer,
-                }}
-              >
-                <Text variant="labelMd" color={same ? colors.onPrimary : colors.onSurface}>
-                  {formatWeekday(d, { locale })} {d.getDate()}
-                </Text>
-              </Pressable>
+              />
             );
           })}
         </Row>
@@ -205,7 +173,9 @@ export default function CreateRideScreen() {
           </View>
         </Row>
       </Section>
+      </FadeSlideIn>
 
+      <FadeSlideIn index={2}>
       <Section title={t('driver:pricePerSeat')}>
         <Banner
           variant="info"
@@ -236,7 +206,7 @@ export default function CreateRideScreen() {
               style={{
                 width: 44,
                 height: 44,
-                borderRadius: 22,
+                borderRadius: radius.full,
                 backgroundColor: colors.primaryFixed,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -247,7 +217,9 @@ export default function CreateRideScreen() {
           </Row>
         </Card>
       </Section>
+      </FadeSlideIn>
 
+      <FadeSlideIn index={3}>
       <Section title={t('driver:capacity')}>
         <Card accent={colors.primary}>
           <Row justify="space-between">
@@ -256,17 +228,26 @@ export default function CreateRideScreen() {
           </Row>
         </Card>
       </Section>
+      </FadeSlideIn>
 
-      {error ? <Banner variant="error" title={t('driver:couldntPublish')} body={error} /> : null}
+      {error ? (
+        <FadeSlideIn>
+          <Banner variant="error" title={t('driver:couldntPublish')} body={error} />
+        </FadeSlideIn>
+      ) : null}
 
+      <FadeSlideIn index={4}>
       <Row gap={spacing.sm}>
         <View style={{ flex: 1 }}>
           <Button label={t('common:cancel')} variant="outline" onPress={() => nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')} />
         </View>
         <View style={{ flex: 1.5 }}>
-          <Button label={t('driver:publishRide')} variant="secondary" loading={loading} onPress={submit} />
+          <PressableScale onPress={submit} disabled={loading} pointerEvents="box-only">
+            <Button label={t('driver:publishRide')} variant="secondary" loading={loading} onPress={submit} />
+          </PressableScale>
         </View>
       </Row>
+      </FadeSlideIn>
     </Screen>
   );
 }

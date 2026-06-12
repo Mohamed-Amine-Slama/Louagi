@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -14,54 +14,58 @@ import { StepIndicator } from '../../components/StepIndicator';
 import { Banner } from '../../components/Banner';
 import { ScreenHeader } from '../../components/Header';
 import { Stack, Row } from '../../components/Section';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { driversApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius } from '../../theme';
 
-function Slot({ label, file, kind, onPick, error, fallbackHint }) {
+function Slot({ label, file, kind, onPick, error, fallbackHint, index = 0 }) {
   const { colors } = useTheme();
   return (
-    <Pressable
-      onPress={onPick}
-      style={{
-        borderWidth: 2,
-        borderStyle: 'dashed',
-        borderColor: error ? colors.error : colors.outlineVariant,
-        borderRadius: radius.xl,
-        padding: spacing.md,
-        alignItems: 'center',
-        gap: spacing.xs,
-        backgroundColor: file ? colors.successContainer : colors.surfaceContainerLow,
-      }}
-    >
-      <View
+    <FadeSlideIn index={index}>
+      <PressableScale
+        onPress={onPick}
+        scaleTo={0.96}
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: radius.lg,
-          backgroundColor: file ? colors.success : colors.primaryFixed,
+          borderWidth: 2,
+          borderStyle: 'dashed',
+          borderColor: error ? colors.error : colors.outlineVariant,
+          borderRadius: radius.xl,
+          padding: spacing.md,
           alignItems: 'center',
-          justifyContent: 'center',
+          gap: spacing.xs,
+          backgroundColor: file ? colors.successContainer : colors.surfaceContainerLow,
         }}
       >
-        <MaterialIcons
-          name={file ? 'check' : kind === 'vehicle' ? 'photo-camera' : 'file-upload'}
-          size={22}
-          color={file ? '#fff' : colors.primary}
-        />
-      </View>
-      <Text variant="labelMd">{label}</Text>
-      <Text variant="labelSm" color={colors.onSurfaceVariant}>
-        {file ? file.name : fallbackHint}
-      </Text>
-      {error ? (
-        <Text variant="labelSm" color={colors.error}>
-          {error}
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: radius.lg,
+            backgroundColor: file ? colors.success : colors.primaryFixed,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <MaterialIcons
+            name={file ? 'check' : kind === 'vehicle' ? 'photo-camera' : 'file-upload'}
+            size={22}
+            color={file ? colors.onSuccess : colors.onPrimaryFixed}
+          />
+        </View>
+        <Text variant="labelMd">{label}</Text>
+        <Text variant="labelSm" color={colors.onSurfaceVariant}>
+          {file ? file.name : fallbackHint}
         </Text>
-      ) : null}
-    </Pressable>
+        {error ? (
+          <Text variant="labelSm" color={colors.error}>
+            {error}
+          </Text>
+        ) : null}
+      </PressableScale>
+    </FadeSlideIn>
   );
 }
 
@@ -119,19 +123,24 @@ export default function DriverRegisterScreen() {
   return (
     <Screen>
       <ScreenHeader title={t('driver:onboarding')} subtitle={t('driver:onboardingSubtitle')} />
-      <StepIndicator
-        steps={[t('driver:stepDocuments'), t('driver:stepVehicle'), t('driver:stepReview')]}
-        current={step}
-      />
+      <FadeSlideIn index={0}>
+        <StepIndicator
+          steps={[t('driver:stepDocuments'), t('driver:stepVehicle'), t('driver:stepReview')]}
+          current={step}
+        />
+      </FadeSlideIn>
 
       {step === 0 ? (
         <Stack gap={spacing.md}>
-          <Banner
-            variant="info"
-            title={t('driver:whyAsk')}
-            body={t('driver:whyAskBody')}
-          />
+          <FadeSlideIn index={1}>
+            <Banner
+              variant="info"
+              title={t('driver:whyAsk')}
+              body={t('driver:whyAskBody')}
+            />
+          </FadeSlideIn>
           <Slot
+            index={2}
             label={t('driver:nationalIdCard')}
             kind="id"
             file={idCardFile}
@@ -140,6 +149,7 @@ export default function DriverRegisterScreen() {
             fallbackHint={jpegHint}
           />
           <Slot
+            index={3}
             label={t('driver:driverLicense')}
             kind="license"
             file={licenseFile}
@@ -148,6 +158,7 @@ export default function DriverRegisterScreen() {
             fallbackHint={jpegHint}
           />
           <Slot
+            index={4}
             label={t('driver:vehiclePhoto')}
             kind="vehicle"
             file={vehiclePhoto}
@@ -155,15 +166,18 @@ export default function DriverRegisterScreen() {
             error={errors.vehicle}
             fallbackHint={jpegHint}
           />
-          <Button
-            label={t('common:continue')}
-            variant="secondary"
-            iconRight="arrow-forward"
-            disabled={!canContinue}
-            onPress={() => setStep(1)}
-          />
+          <FadeSlideIn index={5}>
+            <Button
+              label={t('common:continue')}
+              variant="secondary"
+              iconRight="arrow-forward"
+              disabled={!canContinue}
+              onPress={() => setStep(1)}
+            />
+          </FadeSlideIn>
         </Stack>
       ) : step === 1 ? (
+        <FadeSlideIn index={1}>
         <Stack gap={spacing.md}>
           <Input
             label={t('driver:nationalIdNumber')}
@@ -215,8 +229,10 @@ export default function DriverRegisterScreen() {
             </View>
           </Row>
         </Stack>
+        </FadeSlideIn>
       ) : (
         <Stack gap={spacing.md}>
+          <FadeSlideIn index={1}>
           <Card>
             <Text variant="labelMd" color={colors.onSurfaceVariant}>
               {t('driver:documents')}
@@ -234,6 +250,8 @@ export default function DriverRegisterScreen() {
               <MaterialIcons name="check-circle" size={18} color={colors.success} />
             </Row>
           </Card>
+          </FadeSlideIn>
+          <FadeSlideIn index={2}>
           <Card>
             <Text variant="labelMd" color={colors.onSurfaceVariant}>
               {t('driver:vehicle')}
@@ -243,14 +261,17 @@ export default function DriverRegisterScreen() {
             </Text>
             <Text variant="bodyMd">{t('driver:plateValue', { plate })}</Text>
           </Card>
-          <Row gap={spacing.sm}>
-            <View style={{ flex: 1 }}>
-              <Button label={t('common:edit')} variant="outline" onPress={() => setStep(1)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label={t('driver:submitApplication')} variant="secondary" onPress={submit} loading={loading} />
-            </View>
-          </Row>
+          </FadeSlideIn>
+          <FadeSlideIn index={3}>
+            <Row gap={spacing.sm}>
+              <View style={{ flex: 1 }}>
+                <Button label={t('common:edit')} variant="outline" onPress={() => setStep(1)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button label={t('driver:submitApplication')} variant="secondary" onPress={submit} loading={loading} />
+              </View>
+            </Row>
+          </FadeSlideIn>
         </Stack>
       )}
     </Screen>

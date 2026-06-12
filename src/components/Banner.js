@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Text } from './Text';
 import { radius, spacing, withAlpha } from '../theme';
+import { FadeSlideIn } from './motion';
 
 export function Banner({ variant = 'info', title, body, icon }) {
   const { colors } = useTheme();
@@ -15,29 +16,31 @@ export function Banner({ variant = 'info', title, body, icon }) {
   };
   const v = variants[variant] ?? variants.info;
   return (
-    <View
-      style={{
-        backgroundColor: v.bg,
-        borderRadius: radius.lg,
-        padding: spacing.md,
-        flexDirection: 'row',
-        gap: spacing.sm,
-        alignItems: 'flex-start',
-      }}
-    >
-      <MaterialIcons name={icon || v.icon} size={22} color={v.fg} />
-      <View style={{ flex: 1, gap: 2 }}>
-        {title ? (
-          <Text variant="labelMd" color={v.fg}>
-            {title}
-          </Text>
-        ) : null}
-        {body ? (
-          <Text variant="bodySm" color={v.fg}>
-            {body}
-          </Text>
-        ) : null}
+    <FadeSlideIn>
+      <View
+        style={{
+          backgroundColor: v.bg,
+          borderRadius: radius.lg,
+          padding: spacing.md,
+          flexDirection: 'row',
+          gap: spacing.sm,
+          alignItems: 'flex-start',
+        }}
+      >
+        <MaterialIcons name={icon || v.icon} size={22} color={v.fg} />
+        <View style={{ flex: 1, gap: 2 }}>
+          {title ? (
+            <Text variant="labelMd" color={v.fg}>
+              {title}
+            </Text>
+          ) : null}
+          {body ? (
+            <Text variant="bodySm" color={v.fg}>
+              {body}
+            </Text>
+          ) : null}
+        </View>
       </View>
-    </View>
+    </FadeSlideIn>
   );
 }

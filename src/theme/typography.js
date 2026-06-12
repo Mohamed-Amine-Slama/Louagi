@@ -66,4 +66,11 @@ export const typography = {
     lineHeight: 16,
     letterSpacing: 0.24,
   },
+  // Micro size for badges, tab labels and timestamps — smallest legible step.
+  labelXs: {
+    fontFamily: family.semiBold,
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.2,
+  },
 };

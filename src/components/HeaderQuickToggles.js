@@ -18,7 +18,7 @@ const ICONS = {
 
 export function HeaderQuickToggles({ dark = false }) {
   const { mode, setMode, colors } = useTheme();
-  const { locale, setLocale, t } = useLocale();
+  const { locale, setLocale, switching, t } = useLocale();
 
   const cycleTheme = () => {
     const next = THEME_CYCLE[(THEME_CYCLE.indexOf(mode) + 1) % THEME_CYCLE.length];
@@ -42,7 +42,7 @@ export function HeaderQuickToggles({ dark = false }) {
         style={{
           width: 40,
           height: 40,
-          borderRadius: 20,
+          borderRadius: radius.full,
           backgroundColor: bg,
           alignItems: 'center',
           justifyContent: 'center',
@@ -52,6 +52,7 @@ export function HeaderQuickToggles({ dark = false }) {
       </Pressable>
       <Pressable
         onPress={cycleLocale}
+        disabled={switching}
         accessibilityRole="button"
         accessibilityLabel={t('passenger:language')}
         style={{

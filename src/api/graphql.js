@@ -65,13 +65,13 @@ async function refreshOnce() {
   return pendingRefresh;
 }
 
-export async function gql(operationName, variables, { retry = true } = {}) {
+async function gqlOnce(operationName, variables, { retry = true } = {}) {
   try {
     const { res, payload } = await postGraphql(operationName, variables, getAccessToken());
 
     if (res.status === 401 && retry) {
       const refreshed = await refreshOnce();
-      if (refreshed) return gql(operationName, variables, { retry: false });
+      if (refreshed) return gqlOnce(operationName, variables, { retry: false });
     }
 
     if (!res.ok) {
@@ -85,6 +85,36 @@ export async function gql(operationName, variables, { retry = true } = {}) {
     const aborted = err?.name === 'AbortError';
     return { ok: false, error: aborted ? 'Request timed out' : 'Network unavailable' };
   }
+}
+
+// Read operations that are safe to coalesce: identical concurrent calls share
+// one network request (screen + child components often request the same data
+// in the same frame). Commands are never deduped — and ResendOtp /
+// RequestDataExport live on the query bus but have side effects, so they are
+// deliberately excluded.
+const DEDUPE_OPS = new Set([
+  'AdminAlerts', 'AdminAuditCount', 'AdminDriverPayouts', 'AdminListAudit',
+  'AdminListDrivers', 'AdminListRides', 'AdminListUserDocuments', 'AdminMetrics',
+  'AdminPaymentsSummary', 'AdminSearchUsers', 'AdminStats', 'AdminTimeSeries',
+  'AvailableDeliveryRides', 'DriverEarnings', 'DriverRides', 'Get2FAStatus',
+  'GetDriverProfile', 'GetDriverStatus', 'GetMessages', 'GetProfile',
+  'GetReservation', 'GetReviewForRide', 'GetRideDetail', 'Health', 'ListChats',
+  'ListCities', 'ListDriverSessions', 'ListPayments', 'ListReservations',
+  'ListRoutes', 'Me', 'MyDeliveries', 'RideDeliveries', 'RidePassengers',
+  'SearchRides',
+]);
+const inflight = new Map();
+
+export async function gql(operationName, variables, opts) {
+  if (!DEDUPE_OPS.has(operationName)) return gqlOnce(operationName, variables, opts);
+  const key = `${operationName}:${JSON.stringify(variables ?? {})}`;
+  const pending = inflight.get(key);
+  if (pending) return pending;
+  const request = gqlOnce(operationName, variables, opts).finally(() => {
+    inflight.delete(key);
+  });
+  inflight.set(key, request);
+  return request;
 }
 
 export async function gqlList(operationName, variables) {

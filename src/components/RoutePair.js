@@ -14,12 +14,13 @@ export function RoutePair({ from, to, variant = 'bodyLg', size = 16, color }) {
   const { isRTL } = useLocale();
   const arrow = isRTL ? 'arrow-back' : 'arrow-forward';
   const fg = color || colors.onSurface;
+  const arrowFg = color || colors.onSurfaceVariant;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
       <Text variant={variant} color={fg}>
         {from}
       </Text>
-      <MaterialIcons name={arrow} size={size} color={fg} />
+      <MaterialIcons name={arrow} size={size} color={arrowFg} />
       <Text variant={variant} color={fg}>
         {to}
       </Text>

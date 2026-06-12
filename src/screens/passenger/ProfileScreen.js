@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme, THEME_MODES } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, Switch, Pressable } from 'react-native';
+import { View, Switch } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -13,9 +14,13 @@ import { Input } from '../../components/Input';
 import { Avatar } from '../../components/Avatar';
 import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
+import { Chip } from '../../components/Chip';
+import { KpiTile } from '../../components/KpiTile';
+import { SkeletonList } from '../../components/Skeleton';
 import { Stack, Row, Section } from '../../components/Section';
 import { Stepper } from '../../components/Stepper';
 import { ScreenHeader } from '../../components/Header';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { usersApi, authApi } from '../../api';
 import { StepIndicator } from '../../components/StepIndicator';
@@ -42,8 +47,8 @@ const LANGUAGES = [
 ];
 
 export default function PassengerProfile() {
-  const { colors, mode, setMode } = useTheme();
-  const { locale, setLocale, t } = useLocale();
+  const { colors, mode, setMode, isDark } = useTheme();
+  const { locale, setLocale, switching, t } = useLocale();
   const nav = useNavigation();
   const { user, signOut } = useAuth();
   const toast = useToast();
@@ -173,7 +178,13 @@ export default function PassengerProfile() {
     );
   }
 
-  if (!profile) return <Screen />;
+  if (!profile) {
+    return (
+      <Screen>
+        <SkeletonList count={4} lines={2} />
+      </Screen>
+    );
+  }
 
   const memberSince = formatMonthYear(profile.created_at || new Date(), { locale });
   const roleLabel =
@@ -348,37 +359,41 @@ export default function PassengerProfile() {
     signOut();
   };
 
+  const heroFg = isDark ? colors.onSurface : colors.onPrimary;
+
   return (
     <Screen padded={false}>
-      <View
+      <LinearGradient
+        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: colors.primary,
           paddingHorizontal: spacing.containerMargin,
           paddingTop: spacing.md,
           paddingBottom: spacing.xl,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
+          borderBottomLeftRadius: radius.xxl,
+          borderBottomRightRadius: radius.xxl,
           gap: spacing.md,
         }}
       >
-        <Text variant="labelSm" color={colors.onPrimaryContainer}>
+        <Text variant="labelSm" color={withAlpha(heroFg, 0.8)}>
           {t('passenger:profileTitle')}
         </Text>
         <Row gap={spacing.md} align="center">
           <View
             style={{
               borderWidth: 3,
-              borderColor: withAlpha(colors.onPrimary, 0.24),
-              borderRadius: 40,
+              borderColor: withAlpha(heroFg, 0.24),
+              borderRadius: radius.full,
             }}
           >
             <Avatar name={profile.full_name} size={72} badge />
           </View>
           <Stack gap={6} style={{ flex: 1 }}>
-            <Text variant="headlineMd" color={colors.onPrimary} numberOfLines={1}>
+            <Text variant="headlineMd" color={heroFg} numberOfLines={1}>
               {profile.full_name}
             </Text>
-            <Text variant="bodySm" color={colors.onPrimaryContainer} numberOfLines={1}>
+            <Text variant="bodySm" color={withAlpha(heroFg, 0.8)} numberOfLines={1}>
               {profile.email}
             </Text>
             <Row gap={spacing.xs} style={{ flexWrap: 'wrap' }}>
@@ -387,21 +402,24 @@ export default function PassengerProfile() {
             </Row>
           </Stack>
         </Row>
-      </View>
+      </LinearGradient>
 
       <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
-        <Row gap={spacing.sm}>
-          <StatTile icon="route" value={stats.trips} label={t('passenger:trips')} />
-          <StatTile icon="payments" value={`${stats.spent} ${t('common:tnd')}`} label={t('passenger:spent')} />
-        </Row>
+        <FadeSlideIn index={0}>
+          <Row gap={spacing.sm}>
+            <KpiTile icon="route" value={stats.trips} label={t('passenger:trips')} tone="primary" />
+            <KpiTile icon="payments" value={`${stats.spent} ${t('common:tnd')}`} label={t('passenger:spent')} tone="success" />
+          </Row>
+        </FadeSlideIn>
+        <FadeSlideIn index={1}>
         <Card>
           <Row gap={spacing.md}>
             <View
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 20,
-                backgroundColor: colors.primaryFixed,
+                borderRadius: radius.lg,
+                backgroundColor: withAlpha(colors.primary, 0.1),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -416,8 +434,10 @@ export default function PassengerProfile() {
             </Stack>
           </Row>
         </Card>
+        </FadeSlideIn>
 
         {/* Account info */}
+        <FadeSlideIn index={2}>
         <Section title={t('passenger:account')}>
           <Card>
             <Stack gap={spacing.md}>
@@ -442,8 +462,10 @@ export default function PassengerProfile() {
             </Stack>
           </Card>
         </Section>
+        </FadeSlideIn>
 
         {/* Security */}
+        <FadeSlideIn index={3}>
         <Section title={t('passenger:security')}>
           <Card>
             <SettingRow
@@ -649,8 +671,10 @@ export default function PassengerProfile() {
             />
           </Card>
         </Section>
+        </FadeSlideIn>
 
         {/* Notifications */}
+        <FadeSlideIn index={4}>
         <Section title={t('passenger:notifications')}>
           <Card>
             <SettingRow
@@ -675,8 +699,10 @@ export default function PassengerProfile() {
             />
           </Card>
         </Section>
+        </FadeSlideIn>
 
         {/* Preferences */}
+        <FadeSlideIn index={5}>
         <Section title={t('passenger:preferences')}>
           <Card>
             <SettingRow
@@ -692,25 +718,16 @@ export default function PassengerProfile() {
               subtitle={LANGUAGES.find((l) => l.code === locale)?.label}
               right={
                 <Row gap={4}>
-                  {LANGUAGES.map((l) => {
-                    const active = l.code === locale;
-                    return (
-                      <Pressable
-                        key={l.code}
-                        onPress={() => setLocale(l.code)}
-                        style={{
-                          paddingHorizontal: spacing.sm,
-                          paddingVertical: 4,
-                          borderRadius: radius.full,
-                          backgroundColor: active ? colors.primary : colors.surfaceContainer,
-                        }}
-                      >
-                        <Text variant="labelSm" color={active ? colors.onPrimary : colors.onSurface}>
-                          {l.code.toUpperCase()}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                  {LANGUAGES.map((l) => (
+                    <Chip
+                      key={l.code}
+                      disabled={switching}
+                      selected={l.code === locale}
+                      onPress={() => setLocale(l.code)}
+                      label={l.code.toUpperCase()}
+                      style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}
+                    />
+                  ))}
                 </Row>
               }
             />
@@ -723,27 +740,15 @@ export default function PassengerProfile() {
               }
               right={
                 <Row gap={4}>
-                  {THEME_MODES.map((m) => {
-                    const active = m === mode;
-                    return (
-                      <Pressable
-                        key={m}
-                        onPress={() => setMode(m)}
-                        style={{
-                          paddingHorizontal: spacing.sm,
-                          paddingVertical: 4,
-                          borderRadius: radius.full,
-                          backgroundColor: active ? colors.primary : colors.surfaceContainer,
-                        }}
-                      >
-                        <MaterialIcons
-                          name={{ light: 'light-mode', dark: 'dark-mode', system: 'brightness-auto' }[m]}
-                          size={14}
-                          color={active ? colors.onPrimary : colors.onSurface}
-                        />
-                      </Pressable>
-                    );
-                  })}
+                  {THEME_MODES.map((m) => (
+                    <Chip
+                      key={m}
+                      selected={m === mode}
+                      onPress={() => setMode(m)}
+                      icon={{ light: 'light-mode', dark: 'dark-mode', system: 'brightness-auto' }[m]}
+                      style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}
+                    />
+                  ))}
                 </Row>
               }
             />
@@ -762,8 +767,10 @@ export default function PassengerProfile() {
             />
           </Card>
         </Section>
+        </FadeSlideIn>
 
         {/* Payment methods */}
+        <FadeSlideIn index={6}>
         <Section title={t('passenger:paymentMethods')}>
           <Card>
             <SettingRow
@@ -773,20 +780,20 @@ export default function PassengerProfile() {
               right={paymentAccount ? <Badge label={t('passenger:cardDefaultBadge')} variant="success" /> : null}
             />
             <Divider />
-            <Pressable
+            <PressableScale
               onPress={() => setShowPaymentForm((v) => !v)}
-              style={({ pressed }) => ({
+              scaleTo={0.98}
+              style={{
                 paddingVertical: spacing.sm,
-                opacity: pressed ? 0.7 : 1,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: spacing.sm,
-              })}
+              }}
             >
               <View
                 style={{
-                  width: 40, height: 40, borderRadius: 20,
-                  backgroundColor: colors.primaryFixed,
+                  width: 40, height: 40, borderRadius: radius.full,
+                  backgroundColor: withAlpha(colors.primary, 0.1),
                   alignItems: 'center', justifyContent: 'center',
                 }}
               >
@@ -795,7 +802,7 @@ export default function PassengerProfile() {
               <Text variant="labelMd" color={colors.primary}>
                 {paymentAccount ? t('passenger:editPaymentMethod') : t('passenger:addCard')}
               </Text>
-            </Pressable>
+            </PressableScale>
             {showPaymentForm ? (
               <Stack gap={spacing.md} style={{ marginTop: spacing.sm }}>
                 <Input
@@ -829,8 +836,10 @@ export default function PassengerProfile() {
             ) : null}
           </Card>
         </Section>
+        </FadeSlideIn>
 
         {/* Support */}
+        <FadeSlideIn index={7}>
         <Section title={t('passenger:support')}>
           <Card>
             <LinkRow icon="help" title={t('passenger:helpCentre')} onPress={() => nav.navigate('Support', { section: 'help' })} />
@@ -848,10 +857,14 @@ export default function PassengerProfile() {
             />
           </Card>
         </Section>
+        </FadeSlideIn>
 
-        <Button label={t('common:logout')} variant="outline" onPress={signOut} iconLeft="logout" />
+        <FadeSlideIn index={8}>
+          <Button label={t('common:logout')} variant="outline" onPress={signOut} iconLeft="logout" />
+        </FadeSlideIn>
 
         {/* Danger zone */}
+        <FadeSlideIn index={8}>
         <Section title={t('passenger:dangerZone')}>
           <Banner
             variant="error"
@@ -880,6 +893,7 @@ export default function PassengerProfile() {
             <Button label={t('passenger:deleteAccount')} variant="danger" iconLeft="delete-forever" onPress={() => setShowDeleteForm(true)} />
           )}
         </Section>
+        </FadeSlideIn>
 
         <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ textAlign: 'center', marginTop: spacing.md }}>
           {t('passenger:versionFooter')}
@@ -890,7 +904,8 @@ export default function PassengerProfile() {
 }
 
 function ProfileMetaPill({ icon, label }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const fg = isDark ? colors.onSurface : colors.onPrimary;
   return (
     <View
       style={{
@@ -900,35 +915,16 @@ function ProfileMetaPill({ icon, label }) {
         paddingHorizontal: spacing.sm,
         paddingVertical: 6,
         borderRadius: radius.full,
-        backgroundColor: withAlpha(colors.onPrimary, 0.14),
+        backgroundColor: withAlpha(fg, 0.14),
         maxWidth: '100%',
         flexShrink: 1,
       }}
     >
-      <MaterialIcons name={icon} size={14} color={colors.onPrimary} />
-      <Text variant="labelSm" color={colors.onPrimary} numberOfLines={1} style={{ flexShrink: 1 }}>
+      <MaterialIcons name={icon} size={14} color={fg} />
+      <Text variant="labelSm" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
         {label}
       </Text>
     </View>
-  );
-}
-
-function StatTile({ icon, value, label }) {
-  const { colors } = useTheme();
-  return (
-    <Card style={{ flex: 1, paddingVertical: spacing.md, alignItems: 'flex-start', gap: 6 }}>
-      <View
-        style={{
-          width: 36, height: 36, borderRadius: radius.lg,
-          backgroundColor: colors.primaryFixed,
-          alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <MaterialIcons name={icon} size={18} color={colors.primary} />
-      </View>
-      <Text variant="headlineSm" numberOfLines={1} style={{ maxWidth: '100%' }}>{value}</Text>
-      <Text variant="labelSm" color={colors.onSurfaceVariant} numberOfLines={1}>{label}</Text>
-    </Card>
   );
 }
 
@@ -938,7 +934,7 @@ function SettingRow({ icon, title, subtitle, right, onPress }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}>
       <View
         style={{
-          width: 40, height: 40, borderRadius: 20,
+          width: 40, height: 40, borderRadius: radius.full,
           backgroundColor: colors.surfaceContainer,
           alignItems: 'center', justifyContent: 'center',
         }}
@@ -956,9 +952,9 @@ function SettingRow({ icon, title, subtitle, right, onPress }) {
   );
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+      <PressableScale onPress={onPress} scaleTo={0.98}>
         {node}
-      </Pressable>
+      </PressableScale>
     );
   }
   return node;

@@ -49,14 +49,15 @@ export const colorsLight = {
   background: '#fbf8fc',
   onBackground: '#1b1b1e',
   surfaceVariant: '#e4e2e5',
-  success: '#198754',
+  success: '#157347',
   successContainer: '#d1f1de',
   onSuccess: '#ffffff',
-  warning: '#b88700',
-  onWarning: '#251a00',
+  warning: '#8f6900',
+  onWarning: '#ffffff',
   warningContainer: '#ffdf9e',
   onWarningContainer: '#5c4300',
   shadow: '#1a2b4a',
+  scrim: '#000000',
 };
 
 // Live palette pointer — mutable so static `colors` imports always read the
@@ -93,10 +94,3 @@ export const colors = new Proxy(
   }
 );
 
-export const withAlpha = (hex, alpha) => {
-  if (!hex) return hex;
-  const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
-    .toString(16)
-    .padStart(2, '0');
-  return `${hex}${a}`;
-};

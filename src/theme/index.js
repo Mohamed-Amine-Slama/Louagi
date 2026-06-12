@@ -1,10 +1,10 @@
 export {
   colors,
   colorsLight,
-  withAlpha,
   setActivePalette,
   getActivePalette,
 } from './colors';
+export { withAlpha } from './colorUtils';
 export { colorsDark } from './colors-dark';
 export { typography } from './typography';
 export { spacing, radius, shadows, floatingTabBar } from './spacing';

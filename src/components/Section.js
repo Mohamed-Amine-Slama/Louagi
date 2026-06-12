@@ -4,12 +4,40 @@ import { View } from 'react-native';
 import { Text } from './Text';
 import { spacing } from '../theme';
 
-export function Section({ title, action, children }) {
+// tick: small brand-red bar beside the title for visual rhythm. Disable it on
+// colored/hero containers where red would clash.
+export function Section({ title, subtitle, action, tick = true, style, children }) {
+  const { colors } = useTheme();
   return (
-    <View style={{ gap: spacing.sm }}>
+    <View style={[{ gap: spacing.sm }, style]}>
       {title || action ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          {title ? <Text variant="headlineSm">{title}</Text> : <View />}
+          {title ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+              {tick ? (
+                <View
+                  style={{
+                    width: 4,
+                    height: 16,
+                    borderRadius: 2,
+                    backgroundColor: colors.secondaryContainer,
+                  }}
+                />
+              ) : null}
+              <View style={{ flex: 1 }}>
+                <Text variant="headlineSm" numberOfLines={1}>
+                  {title}
+                </Text>
+                {subtitle ? (
+                  <Text variant="bodySm" color={colors.onSurfaceVariant} numberOfLines={1}>
+                    {subtitle}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ) : (
+            <View />
+          )}
           {action ?? null}
         </View>
       ) : null}

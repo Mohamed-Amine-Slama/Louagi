@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, RefreshControl, Pressable } from 'react-native';
+import { View, RefreshControl } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -15,16 +16,18 @@ import { Stack, Row } from '../../components/Section';
 import { EmptyState } from '../../components/EmptyState';
 import { Avatar } from '../../components/Avatar';
 import { RateDriverModal } from '../../components/RateDriverModal';
+import { SkeletonList } from '../../components/Skeleton';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { reservationsApi, paymentsApi, reviewsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { usePush } from '../../context/NotificationContext';
 import { useToast } from '../../components/Toast';
-import { spacing, radius } from '../../theme';
+import { spacing, radius, withAlpha } from '../../theme';
 import { formatDateTime, formatDate, countdownFrom, statusLabel } from '../../i18n/format';
 
 export default function PassengerDashboard() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t } = useLocale();
   const { user, signOut } = useAuth();
   const toast = useToast();
@@ -40,13 +43,27 @@ export default function PassengerDashboard() {
   const load = useCallback(async () => {
     if (!user?.id) { setRefreshing(false); return; }
     setRefreshing(true);
-    const [u, p, py] = await Promise.all([
-      reservationsApi.listReservations({ actor: user, status: 'confirmed' }),
-      reservationsApi.listReservations({ actor: user, status: 'cancelled' }),
+    const [allRes, py] = await Promise.all([
+      reservationsApi.listReservations({ actor: user }),
       paymentsApi.listPayments({ actor: user }),
     ]);
-    setUpcoming(u);
-    setPast(p);
+
+    const upcomingList = [];
+    const pastList = [];
+
+    (allRes || []).forEach((row) => {
+      const isCancelled = row.reservation.status === 'cancelled';
+      const isRideLiveOrDone = row.ride && (row.ride.status === 'in_progress' || row.ride.status === 'completed' || row.ride.status === 'cancelled');
+
+      if (isCancelled || isRideLiveOrDone) {
+        pastList.push(row);
+      } else {
+        upcomingList.push(row);
+      }
+    });
+
+    setUpcoming(upcomingList);
+    setPast(pastList);
     setPayments(py);
     setRefreshing(false);
   }, [user]);
@@ -92,37 +109,45 @@ export default function PassengerDashboard() {
     load();
   };
 
+  const heroFg = isDark ? colors.onSurface : colors.onPrimary;
+  const heroCardFg = isDark ? colors.onPrimaryContainer : colors.onPrimary;
+  const heroCardMuted = isDark ? withAlpha(colors.onPrimaryContainer, 0.8) : colors.onPrimaryContainer;
+  const heroIconBtn = {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    backgroundColor: withAlpha(heroFg, 0.16),
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+  const nextTrip = upcoming[0];
+
   return (
     <Screen padded={false}>
-      <View
+      <LinearGradient
+        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: colors.primary,
           paddingHorizontal: spacing.containerMargin,
           paddingTop: spacing.md,
           paddingBottom: spacing.lg,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
+          borderBottomLeftRadius: radius.xxl,
+          borderBottomRightRadius: radius.xxl,
         }}
       >
         <Row justify="space-between">
           <View>
-            <Text variant="labelSm" color={colors.onPrimaryContainer}>
+            <Text variant="labelSm" color={withAlpha(heroFg, 0.8)}>
               {t('passenger:hello')},
             </Text>
-            <Text variant="headlineMd" color={colors.onPrimary}>
+            <Text variant="headlineMd" color={heroFg}>
               {user?.name?.split(' ')[0]} 👋
             </Text>
           </View>
           <Row gap={spacing.sm}>
-            <Pressable
-              onPress={() => nav.navigate('ChatList')}
-              style={{
-                width: 40, height: 40, borderRadius: 20,
-                backgroundColor: colors.primaryContainer,
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <MaterialIcons name="chat" size={20} color={colors.onPrimary} />
+            <PressableScale onPress={() => nav.navigate('ChatList')} scaleTo={0.92} style={heroIconBtn}>
+              <MaterialIcons name="chat" size={20} color={heroFg} />
               {unreadCount > 0 && (
                 <View
                   style={{
@@ -131,31 +156,25 @@ export default function PassengerDashboard() {
                     end: -4,
                     minWidth: 16,
                     height: 16,
-                    borderRadius: 8,
+                    borderRadius: radius.full,
                     backgroundColor: colors.error,
                     alignItems: 'center',
                     justifyContent: 'center',
                     paddingHorizontal: 4,
                   }}
                 >
-                  <Text variant="labelSm" color={colors.onError} style={{ fontSize: 9, fontWeight: '700' }}>
+                  <Text variant="labelSm" color={colors.onError}>
                     {unreadCount}
                   </Text>
                 </View>
               )}
-            </Pressable>
-            <Pressable
+            </PressableScale>
+            <PressableScale
               onPress={() => toast.show(t('toast:noNewNotifications'), 'info')}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: colors.primaryContainer,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              scaleTo={0.92}
+              style={heroIconBtn}
             >
-              <MaterialIcons name="notifications" size={20} color={colors.onPrimary} />
+              <MaterialIcons name="notifications" size={20} color={heroFg} />
               <View
                 style={{
                   position: 'absolute',
@@ -163,54 +182,103 @@ export default function PassengerDashboard() {
                   end: 8,
                   width: 8,
                   height: 8,
-                  borderRadius: 4,
+                  borderRadius: radius.full,
                   backgroundColor: colors.error,
                 }}
               />
-            </Pressable>
-            <Pressable
-              onPress={() => nav.navigate('Settings')}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: colors.primaryContainer,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialIcons name="settings" size={20} color={colors.onPrimary} />
-            </Pressable>
-            <Pressable
-              onPress={signOut}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: colors.primaryContainer,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialIcons name="logout" size={20} color={colors.onPrimary} />
-            </Pressable>
+            </PressableScale>
+            <PressableScale onPress={() => nav.navigate('Settings')} scaleTo={0.92} style={heroIconBtn}>
+              <MaterialIcons name="settings" size={20} color={heroFg} />
+            </PressableScale>
+            <PressableScale onPress={signOut} scaleTo={0.92} style={heroIconBtn}>
+              <MaterialIcons name="logout" size={20} color={heroFg} />
+            </PressableScale>
           </Row>
         </Row>
-      </View>
+      </LinearGradient>
 
       <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.md, gap: spacing.md }}>
-        <Tabs
-          value={tab}
-          onChange={setTab}
-          tabs={[
-            { key: 'upcoming', label: t('passenger:upcoming') },
-            { key: 'past', label: t('passenger:past') },
-            { key: 'payments', label: t('passenger:payments') },
-          ]}
-        />
+        {nextTrip ? (
+          <FadeSlideIn index={0}>
+            <Card
+              variant="hero"
+              accent={colors.secondaryContainer}
+              onPress={() => nav.navigate('BookingConfirm', { id: nextTrip.reservation.id })}
+            >
+              <Row justify="space-between" align="flex-start">
+                <Text variant="labelSm" color={heroCardMuted}>
+                  {t('passenger:upcoming')}
+                </Text>
+                <Row
+                  gap={4}
+                  style={{
+                    backgroundColor: withAlpha(colors.secondaryFixedDim, 0.1),
+                    borderRadius: radius.full,
+                    paddingHorizontal: spacing.sm,
+                    paddingVertical: spacing.xs,
+                  }}
+                >
+                  <MaterialIcons name="schedule" size={14} color={colors.secondaryFixedDim} />
+                  <Text variant="labelSm" color={colors.secondaryFixedDim}>
+                    {t('common:departsIn', { duration: countdownFrom(nextTrip.ride?.departure_time, t) })}
+                  </Text>
+                </Row>
+              </Row>
+              <Stack gap={2} style={{ marginTop: spacing.sm }}>
+                <Text variant="headlineMd" color={heroCardFg}>
+                  {nextTrip.route?.origin_city} → {nextTrip.route?.destination_city}
+                </Text>
+                <Text variant="bodySm" color={heroCardMuted}>
+                  {formatDateTime(nextTrip.ride?.departure_time)}
+                </Text>
+              </Stack>
+              <Row justify="space-between" style={{ marginTop: spacing.md }}>
+                <Row gap={spacing.sm} style={{ flex: 1 }}>
+                  <Avatar name={nextTrip.driverUser?.full_name} size={32} />
+                  <Stack gap={0} style={{ flexShrink: 1 }}>
+                    <Text variant="labelSm" color={heroCardMuted}>
+                      {t('passenger:driverShort')}
+                    </Text>
+                    <Text variant="labelMd" color={heroCardFg} numberOfLines={1}>
+                      {nextTrip.driverUser?.full_name}
+                    </Text>
+                  </Stack>
+                </Row>
+                <Row
+                  gap={4}
+                  style={{
+                    backgroundColor: colors.secondaryContainer,
+                    borderRadius: radius.full,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm,
+                  }}
+                >
+                  <MaterialIcons name="confirmation-number" size={14} color={colors.onSecondaryContainer} />
+                  <Text variant="labelMd" color={colors.onSecondaryContainer}>
+                    {t('passenger:viewTicket')}
+                  </Text>
+                </Row>
+              </Row>
+            </Card>
+          </FadeSlideIn>
+        ) : null}
+
+        <FadeSlideIn index={1}>
+          <Tabs
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { key: 'upcoming', label: t('passenger:upcoming') },
+              { key: 'past', label: t('passenger:past') },
+              { key: 'payments', label: t('passenger:payments') },
+            ]}
+          />
+        </FadeSlideIn>
 
         {tab === 'upcoming' &&
-          (upcoming.length === 0 ? (
+          (refreshing && upcoming.length === 0 ? (
+            <SkeletonList count={3} lines={2} />
+          ) : upcoming.length === 0 ? (
             <EmptyState
               icon="event-note"
               title={t('passenger:noUpcomingTitle')}
@@ -219,8 +287,12 @@ export default function PassengerDashboard() {
               onAction={() => nav.navigate('Search')}
             />
           ) : (
-            upcoming.map((row) => (
-              <Card key={row.reservation.id} accent={colors.secondaryContainer}>
+            upcoming.map((row, index) => (
+              <FadeSlideIn key={row.reservation.id} index={Math.min(index, 8)}>
+                <Card
+                  accent={colors.secondaryContainer}
+                  onPress={() => nav.navigate('BookingConfirm', { id: row.reservation.id })}
+                >
                 <Row justify="space-between" align="flex-start">
                   <View style={{ flex: 1, gap: 4 }}>
                     <Text variant="headlineSm">
@@ -285,20 +357,24 @@ export default function PassengerDashboard() {
                     </View>
                   </Row>
                 )}
-              </Card>
+                </Card>
+              </FadeSlideIn>
             ))
           ))}
 
         {tab === 'past' &&
-          (past.length === 0 ? (
+          (refreshing && past.length === 0 ? (
+            <SkeletonList count={3} lines={1} />
+          ) : past.length === 0 ? (
             <EmptyState
               icon="history"
               title={t('passenger:noPastTitle')}
               body={t('passenger:noPastBody')}
             />
           ) : (
-            past.map((row) => (
-              <Card key={row.reservation.id}>
+            past.map((row, index) => (
+              <FadeSlideIn key={row.reservation.id} index={Math.min(index, 8)}>
+              <Card onPress={() => nav.navigate('BookingConfirm', { id: row.reservation.id })}>
                 <Row justify="space-between">
                   <Stack gap={2}>
                     <Text variant="bodyLg">
@@ -309,8 +385,27 @@ export default function PassengerDashboard() {
                     </Text>
                   </Stack>
                   <View style={{ alignItems: 'flex-end', gap: spacing.sm }}>
-                    <Badge label={statusLabel(t, row.reservation.status)} variant={row.reservation.status === 'cancelled' ? 'error' : 'success'} />
-                    {row.reservation.status === 'completed' && (
+                    <Badge
+                      label={
+                        row.reservation.status === 'cancelled'
+                          ? statusLabel(t, 'cancelled')
+                          : row.ride?.status === 'in_progress'
+                            ? t('booking:ticketExpired')
+                            : row.ride?.status === 'completed'
+                              ? statusLabel(t, 'completed')
+                              : row.ride?.status === 'cancelled'
+                                ? statusLabel(t, 'cancelled')
+                                : statusLabel(t, row.reservation.status)
+                      }
+                      variant={
+                        row.reservation.status === 'cancelled' || row.ride?.status === 'cancelled'
+                          ? 'error'
+                          : row.ride?.status === 'in_progress'
+                            ? 'warning'
+                            : 'success'
+                      }
+                    />
+                    {row.ride?.status === 'completed' && (
                       <Button
                         label={t('passenger:rateDriver')}
                         variant="outline"
@@ -325,15 +420,19 @@ export default function PassengerDashboard() {
                   </View>
                 </Row>
               </Card>
+              </FadeSlideIn>
             ))
           ))}
 
         {tab === 'payments' &&
-          (payments.length === 0 ? (
+          (refreshing && payments.length === 0 ? (
+            <SkeletonList count={3} lines={1} />
+          ) : payments.length === 0 ? (
             <EmptyState icon="payments" title={t('passenger:noPaymentsTitle')} />
           ) : (
-            payments.map((p) => (
-              <Card key={p.id}>
+            payments.map((p, index) => (
+              <FadeSlideIn key={p.id} index={Math.min(index, 8)}>
+              <Card>
                 <Row justify="space-between">
                   <Stack gap={2}>
                     <Text variant="bodyLg">{p.amount} {t('common:tnd')}</Text>
@@ -349,6 +448,7 @@ export default function PassengerDashboard() {
                   />
                 </Row>
               </Card>
+              </FadeSlideIn>
             ))
           ))}
 

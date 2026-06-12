@@ -51,14 +51,31 @@ function passengerContact(user) {
   };
 }
 
+// Routes and cities are government reference data that changes ~never. Cache
+// them in memory so repeat screen mounts skip the round-trip entirely (the
+// server caches them for 24h; this saves the network hop too).
+const REF_TTL_MS = 10 * 60 * 1000;
+let routesCache = { at: 0, data: null };
+let citiesCache = { at: 0, data: null };
+
 export async function listRoutes() {
-  if (!useMocks) return gqlList('ListRoutes');
+  if (!useMocks) {
+    if (routesCache.data && Date.now() - routesCache.at < REF_TTL_MS) return routesCache.data;
+    const rows = await gqlList('ListRoutes');
+    if (rows.length) routesCache = { at: Date.now(), data: rows };
+    return rows;
+  }
   await sleep(80);
   return db.routes.slice();
 }
 
 export async function listCities() {
-  if (!useMocks) return gqlList('ListCities');
+  if (!useMocks) {
+    if (citiesCache.data && Date.now() - citiesCache.at < REF_TTL_MS) return citiesCache.data;
+    const rows = await gqlList('ListCities');
+    if (rows.length) citiesCache = { at: Date.now(), data: rows };
+    return rows;
+  }
   await sleep(40);
   return [...new Set(db.routes.flatMap((r) => [r.origin_city, r.destination_city]))].sort();
 }

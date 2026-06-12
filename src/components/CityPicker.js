@@ -16,12 +16,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import Animated, { withSpring, withTiming } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { Text } from './Text';
 import { useTheme } from '../context/ThemeContext';
 import { useLocale } from '../context/LocaleContext';
-import { spacing, radius, shadows, typography } from '../theme';
+import { spacing, radius, shadows, typography, withAlpha } from '../theme';
+import { FadeSlideIn, PressableScale, SPRING } from './motion';
 
 const normalizeForSearch = (s) =>
   (s || '')
@@ -47,10 +49,28 @@ export function rankCities(cities, rawQuery) {
   return scored.map((s) => s.c);
 }
 
+const sheetEntering = () => {
+  'worklet';
+  return {
+    initialValues: {
+      opacity: 0,
+      transform: [{ translateY: 56 }, { scale: 0.97 }],
+    },
+    animations: {
+      opacity: withTiming(1, { duration: 160 }),
+      transform: [
+        { translateY: withSpring(0, SPRING) },
+        { scale: withSpring(1, SPRING) },
+      ],
+    },
+  };
+};
+
 export function CityPickerModal({ visible, label, value, onChange, onClose, cities }) {
   const { colors } = useTheme();
   const { t } = useLocale();
   const [query, setQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const filtered = useMemo(() => rankCities(cities, query), [cities, query]);
 
   const close = () => {
@@ -68,14 +88,15 @@ export function CityPickerModal({ visible, label, value, onChange, onClose, citi
     >
       <Pressable
         onPress={close}
-        style={{ flex: 1, backgroundColor: 'rgba(3, 22, 52, 0.45)' }}
+        style={{ flex: 1, backgroundColor: withAlpha(colors.scrim, 0.5) }}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1, justifyContent: 'center', paddingHorizontal: spacing.lg }}
           pointerEvents="box-none"
         >
-          <View
+          <Animated.View
+            entering={sheetEntering}
             onStartShouldSetResponder={() => true}
             style={{
               backgroundColor: colors.surfaceContainerLowest,
@@ -96,16 +117,20 @@ export function CityPickerModal({ visible, label, value, onChange, onClose, citi
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  backgroundColor: colors.surfaceContainer,
+                  backgroundColor: searchFocused
+                    ? colors.surfaceContainerHighest
+                    : colors.surfaceContainer,
                   borderRadius: radius.lg,
                   paddingHorizontal: spacing.md,
                   height: 44,
+                  borderWidth: 1.5,
+                  borderColor: searchFocused ? colors.primary : withAlpha(colors.primary, 0),
                 }}
               >
                 <MaterialIcons
                   name="search"
                   size={20}
-                  color={colors.onSurfaceVariant}
+                  color={searchFocused ? colors.primary : colors.onSurfaceVariant}
                   style={{ marginEnd: spacing.sm }}
                 />
                 <TextInput
@@ -116,6 +141,8 @@ export function CityPickerModal({ visible, label, value, onChange, onClose, citi
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoFocus
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
                   style={{
                     flex: 1,
                     color: colors.onSurface,
@@ -143,32 +170,40 @@ export function CityPickerModal({ visible, label, value, onChange, onClose, citi
                   </Text>
                 </View>
               }
-              renderItem={({ item: c }) => (
-                <Pressable
-                  onPress={() => {
-                    onChange(c);
-                    close();
-                  }}
-                  style={({ pressed }) => ({
-                    paddingVertical: 14,
-                    paddingHorizontal: spacing.md,
-                    marginVertical: 2,
-                    borderRadius: radius.lg,
-                    backgroundColor:
-                      c === value
-                        ? colors.primaryFixed
-                        : pressed
-                          ? colors.surfaceContainer
-                          : 'transparent',
-                  })}
-                >
-                  <Text variant="bodyLg" color={c === value ? colors.primary : colors.onSurface}>
-                    {c}
-                  </Text>
-                </Pressable>
+              renderItem={({ item: c, index }) => (
+                <FadeSlideIn index={Math.min(index, 8)}>
+                  <Pressable
+                    onPress={() => {
+                      onChange(c);
+                      close();
+                    }}
+                    style={({ pressed }) => ({
+                      paddingVertical: 14,
+                      paddingHorizontal: spacing.md,
+                      marginVertical: 2,
+                      borderRadius: radius.lg,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor:
+                        c === value
+                          ? withAlpha(colors.primary, 0.12)
+                          : pressed
+                            ? colors.surfaceContainer
+                            : 'transparent',
+                    })}
+                  >
+                    <Text variant="bodyLg" color={c === value ? colors.primary : colors.onSurface}>
+                      {c}
+                    </Text>
+                    {c === value ? (
+                      <MaterialIcons name="check" size={20} color={colors.primary} />
+                    ) : null}
+                  </Pressable>
+                </FadeSlideIn>
               )}
             />
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Pressable>
     </Modal>
@@ -180,7 +215,7 @@ export function CityPicker({ label, value, onChange, cities }) {
   const [open, setOpen] = useState(false);
   return (
     <View>
-      <Pressable
+      <PressableScale
         onPress={() => setOpen(true)}
         style={{
           backgroundColor: colors.surfaceContainer,
@@ -193,7 +228,7 @@ export function CityPicker({ label, value, onChange, cities }) {
           {label}
         </Text>
         <Text variant="bodyLg">{value}</Text>
-      </Pressable>
+      </PressableScale>
       <CityPickerModal
         visible={open}
         label={label}

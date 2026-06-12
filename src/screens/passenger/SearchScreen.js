@@ -4,18 +4,21 @@ import { useLocale } from '../../context/LocaleContext';
 import {
   View,
   Pressable,
-  ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { Card } from '../../components/Card';
+import { Chip } from '../../components/Chip';
 import { RideCard } from '../../components/RideCard';
 import { EmptyState } from '../../components/EmptyState';
+import { SkeletonList } from '../../components/Skeleton';
 import { Row } from '../../components/Section';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 import { CityPickerModal } from '../../components/CityPicker';
 import { ridesApi } from '../../api';
 import { spacing, radius, withAlpha } from '../../theme';
@@ -24,7 +27,7 @@ import { formatDate, formatWeekday } from '../../i18n/format';
 const DEFAULT_FILTERS = { priceMax: null, ratingMin: 0 };
 
 export default function SearchScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t, locale } = useLocale();
   const nav = useNavigation();
   const route = useRoute();
@@ -104,43 +107,49 @@ export default function SearchScreen() {
     setSort('departure');
   }, []);
 
+  const heroFg = isDark ? colors.onSurface : colors.onPrimary;
+  const heroMuted = withAlpha(heroFg, 0.8);
+
   return (
     <Screen padded={false}>
       {/* ─── Banner ──────────────────────────────────────────────────────── */}
-      <View
+      <LinearGradient
+        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: colors.primary,
           paddingHorizontal: spacing.containerMargin,
           paddingTop: spacing.md,
           paddingBottom: spacing.lg,
-          borderBottomLeftRadius: 28,
-          borderBottomRightRadius: 28,
+          borderBottomLeftRadius: radius.xxl,
+          borderBottomRightRadius: radius.xxl,
           gap: spacing.md,
         }}
       >
         <Row align="center" gap={spacing.sm}>
-          <Pressable
+          <PressableScale
             onPress={() => nav.canGoBack() && nav.goBack()}
             hitSlop={10}
+            scaleTo={0.9}
             style={{
               width: 36,
               height: 36,
-              borderRadius: 18,
-              backgroundColor: withAlpha(colors.onPrimary, 0.16),
+              borderRadius: radius.full,
+              backgroundColor: withAlpha(heroFg, 0.16),
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <MaterialIcons name="arrow-back" size={20} color={colors.onPrimary} />
-          </Pressable>
-          <Text variant="labelMd" color={colors.onPrimaryContainer}>
+            <MaterialIcons name="arrow-back" size={20} color={heroFg} />
+          </PressableScale>
+          <Text variant="labelMd" color={heroMuted}>
             {t('search:title', 'Find a ride')}
           </Text>
         </Row>
 
         <View
           style={{
-            backgroundColor: withAlpha(colors.onPrimary, 0.12),
+            backgroundColor: withAlpha(heroFg, 0.12),
             borderRadius: radius.lg,
             paddingHorizontal: spacing.md,
             paddingVertical: spacing.sm,
@@ -154,8 +163,8 @@ export default function SearchScreen() {
                 style={{ paddingVertical: 6 }}
               >
                 <Row align="center" gap={spacing.xs}>
-                  <MaterialIcons name="trip-origin" size={14} color={colors.onPrimary} />
-                  <Text variant="bodyMd" color={colors.onPrimary} numberOfLines={1}>
+                  <MaterialIcons name="trip-origin" size={14} color={heroFg} />
+                  <Text variant="bodyMd" color={heroFg} numberOfLines={1}>
                     {origin || t('search:anyOrigin', 'Anywhere')}
                   </Text>
                 </Row>
@@ -163,7 +172,7 @@ export default function SearchScreen() {
               <View
                 style={{
                   height: 1,
-                  backgroundColor: withAlpha(colors.onPrimary, 0.15),
+                  backgroundColor: withAlpha(heroFg, 0.15),
                   marginVertical: 2,
                 }}
               />
@@ -173,85 +182,82 @@ export default function SearchScreen() {
                 style={{ paddingVertical: 6 }}
               >
                 <Row align="center" gap={spacing.xs}>
-                  <MaterialIcons name="place" size={14} color={colors.onPrimary} />
-                  <Text variant="bodyMd" color={colors.onPrimary} numberOfLines={1}>
+                  <MaterialIcons name="place" size={14} color={heroFg} />
+                  <Text variant="bodyMd" color={heroFg} numberOfLines={1}>
                     {destination || t('search:anyDestination', 'Anywhere')}
                   </Text>
                 </Row>
               </Pressable>
             </View>
-            <Pressable
+            <PressableScale
               onPress={() => {
                 setOrigin(destination);
                 setDestination(origin);
               }}
               hitSlop={10}
+              scaleTo={0.9}
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 18,
-                backgroundColor: withAlpha(colors.onPrimary, 0.16),
+                borderRadius: radius.full,
+                backgroundColor: withAlpha(heroFg, 0.16),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="swap-vert" size={20} color={colors.onPrimary} />
-            </Pressable>
+              <MaterialIcons name="swap-vert" size={20} color={heroFg} />
+            </PressableScale>
           </Row>
         </View>
 
         <Row gap={spacing.sm} align="center">
           <Row gap={4} align="center" style={{ flex: 1 }}>
-            <MaterialIcons name="event" size={14} color={colors.onPrimaryContainer} />
-            <Text variant="labelSm" color={colors.onPrimaryContainer}>
+            <MaterialIcons name="event" size={14} color={heroMuted} />
+            <Text variant="labelSm" color={heroMuted}>
               {formatDate(date)}
             </Text>
           </Row>
           <Row gap={4} align="center">
-            <MaterialIcons name="person" size={14} color={colors.onPrimaryContainer} />
-            <Text variant="labelSm" color={colors.onPrimaryContainer}>
+            <MaterialIcons name="person" size={14} color={heroMuted} />
+            <Text variant="labelSm" color={heroMuted}>
               {t('common:seatsCount', { count: Number(seats) || 1 })}
             </Text>
           </Row>
         </Row>
-      </View>
+      </LinearGradient>
 
       {/* ─── Day strip ───────────────────────────────────────────────────── */}
       <View style={{ paddingTop: spacing.md, gap: spacing.md }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: spacing.containerMargin,
-            gap: spacing.sm,
-          }}
-        >
-          {days.map((d) => {
-            const same = d.toDateString() === date.toDateString();
-            return (
-              <Pressable
-                key={d.toISOString()}
-                onPress={() => setDate(d)}
-                style={{
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: spacing.sm,
-                  borderRadius: radius.full,
-                  backgroundColor: same ? colors.primary : colors.surfaceContainer,
-                }}
-              >
-                <Text variant="labelMd" color={same ? colors.onPrimary : colors.onSurface}>
-                  {formatWeekday(d, { locale })} {d.getDate()}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <FadeSlideIn index={0}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.containerMargin,
+              gap: spacing.sm,
+            }}
+          >
+            {days.map((d) => {
+              const same = d.toDateString() === date.toDateString();
+              return (
+                <Chip
+                  key={d.toISOString()}
+                  label={`${formatWeekday(d, { locale })} ${d.getDate()}`}
+                  selected={same}
+                  onPress={() => setDate(d)}
+                />
+              );
+            })}
+          </ScrollView>
+        </FadeSlideIn>
 
         <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
           {/* ─── Filter toolbar ──────────────────────────────────────────── */}
+          <FadeSlideIn index={1}>
           <Row align="center" justify="space-between">
-            <Pressable
+            <PressableScale
               onPress={toggleFilters}
+              scaleTo={0.94}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -259,17 +265,17 @@ export default function SearchScreen() {
                 paddingHorizontal: spacing.md,
                 paddingVertical: spacing.sm,
                 borderRadius: radius.full,
-                backgroundColor: filtersOpen ? colors.primary : colors.surfaceContainerHigh,
+                backgroundColor: filtersOpen ? colors.secondaryContainer : colors.surfaceContainerHigh,
               }}
             >
               <MaterialIcons
                 name="tune"
                 size={16}
-                color={filtersOpen ? colors.onPrimary : colors.onSurface}
+                color={filtersOpen ? colors.onSecondaryContainer : colors.onSurface}
               />
               <Text
                 variant="labelMd"
-                color={filtersOpen ? colors.onPrimary : colors.onSurface}
+                color={filtersOpen ? colors.onSecondaryContainer : colors.onSurface}
               >
                 {t('search:filters')}
               </Text>
@@ -279,114 +285,113 @@ export default function SearchScreen() {
                     minWidth: 18,
                     height: 18,
                     paddingHorizontal: 5,
-                    borderRadius: 9,
+                    borderRadius: radius.full,
                     backgroundColor: filtersOpen
-                      ? withAlpha(colors.onPrimary, 0.25)
-                      : colors.primary,
+                      ? colors.onSecondaryContainer
+                      : colors.secondaryContainer,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
                   <Text
                     variant="labelSm"
-                    color={filtersOpen ? colors.onPrimary : colors.onPrimary}
-                    style={{ fontSize: 11, fontWeight: '700' }}
+                    color={filtersOpen ? colors.secondaryContainer : colors.onSecondaryContainer}
                   >
                     {activeFilterCount}
                   </Text>
                 </View>
               )}
-            </Pressable>
+            </PressableScale>
 
             <Text variant="labelSm" color={colors.onSurfaceVariant}>
               {rides.length} {t('search:results', 'results')}
             </Text>
           </Row>
+          </FadeSlideIn>
 
           {/* ─── Collapsible filter panel ────────────────────────────────── */}
           {filtersOpen && (
-            <Card style={{ gap: spacing.md }}>
-              <Row align="center" justify="space-between">
-                <Text variant="labelMd">{t('search:filters')}</Text>
-                <Row gap={spacing.sm} align="center">
-                  {activeFilterCount > 0 && (
-                    <Pressable onPress={resetFilters} hitSlop={8}>
-                      <Text variant="labelSm" color={colors.primary}>
-                        {t('search:reset', 'Reset')}
-                      </Text>
-                    </Pressable>
-                  )}
-                  <Pressable
-                    onPress={closeFilters}
-                    hitSlop={10}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: colors.surfaceContainerHigh,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <MaterialIcons name="close" size={16} color={colors.onSurface} />
-                  </Pressable>
+            <FadeSlideIn>
+              <Card style={{ gap: spacing.md }}>
+                <Row align="center" justify="space-between">
+                  <Text variant="labelMd">{t('search:filters')}</Text>
+                  <Row gap={spacing.sm} align="center">
+                    {activeFilterCount > 0 && (
+                      <Pressable onPress={resetFilters} hitSlop={8}>
+                        <Text variant="labelSm" color={colors.primary}>
+                          {t('search:reset', 'Reset')}
+                        </Text>
+                      </Pressable>
+                    )}
+                    <PressableScale
+                      onPress={closeFilters}
+                      hitSlop={10}
+                      scaleTo={0.9}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: radius.full,
+                        backgroundColor: colors.surfaceContainerHigh,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MaterialIcons name="close" size={16} color={colors.onSurface} />
+                    </PressableScale>
+                  </Row>
                 </Row>
-              </Row>
 
-              <FilterRow
-                icon="payments"
-                label={t('search:maxPrice')}
-                colors={colors}
-              >
-                {[null, 15, 25, 40].map((p) => (
-                  <Chip
-                    key={String(p)}
-                    active={filters.priceMax === p}
-                    onPress={() => setFilters((f) => ({ ...f, priceMax: p }))}
-                    label={p == null ? t('search:anyPrice') : t('search:priceLte', { price: p })}
-                    colors={colors}
-                  />
-                ))}
-              </FilterRow>
+                <FilterRow
+                  icon="payments"
+                  label={t('search:maxPrice')}
+                  colors={colors}
+                >
+                  {[null, 15, 25, 40].map((p) => (
+                    <Chip
+                      key={String(p)}
+                      selected={filters.priceMax === p}
+                      onPress={() => setFilters((f) => ({ ...f, priceMax: p }))}
+                      label={p == null ? t('search:anyPrice') : t('search:priceLte', { price: p })}
+                    />
+                  ))}
+                </FilterRow>
 
-              <FilterRow
-                icon="star-outline"
-                label={t('search:minRating', 'Min rating')}
-                colors={colors}
-              >
-                {[0, 3, 4, 4.5].map((rating) => (
-                  <Chip
-                    key={String(rating)}
-                    active={filters.ratingMin === rating}
-                    onPress={() => setFilters((f) => ({ ...f, ratingMin: rating }))}
-                    label={rating === 0 ? t('search:anyRating', 'Any') : t('search:ratingPlus', { rating })}
-                    colors={colors}
-                  />
-                ))}
-              </FilterRow>
+                <FilterRow
+                  icon="star-outline"
+                  label={t('search:minRating', 'Min rating')}
+                  colors={colors}
+                >
+                  {[0, 3, 4, 4.5].map((rating) => (
+                    <Chip
+                      key={String(rating)}
+                      selected={filters.ratingMin === rating}
+                      onPress={() => setFilters((f) => ({ ...f, ratingMin: rating }))}
+                      label={rating === 0 ? t('search:anyRating', 'Any') : t('search:ratingPlus', { rating })}
+                    />
+                  ))}
+                </FilterRow>
 
-              <FilterRow icon="sort" label={t('search:sortBy')} colors={colors}>
-                {[
-                  { k: 'departure', label: t('search:sortEarliest') },
-                  { k: 'price', label: t('search:sortCheapest') },
-                  { k: 'rating', label: t('search:sortBestRated') },
-                ].map((opt) => (
-                  <Chip
-                    key={opt.k}
-                    active={sort === opt.k}
-                    accent="secondary"
-                    onPress={() => setSort(opt.k)}
-                    label={opt.label}
-                    colors={colors}
-                  />
-                ))}
-              </FilterRow>
-            </Card>
+                <FilterRow icon="sort" label={t('search:sortBy')} colors={colors}>
+                  {[
+                    { k: 'departure', label: t('search:sortEarliest') },
+                    { k: 'price', label: t('search:sortCheapest') },
+                    { k: 'rating', label: t('search:sortBestRated') },
+                  ].map((opt) => (
+                    <Chip
+                      key={opt.k}
+                      selected={sort === opt.k}
+                      onPress={() => setSort(opt.k)}
+                      label={opt.label}
+                    />
+                  ))}
+                </FilterRow>
+              </Card>
+            </FadeSlideIn>
           )}
 
           {/* ─── Results (RideCard untouched) ────────────────────────────── */}
           {loading ? (
-            <ActivityIndicator color={colors.primary} />
+            <SkeletonList count={4} lines={2} />
           ) : rides.length === 0 ? (
             <EmptyState
               icon="search-off"
@@ -394,12 +399,13 @@ export default function SearchScreen() {
               body={t('search:noResultsBody')}
             />
           ) : (
-            rides.map((r) => (
-              <RideCard
-                key={r.id}
-                ride={r}
-                onPress={() => nav.navigate('RideDetail', { id: r.id })}
-              />
+            rides.map((r, index) => (
+              <FadeSlideIn key={r.id} index={Math.min(index, 8)}>
+                <RideCard
+                  ride={r}
+                  onPress={() => nav.navigate('RideDetail', { id: r.id })}
+                />
+              </FadeSlideIn>
             ))
           )}
         </View>
@@ -441,27 +447,5 @@ function FilterRow({ icon, label, children, colors }) {
         {children}
       </View>
     </View>
-  );
-}
-
-function Chip({ active, onPress, label, accent = 'primary', colors }) {
-  const bgActive = accent === 'secondary' ? colors.secondaryContainer : colors.primary;
-  const fgActive = accent === 'secondary' ? colors.onSecondaryContainer : colors.onPrimary;
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        paddingHorizontal: spacing.md,
-        paddingVertical: 6,
-        borderRadius: radius.full,
-        backgroundColor: active ? bgActive : colors.surfaceContainerHigh,
-        borderWidth: active ? 0 : 1,
-        borderColor: withAlpha(colors.outlineVariant, 0.4),
-      }}
-    >
-      <Text variant="labelSm" color={active ? fgActive : colors.onSurface}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }

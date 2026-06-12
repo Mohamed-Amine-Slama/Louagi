@@ -15,6 +15,7 @@ const WEIGHT_BY_VARIANT = {
   bodySm: 'regular',
   labelMd: 'semiBold',
   labelSm: 'semiBold',
+  labelXs: 'semiBold',
 };
 
 export function Text({ variant = 'bodyMd', color, style, children, numberOfLines, ...rest }) {

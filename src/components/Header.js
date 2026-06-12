@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Text } from './Text';
 import { useTheme } from '../context/ThemeContext';
 import { useLocale } from '../context/LocaleContext';
-import { spacing } from '../theme';
+import { spacing, radius } from '../theme';
 import { HeaderQuickToggles } from './HeaderQuickToggles';
 
 import { useAuth } from '../context/AuthContext';
@@ -61,7 +61,7 @@ export function ScreenHeader({
           style={{
             width: 40,
             height: 40,
-            borderRadius: 20,
+            borderRadius: radius.full,
             backgroundColor: dark ? colors.primaryContainer : colors.surfaceContainer,
             alignItems: 'center',
             justifyContent: 'center',
@@ -70,12 +70,12 @@ export function ScreenHeader({
           <MaterialIcons name={backIcon} size={22} color={fg} />
         </Pressable>
       ) : null}
-      <View style={{ flex: 1 }}>
-        <Text variant="headlineSm" color={fg}>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text variant="headlineSm" color={fg} numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (
-          <Text variant="bodySm" color={subFg}>
+          <Text variant="bodySm" color={subFg} numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
@@ -87,7 +87,7 @@ export function ScreenHeader({
           style={{
             width: 40,
             height: 40,
-            borderRadius: 20,
+            borderRadius: radius.full,
             backgroundColor: dark ? colors.primaryContainer : colors.surfaceContainer,
             alignItems: 'center',
             justifyContent: 'center',

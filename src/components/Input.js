@@ -2,9 +2,16 @@ import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLocale } from '../context/LocaleContext';
 import { View, TextInput, Pressable } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolateColor,
+} from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Text } from './Text';
-import { radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, withAlpha } from '../theme';
+import { SPRING } from './motion';
 
 export function Input({
   label,
@@ -20,36 +27,54 @@ export function Input({
   autoCapitalize = 'sentences',
   prefix,
   multiline = false,
+  maxLength,
 }) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
   const [reveal, setReveal] = useState(false);
+  const focus = useSharedValue(0);
   const isSecure = secureTextEntry && !reveal;
+  const primary = colors.primary;
+  const errorColor = colors.error;
+  const idleBg = colors.surfaceContainer;
+  const focusBg = colors.surfaceContainerHighest;
+  const idleBorder = withAlpha(primary, 0);
+  const hasError = !!error;
+  const fieldStyle = useAnimatedStyle(
+    () => ({
+      borderColor: hasError
+        ? errorColor
+        : interpolateColor(focus.value, [0, 1], [idleBorder, primary]),
+      backgroundColor: interpolateColor(focus.value, [0, 1], [idleBg, focusBg]),
+    }),
+    [hasError, errorColor, idleBorder, primary, idleBg, focusBg]
+  );
   return (
     <View style={{ gap: spacing.xs }}>
       {label ? (
-        <Text variant="labelSm" color={colors.onSurfaceVariant}>
+        <Text variant="labelSm" color={focused ? colors.primary : colors.onSurfaceVariant}>
           {label}
         </Text>
       ) : null}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: multiline ? 'flex-start' : 'center',
-          backgroundColor: focused ? colors.surfaceContainerHighest : colors.surfaceContainer,
-          borderRadius: radius.lg,
-          paddingHorizontal: spacing.md,
-          paddingVertical: multiline ? spacing.sm : 0,
-          borderWidth: focused ? 1 : 0,
-          borderColor: error ? colors.error : colors.primary,
-          minHeight: multiline ? 96 : 52,
-        }}
+      <Animated.View
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: multiline ? 'flex-start' : 'center',
+            borderRadius: radius.lg,
+            paddingHorizontal: spacing.md,
+            paddingVertical: multiline ? spacing.sm : 0,
+            borderWidth: 1.5,
+            minHeight: multiline ? 96 : 52,
+          },
+          fieldStyle,
+        ]}
       >
         {iconLeft ? (
           <MaterialIcons
             name={iconLeft}
             size={20}
-            color={colors.onSurfaceVariant}
+            color={focused ? colors.primary : colors.onSurfaceVariant}
             style={{ marginEnd: spacing.sm }}
           />
         ) : null}
@@ -68,8 +93,15 @@ export function Input({
           keyboardType={keyboardType}
           secureTextEntry={isSecure}
           autoCapitalize={autoCapitalize}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          maxLength={maxLength}
+          onFocus={() => {
+            setFocused(true);
+            focus.value = withSpring(1, SPRING);
+          }}
+          onBlur={() => {
+            setFocused(false);
+            focus.value = withSpring(0, SPRING);
+          }}
           multiline={multiline}
           style={{
             flex: 1,
@@ -89,7 +121,7 @@ export function Input({
         ) : iconRight ? (
           <MaterialIcons name={iconRight} size={20} color={colors.onSurfaceVariant} />
         ) : null}
-      </View>
+      </Animated.View>
       {error ? (
         <Text variant="labelSm" color={colors.error}>
           {error}
@@ -106,21 +138,37 @@ export function Input({
 export function PhoneInput({ value, onChangeText, error, label, placeholder }) {
   const { colors } = useTheme();
   const { t } = useLocale();
+  const [focused, setFocused] = useState(false);
+  const focus = useSharedValue(0);
+  const primary = colors.primary;
+  const errorColor = colors.error;
+  const idleBorder = withAlpha(primary, 0);
+  const hasError = !!error;
+  const fieldStyle = useAnimatedStyle(
+    () => ({
+      borderColor: hasError
+        ? errorColor
+        : interpolateColor(focus.value, [0, 1], [idleBorder, primary]),
+    }),
+    [hasError, errorColor, idleBorder, primary]
+  );
   return (
     <View style={{ gap: spacing.xs }}>
-      <Text variant="labelSm" color={colors.onSurfaceVariant}>
+      <Text variant="labelSm" color={focused ? colors.primary : colors.onSurfaceVariant}>
         {label || t('auth:phoneNumber')}
       </Text>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: colors.surfaceContainer,
-          borderRadius: radius.lg,
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: error ? colors.error : 'transparent',
-        }}
+      <Animated.View
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.surfaceContainer,
+            borderRadius: radius.lg,
+            overflow: 'hidden',
+            borderWidth: 1.5,
+          },
+          fieldStyle,
+        ]}
       >
         <View
           style={{
@@ -163,6 +211,14 @@ export function PhoneInput({ value, onChangeText, error, label, placeholder }) {
           placeholder={placeholder || t('auth:phonePlaceholder')}
           placeholderTextColor={colors.outline}
           keyboardType="phone-pad"
+          onFocus={() => {
+            setFocused(true);
+            focus.value = withSpring(1, SPRING);
+          }}
+          onBlur={() => {
+            setFocused(false);
+            focus.value = withSpring(0, SPRING);
+          }}
           style={{
             flex: 1,
             paddingHorizontal: spacing.md,
@@ -170,7 +226,7 @@ export function PhoneInput({ value, onChangeText, error, label, placeholder }) {
             ...typography.bodyLg,
           }}
         />
-      </View>
+      </Animated.View>
       {error ? (
         <Text variant="labelSm" color={colors.error}>
           {error}

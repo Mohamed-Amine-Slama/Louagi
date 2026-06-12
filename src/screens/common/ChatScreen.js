@@ -6,10 +6,12 @@ import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/nativ
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { Row } from '../../components/Section';
+import { PressableScale } from '../../components/motion';
 
 import { messagesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -18,7 +20,7 @@ import { formatTime } from '../../i18n/format';
 import { useToast } from '../../components/Toast';
 
 export default function ChatScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t, locale } = useLocale();
   const { user } = useAuth();
   const route = useRoute();
@@ -33,18 +35,43 @@ export default function ChatScreen() {
   const [busy, setBusy] = useState(false);
   const listRef = useRef(null);
 
+  // Adaptive polling: fast while the conversation is active, backing off to
+  // POLL_SLOW_MS when nothing changes. Sending resets to the fast cadence.
+  const POLL_FAST_MS = 3000;
+  const POLL_SLOW_MS = 12000;
+  const pollDelay = useRef(POLL_FAST_MS);
+
   const load = useCallback(async () => {
     if (!user?.id) return;
     const res = await messagesApi.getMessages({ actor: user, otherUserId: userId });
-    setMessages(res);
+    if (!Array.isArray(res)) return;
+    setMessages((prev) => {
+      const changed =
+        prev.length !== res.length || prev[prev.length - 1]?.id !== res[res.length - 1]?.id;
+      if (changed) {
+        pollDelay.current = POLL_FAST_MS;
+        return res;
+      }
+      pollDelay.current = Math.min(Math.round(pollDelay.current * 1.5), POLL_SLOW_MS);
+      return prev;
+    });
   }, [user, userId]);
 
   useFocusEffect(
     useCallback(() => {
-      load();
-      // Simple polling for new messages in mock mode
-      const interval = setInterval(load, 3000);
-      return () => clearInterval(interval);
+      let alive = true;
+      let timer = null;
+      pollDelay.current = POLL_FAST_MS;
+      const tick = async () => {
+        await load();
+        if (!alive) return;
+        timer = setTimeout(tick, pollDelay.current);
+      };
+      tick();
+      return () => {
+        alive = false;
+        if (timer) clearTimeout(timer);
+      };
     }, [load])
   );
 
@@ -55,6 +82,7 @@ export default function ChatScreen() {
     setBusy(false);
     if (res.ok) {
       setText('');
+      pollDelay.current = POLL_FAST_MS;
       setMessages((prev) => [...prev, res.message]);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     } else {
@@ -124,14 +152,14 @@ export default function ChatScreen() {
         zIndex: 10,
       }}>
         <Row gap={spacing.md}>
-          <Pressable onPress={() => nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')} style={{ padding: 4 }}>
+          <PressableScale scaleTo={0.88} onPress={() => nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')} style={{ padding: 4 }}>
             <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
-          </Pressable>
-          
+          </PressableScale>
+
           <Row gap={spacing.sm}>
             {/* Avatar Placeholder */}
             <View style={{
-              width: 40, height: 40, borderRadius: 20,
+              width: 40, height: 40, borderRadius: radius.full,
               backgroundColor: colors.primaryFixed,
               alignItems: 'center', justifyContent: 'center'
             }}>
@@ -145,18 +173,19 @@ export default function ChatScreen() {
             </View>
           </Row>
         </Row>
-        
+
         {user?.role === 'driver' && (
-          <Pressable 
-            onPress={handleCall} 
-            style={{ 
-              width: 40, height: 40, borderRadius: 20, 
-              backgroundColor: colors.surfaceContainerHigh, 
-              alignItems: 'center', justifyContent: 'center' 
+          <PressableScale
+            scaleTo={0.9}
+            onPress={handleCall}
+            style={{
+              width: 40, height: 40, borderRadius: radius.full,
+              backgroundColor: colors.surfaceContainerHigh,
+              alignItems: 'center', justifyContent: 'center'
             }}
           >
             <MaterialIcons name="call" size={20} color={colors.primary} />
-          </Pressable>
+          </PressableScale>
         )}
       </View>
 
@@ -187,100 +216,98 @@ export default function ChatScreen() {
           }
           renderItem={({ item }) => {
             const isMe = item.sender_id === user?.id;
+            const onSent = isDark ? colors.onPrimaryContainer : colors.onPrimary;
             return (
-              <Pressable 
-                onLongPress={() => handleLongPress(item)}
-                style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}
-              >
-                {isMe ? (
-                  <LinearGradient
-                    colors={[colors.primary, '#1a365d']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      maxWidth: '80%',
-                      paddingHorizontal: spacing.md,
-                      paddingVertical: 12,
-                      borderRadius: radius.xl,
-                      borderBottomRightRadius: 4,
-                      borderBottomLeftRadius: radius.xl,
-                      shadowColor: colors.primary,
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 4,
-                      elevation: 2,
-                    }}
-                  >
-                    <Text variant="bodyMd" color={colors.onPrimary}>
-                      {item.content}
-                    </Text>
-                    <Text 
-                      variant="labelSm" 
-                      color={withAlpha(colors.onPrimary, 0.7)}
-                      style={{ alignSelf: 'flex-end', marginTop: 6, fontSize: 10 }}
+              <Animated.View entering={FadeIn.duration(120)}>
+                <Pressable
+                  onLongPress={() => handleLongPress(item)}
+                  style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}
+                >
+                  {isMe ? (
+                    <LinearGradient
+                      colors={isDark ? [colors.primaryContainer, colors.primaryContainer] : [colors.primary, colors.primaryContainer]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        maxWidth: '80%',
+                        paddingHorizontal: spacing.md,
+                        paddingVertical: 12,
+                        borderRadius: radius.xl,
+                        borderBottomEndRadius: 4,
+                        borderBottomStartRadius: radius.xl,
+                        shadowColor: colors.primary,
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.15,
+                        shadowRadius: 4,
+                        elevation: 2,
+                      }}
                     >
-                      {formatTime(item.created_at, { locale })}
-                    </Text>
-                  </LinearGradient>
-                ) : (
-                  <View
-                    style={{
-                      maxWidth: '80%',
-                      backgroundColor: colors.surfaceContainerHighest,
-                      paddingHorizontal: spacing.md,
-                      paddingVertical: 12,
-                      borderRadius: radius.xl,
-                      borderBottomRightRadius: radius.xl,
-                      borderBottomLeftRadius: 4,
-                      shadowColor: colors.onSurface,
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 2,
-                      elevation: 1,
-                    }}
-                  >
-                    <Text variant="bodyMd" color={colors.onSurface}>
-                      {item.content}
-                    </Text>
-                    <Text 
-                      variant="labelSm" 
-                      color={colors.onSurfaceVariant}
-                      style={{ alignSelf: 'flex-end', marginTop: 6, fontSize: 10 }}
+                      <Text variant="bodyMd" color={onSent}>
+                        {item.content}
+                      </Text>
+                      <Text
+                        variant="labelXs"
+                        color={withAlpha(onSent, 0.75)}
+                        style={{ alignSelf: 'flex-end', marginTop: 6 }}
+                      >
+                        {formatTime(item.created_at, { locale })}
+                      </Text>
+                    </LinearGradient>
+                  ) : (
+                    <View
+                      style={{
+                        maxWidth: '80%',
+                        backgroundColor: colors.surfaceContainerHighest,
+                        paddingHorizontal: spacing.md,
+                        paddingVertical: 12,
+                        borderRadius: radius.xl,
+                        borderBottomEndRadius: radius.xl,
+                        borderBottomStartRadius: 4,
+                        shadowColor: colors.onSurface,
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
                     >
-                      {formatTime(item.created_at, { locale })}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
+                      <Text variant="bodyMd" color={colors.onSurface}>
+                        {item.content}
+                      </Text>
+                      <Text
+                        variant="labelXs"
+                        color={colors.onSurfaceVariant}
+                        style={{ alignSelf: 'flex-end', marginTop: 6 }}
+                      >
+                        {formatTime(item.created_at, { locale })}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              </Animated.View>
             );
           }}
         />
       </View>
 
       {/* Premium Input Area */}
-      <View style={{ 
-        flexDirection: 'row', 
+      <View style={{
+        flexDirection: 'row',
         alignItems: 'flex-end',
-        paddingHorizontal: spacing.md, 
+        paddingHorizontal: spacing.md,
         paddingTop: spacing.sm,
         paddingBottom: Platform.OS === 'ios' ? spacing.md : spacing.md,
         backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: withAlpha(colors.outlineVariant, 0.3),
         gap: spacing.sm
       }}>
         <View style={{
           flex: 1,
           flexDirection: 'row',
           alignItems: 'flex-end',
-          backgroundColor: colors.surfaceContainerLowest,
-          borderRadius: 24,
-          borderWidth: 1,
-          borderColor: colors.outlineVariant,
-          paddingRight: 4,
-          shadowColor: colors.onSurface,
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.02,
-          shadowRadius: 8,
-          elevation: 2,
+          backgroundColor: colors.surfaceContainerHigh,
+          borderRadius: radius.xxl,
+          paddingEnd: 4,
         }}>
           <TextInput
             value={text}
@@ -299,27 +326,26 @@ export default function ChatScreen() {
               fontSize: 16,
             }}
           />
-          <Pressable
+          <PressableScale
+            scaleTo={0.88}
             onPress={handleSend}
             disabled={!text.trim() || busy}
-            style={({ pressed }) => ({
+            style={{
               width: 40,
               height: 40,
               marginBottom: 4,
-              borderRadius: 20,
-              backgroundColor: text.trim() ? colors.primary : 'transparent',
+              borderRadius: radius.full,
+              backgroundColor: text.trim() ? colors.secondaryContainer : 'transparent',
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: pressed ? 0.8 : 1,
-              transform: [{ scale: pressed && text.trim() ? 0.95 : 1 }],
-            })}
+            }}
           >
-            <MaterialIcons 
-              name="send" 
-              size={20} 
-              color={text.trim() ? colors.onPrimary : colors.outline} 
+            <MaterialIcons
+              name="send"
+              size={20}
+              color={text.trim() ? colors.onSecondaryContainer : colors.outline}
             />
-          </Pressable>
+          </PressableScale>
         </View>
       </View>
     </KeyboardAvoidingView>
