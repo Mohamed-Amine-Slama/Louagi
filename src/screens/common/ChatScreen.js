@@ -1,33 +1,32 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, FlatList, TextInput, KeyboardAvoidingView, Platform, Linking, Pressable, Alert } from 'react-native';
+import { View, FlatList, TextInput, KeyboardAvoidingView, Platform, Linking, Pressable, Alert, ScrollView } from 'react-native';
 import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
-import { Row } from '../../components/Section';
+import { Row, Stack } from '../../components/Section';
+import { Avatar } from '../../components/Avatar';
 import { PressableScale } from '../../components/motion';
 
 import { messagesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { spacing, radius, withAlpha } from '../../theme';
+import { spacing, radius, withAlpha, shadows } from '../../theme';
 import { formatTime } from '../../i18n/format';
 import { useToast } from '../../components/Toast';
 
 export default function ChatScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t, locale } = useLocale();
   const { user } = useAuth();
   const route = useRoute();
   const nav = useNavigation();
   const toast = useToast();
   const insets = useSafeAreaInsets();
-  
+
   const { userId, userName, phoneNumber } = route.params;
 
   const [messages, setMessages] = useState([]);
@@ -35,8 +34,6 @@ export default function ChatScreen() {
   const [busy, setBusy] = useState(false);
   const listRef = useRef(null);
 
-  // Adaptive polling: fast while the conversation is active, backing off to
-  // POLL_SLOW_MS when nothing changes. Sending resets to the fast cadence.
   const POLL_FAST_MS = 3000;
   const POLL_SLOW_MS = 12000;
   const pollDelay = useRef(POLL_FAST_MS);
@@ -46,8 +43,7 @@ export default function ChatScreen() {
     const res = await messagesApi.getMessages({ actor: user, otherUserId: userId });
     if (!Array.isArray(res)) return;
     setMessages((prev) => {
-      const changed =
-        prev.length !== res.length || prev[prev.length - 1]?.id !== res[res.length - 1]?.id;
+      const changed = prev.length !== res.length || prev[prev.length - 1]?.id !== res[res.length - 1]?.id;
       if (changed) {
         pollDelay.current = POLL_FAST_MS;
         return res;
@@ -68,32 +64,34 @@ export default function ChatScreen() {
         timer = setTimeout(tick, pollDelay.current);
       };
       tick();
-      return () => {
-        alive = false;
-        if (timer) clearTimeout(timer);
-      };
+      return () => { alive = false; if (timer) clearTimeout(timer); };
     }, [load])
   );
 
-  const handleSend = async () => {
-    if (!text.trim() || busy) return;
+  const post = async (body) => {
+    if (!body.trim() || busy) return false;
     setBusy(true);
-    const res = await messagesApi.sendMessage({ actor: user, receiverId: userId, text });
+    const res = await messagesApi.sendMessage({ actor: user, receiverId: userId, text: body });
     setBusy(false);
     if (res.ok) {
-      setText('');
       pollDelay.current = POLL_FAST_MS;
       setMessages((prev) => [...prev, res.message]);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-    } else {
-      toast.show(res.error, 'error');
+      return true;
     }
+    toast.show(res.error, 'error');
+    return false;
+  };
+
+  const handleSend = async () => {
+    const ok = await post(text);
+    if (ok) setText('');
   };
 
   const deleteMsg = async (messageId, forEveryone) => {
     const res = await messagesApi.deleteMessage({ actor: user, messageId, forEveryone });
     if (res.ok) {
-      setMessages(prev => prev.filter(m => m.id !== messageId));
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
     } else {
       toast.show(res.error, 'error');
     }
@@ -105,16 +103,10 @@ export default function ChatScreen() {
       t('chat:deleteMessageBody', 'Are you sure you want to delete this message?'),
       [
         { text: t('common:cancel', 'Cancel'), style: 'cancel' },
-        { 
-          text: t('chat:deleteForMe', 'Delete for me'), 
-          style: 'destructive',
-          onPress: () => deleteMsg(msg.id, false)
-        },
-        ...(msg.sender_id === user?.id ? [{
-          text: t('chat:deleteForEveryone', 'Delete for everyone'), 
-          style: 'destructive',
-          onPress: () => deleteMsg(msg.id, true)
-        }] : [])
+        { text: t('chat:deleteForMe', 'Delete for me'), style: 'destructive', onPress: () => deleteMsg(msg.id, false) },
+        ...(msg.sender_id === user?.id
+          ? [{ text: t('chat:deleteForEveryone', 'Delete for everyone'), style: 'destructive', onPress: () => deleteMsg(msg.id, true) }]
+          : []),
       ]
     );
   };
@@ -127,188 +119,100 @@ export default function ChatScreen() {
     Linking.openURL(`tel:${phoneNumber}`);
   };
 
+  const quickReplies = [t('chat:quickWhereAreYou'), t('chat:quickImHere'), t('chat:quickRunningLate')];
+  const canSend = !!text.trim() && !busy;
+
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: colors.surface }} 
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-    >
-      {/* Premium Header */}
-      <View style={{ 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.md, 
-        paddingTop: Math.max(insets.top, 16),
-        paddingBottom: spacing.md,
-        backgroundColor: colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: withAlpha(colors.outlineVariant, 0.3),
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 4,
-        zIndex: 10,
-      }}>
-        <Row gap={spacing.md}>
-          <PressableScale scaleTo={0.88} onPress={() => nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')} style={{ padding: 4 }}>
-            <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.surface }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Header */}
+      <Row
+        gap={11}
+        align="center"
+        style={{
+          paddingHorizontal: spacing.md,
+          paddingTop: Math.max(insets.top, 16),
+          paddingBottom: spacing.md,
+          backgroundColor: colors.surfaceContainerLowest,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.outlineVariant,
+        }}
+      >
+        <PressableScale onPress={() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs'))} hitSlop={10} scaleTo={0.88} style={iconBtn(colors)}>
+          <MaterialIcons name="arrow-back" size={20} color={colors.onSurface} />
+        </PressableScale>
+        <Avatar name={userName} size={42} />
+        <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
+          <Text variant="bodyLg" numberOfLines={1}>{userName}</Text>
+          <Text variant="labelSm" color={colors.success}>{t('chat:online')}</Text>
+        </Stack>
+        {phoneNumber ? (
+          <PressableScale onPress={handleCall} scaleTo={0.9} style={iconBtn(colors)}>
+            <MaterialIcons name="call" size={18} color={colors.primary} />
           </PressableScale>
+        ) : null}
+      </Row>
 
-          <Row gap={spacing.sm}>
-            {/* Avatar Placeholder */}
-            <View style={{
-              width: 40, height: 40, borderRadius: radius.full,
-              backgroundColor: colors.primaryFixed,
-              alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Text variant="headlineSm" color={colors.onPrimaryFixed}>
-                {userName ? userName.charAt(0).toUpperCase() : '?'}
-              </Text>
-            </View>
-            <View>
-              <Text variant="headlineSm">{userName}</Text>
-              <Text variant="labelSm" color={colors.success}>{t('chat:online')}</Text>
-            </View>
-          </Row>
+      {/* Encryption notice (the design's centered context chip) */}
+      <View style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
+        <Row gap={5} align="center" style={{ backgroundColor: withAlpha(colors.success, 0.12), borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 }}>
+          <MaterialIcons name="lock" size={13} color={colors.success} />
+          <Text variant="labelSm" color={colors.success}>{t('driver:endToEndEncrypted', 'End-to-End Encrypted')}</Text>
         </Row>
-
-        {user?.role === 'driver' && (
-          <PressableScale
-            scaleTo={0.9}
-            onPress={handleCall}
-            style={{
-              width: 40, height: 40, borderRadius: radius.full,
-              backgroundColor: colors.surfaceContainerHigh,
-              alignItems: 'center', justifyContent: 'center'
-            }}
-          >
-            <MaterialIcons name="call" size={20} color={colors.primary} />
-          </PressableScale>
-        )}
       </View>
 
-      <View style={{ flex: 1 }}>
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          ListHeaderComponent={
-            <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
-              <View style={{ 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                backgroundColor: withAlpha(colors.success, 0.1),
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.xs,
-                borderRadius: radius.full,
-                gap: 4
-              }}>
-                <MaterialIcons name="lock" size={14} color={colors.success} />
-                <Text variant="labelSm" color={colors.success}>
-                  {t('driver:endToEndEncrypted', 'End-to-End Encrypted')}
-                </Text>
-              </View>
-            </View>
-          }
-          renderItem={({ item }) => {
-            const isMe = item.sender_id === user?.id;
-            const onSent = isDark ? colors.onPrimaryContainer : colors.onPrimary;
-            return (
-              <Animated.View entering={FadeIn.duration(120)}>
-                <Pressable
-                  onLongPress={() => handleLongPress(item)}
-                  style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}
-                >
-                  {isMe ? (
-                    <LinearGradient
-                      colors={isDark ? [colors.primaryContainer, colors.primaryContainer] : [colors.primary, colors.primaryContainer]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={{
-                        maxWidth: '80%',
-                        paddingHorizontal: spacing.md,
-                        paddingVertical: 12,
-                        borderRadius: radius.xl,
-                        borderBottomEndRadius: 4,
-                        borderBottomStartRadius: radius.xl,
-                        shadowColor: colors.primary,
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.15,
-                        shadowRadius: 4,
-                        elevation: 2,
-                      }}
-                    >
-                      <Text variant="bodyMd" color={onSent}>
-                        {item.content}
-                      </Text>
-                      <Text
-                        variant="labelXs"
-                        color={withAlpha(onSent, 0.75)}
-                        style={{ alignSelf: 'flex-end', marginTop: 6 }}
-                      >
-                        {formatTime(item.created_at, { locale })}
-                      </Text>
-                    </LinearGradient>
-                  ) : (
-                    <View
-                      style={{
-                        maxWidth: '80%',
-                        backgroundColor: colors.surfaceContainerHighest,
-                        paddingHorizontal: spacing.md,
-                        paddingVertical: 12,
-                        borderRadius: radius.xl,
-                        borderBottomEndRadius: radius.xl,
-                        borderBottomStartRadius: 4,
-                        shadowColor: colors.onSurface,
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 2,
-                        elevation: 1,
-                      }}
-                    >
-                      <Text variant="bodyMd" color={colors.onSurface}>
-                        {item.content}
-                      </Text>
-                      <Text
-                        variant="labelXs"
-                        color={colors.onSurfaceVariant}
-                        style={{ alignSelf: 'flex-end', marginTop: 6 }}
-                      >
-                        {formatTime(item.created_at, { locale })}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              </Animated.View>
-            );
-          }}
-        />
-      </View>
+      <FlatList
+        ref={listRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.md, gap: 10 }}
+        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        renderItem={({ item, index }) => {
+          const isMe = item.sender_id === user?.id;
+          const showAvatar = !isMe && (index === 0 || messages[index - 1]?.sender_id === user?.id);
+          return (
+            <Animated.View entering={FadeIn.duration(140)}>
+              <Pressable
+                onLongPress={() => handleLongPress(item)}
+                style={{ flexDirection: 'row', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}
+              >
+                {!isMe ? (showAvatar ? <Avatar name={userName} size={28} /> : <View style={{ width: 28 }} />) : null}
+                <View style={{ maxWidth: '74%' }}>
+                  <View
+                    style={[
+                      {
+                        backgroundColor: isMe ? colors.secondaryContainer : colors.surfaceContainerLowest,
+                        borderRadius: 16,
+                        borderBottomEndRadius: isMe ? 5 : 16,
+                        borderBottomStartRadius: isMe ? 16 : 5,
+                        paddingHorizontal: 14,
+                        paddingVertical: 11,
+                      },
+                      isMe ? null : shadows.soft,
+                    ]}
+                  >
+                    <Text variant="bodyMd" color={isMe ? colors.onSecondaryContainer : colors.onSurface}>{item.content}</Text>
+                  </View>
+                  <Text variant="labelXs" color={colors.onSurfaceVariant} style={{ marginTop: 4, textAlign: isMe ? 'right' : 'left' }}>
+                    {formatTime(item.created_at, { locale })}
+                  </Text>
+                </View>
+              </Pressable>
+            </Animated.View>
+          );
+        }}
+      />
 
-      {/* Premium Input Area */}
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        paddingHorizontal: spacing.md,
-        paddingTop: spacing.sm,
-        paddingBottom: Platform.OS === 'ios' ? spacing.md : spacing.md,
-        backgroundColor: colors.surface,
-        borderTopWidth: 1,
-        borderTopColor: withAlpha(colors.outlineVariant, 0.3),
-        gap: spacing.sm
-      }}>
-        <View style={{
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          backgroundColor: colors.surfaceContainerHigh,
-          borderRadius: radius.xxl,
-          paddingEnd: 4,
-        }}>
+      {/* Quick replies + input */}
+      <View style={{ backgroundColor: colors.surfaceContainerLowest, borderTopWidth: 1, borderTopColor: colors.outlineVariant, paddingBottom: Math.max(insets.bottom, spacing.md) }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
+          {quickReplies.map((q) => (
+            <PressableScale key={q} scaleTo={0.95} onPress={() => post(q)} style={{ borderWidth: 1, borderColor: colors.outlineVariant, backgroundColor: colors.surfaceContainerLowest, borderRadius: radius.full, paddingHorizontal: 14, paddingVertical: 8 }}>
+              <Text variant="labelMd" color={colors.primary}>{q}</Text>
+            </PressableScale>
+          ))}
+        </ScrollView>
+
+        <Row gap={9} align="center" style={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs }}>
           <TextInput
             value={text}
             onChangeText={setText}
@@ -317,37 +221,31 @@ export default function ChatScreen() {
             multiline
             style={{
               flex: 1,
-              color: colors.onSurface,
-              paddingHorizontal: spacing.md,
-              paddingTop: Platform.OS === 'ios' ? 14 : 10,
-              paddingBottom: Platform.OS === 'ios' ? 14 : 10,
               minHeight: 48,
               maxHeight: 120,
-              fontSize: 16,
+              backgroundColor: colors.surfaceContainerHigh,
+              borderRadius: radius.xxl,
+              paddingHorizontal: 18,
+              paddingTop: 13,
+              paddingBottom: 13,
+              fontSize: 15,
+              color: colors.onSurface,
             }}
           />
           <PressableScale
             scaleTo={0.88}
             onPress={handleSend}
-            disabled={!text.trim() || busy}
-            style={{
-              width: 40,
-              height: 40,
-              marginBottom: 4,
-              borderRadius: radius.full,
-              backgroundColor: text.trim() ? colors.secondaryContainer : 'transparent',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            disabled={!canSend}
+            style={{ width: 48, height: 48, borderRadius: radius.full, backgroundColor: canSend ? colors.secondaryContainer : colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center' }}
           >
-            <MaterialIcons
-              name="send"
-              size={20}
-              color={text.trim() ? colors.onSecondaryContainer : colors.outline}
-            />
+            <MaterialIcons name="send" size={20} color={canSend ? colors.onSecondaryContainer : colors.onSurfaceVariant} />
           </PressableScale>
-        </View>
+        </Row>
       </View>
     </KeyboardAvoidingView>
   );
+}
+
+function iconBtn(colors) {
+  return { width: 38, height: 38, borderRadius: radius.full, backgroundColor: colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center' };
 }

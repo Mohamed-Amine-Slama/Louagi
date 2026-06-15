@@ -14,16 +14,16 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
-import { Row, Section } from '../../components/Section';
-import { KpiTile } from '../../components/KpiTile';
+import { Stack, Row, Section } from '../../components/Section';
 import { SkeletonList } from '../../components/Skeleton';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { driversApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
-import { spacing, radius, withAlpha } from '../../theme';
+import { spacing, radius, withAlpha, shadows } from '../../theme';
 import { formatMonthYear, statusLabel } from '../../i18n/format';
+import { MONO, PASS, initialsOf } from '../../lib/tickets';
 import {
   getBiometricCapability,
   promptBiometric,
@@ -43,7 +43,7 @@ function expiryWarning(iso, t) {
 }
 
 export default function DriverProfile() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t, locale } = useLocale();
   const { user, signOut } = useAuth();
   const nav = useNavigation();
@@ -205,70 +205,9 @@ export default function DriverProfile() {
   const lic = expiryWarning(profile.license_expires_at, t);
   const idc = expiryWarning(profile.id_expires_at, t);
   const memberSince = formatMonthYear(profile.created_at || new Date(), { locale });
-  const heroFg = isDark ? colors.onSurface : colors.onPrimary;
 
   return (
-    <Screen padded={false}>
-      <LinearGradient
-        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingHorizontal: spacing.containerMargin,
-          paddingTop: spacing.md,
-          paddingBottom: spacing.xl,
-          borderBottomLeftRadius: radius.xxl,
-          borderBottomRightRadius: radius.xxl,
-          gap: spacing.md,
-        }}
-      >
-        <Row justify="space-between">
-          <Text variant="headlineMd" color={heroFg}>
-            {t('driver:driverProfile')}
-          </Text>
-          <View
-            style={{
-              paddingHorizontal: spacing.sm,
-              paddingVertical: 4,
-              borderRadius: radius.full,
-              backgroundColor: withAlpha(heroFg, 0.12),
-            }}
-          >
-            <Text variant="labelSm" color={heroFg}>
-              {t('passenger:driverShort')}
-            </Text>
-          </View>
-        </Row>
-        <Row gap={spacing.md}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: radius.full,
-              backgroundColor: colors.secondaryContainer,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text variant="headlineMd" color={colors.onSecondaryContainer}>
-              {profile.full_name?.charAt(0) || user?.name?.charAt(0) || 'D'}
-            </Text>
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="headlineSm" color={heroFg}>
-              {profile.full_name || user?.name}
-            </Text>
-            <Text variant="bodySm" color={withAlpha(heroFg, 0.8)}>
-              {user?.phone_number}
-            </Text>
-            <Row gap={spacing.xs} style={{ flexWrap: 'wrap', marginTop: 4 }}>
-              <BadgeChip icon="verified" label={statusLabel(t, profile.status)} />
-              <BadgeChip icon="calendar-today" label={t('common:since', { date: memberSince })} />
-            </Row>
-          </View>
-        </Row>
-      </LinearGradient>
-
+    <Screen padded={false} scroll={false}>
       <ScrollView
         contentContainerStyle={{
           padding: spacing.containerMargin,
@@ -277,10 +216,15 @@ export default function DriverProfile() {
         }}
       >
         <FadeSlideIn index={0}>
-          <Row gap={spacing.sm}>
-            <KpiTile icon="star" tone="warning" value={(profile.rating ?? 0).toFixed(1)} label={t('driver:ratingLifetime', { count: profile.trips_completed ?? 0 })} />
-            <KpiTile icon="route" tone="primary" value={String(profile.trips_completed ?? 0)} label={t('driver:tripsCompleted', { count: profile.trips_completed ?? 0 })} />
+          <Row justify="space-between" align="center">
+            <Text variant="headlineMd">{t('driver:driverProfile')}</Text>
+            <View style={[{ width: 38, height: 38, borderRadius: radius.full, backgroundColor: colors.surfaceContainerLowest, alignItems: 'center', justifyContent: 'center' }, shadows.soft]}>
+              <MaterialIcons name="edit" size={17} color={colors.onSurface} />
+            </View>
           </Row>
+        </FadeSlideIn>
+        <FadeSlideIn index={0}>
+          <DriverCard profile={profile} user={user} memberSince={memberSince} notch={colors.surface} />
         </FadeSlideIn>
 
         <FadeSlideIn index={1}>
@@ -451,28 +395,60 @@ export default function DriverProfile() {
 }
 
 // Reusable components matching PassengerProfile
-function BadgeChip({ icon, label }) {
-  const { colors, isDark } = useTheme();
-  const fg = isDark ? colors.onSurface : colors.onPrimary;
+// Navy driver membership card — VERIFIED badge, red avatar, plate · vehicle,
+// and a rating/trips/since stub. Stays navy in both themes.
+function DriverCard({ profile, user, memberSince, notch }) {
+  const { t } = useLocale();
+  const name = profile.full_name || user?.name;
+  const subline = [profile.plate_number_masked, [profile.vehicle_brand, profile.vehicle_model].filter(Boolean).join(' ')]
+    .filter(Boolean)
+    .join(' · ');
+  const rating = profile.rating != null ? profile.rating.toFixed(1) : '—';
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 6,
-        borderRadius: radius.full,
-        backgroundColor: withAlpha(fg, 0.14),
-        maxWidth: '100%',
-        flexShrink: 1,
-      }}
-    >
-      <MaterialIcons name={icon} size={14} color={fg} />
-      <Text variant="labelSm" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
-        {label}
-      </Text>
+    <View style={[{ borderRadius: 22 }, shadows.card]}>
+      <View style={{ borderRadius: 22, overflow: 'hidden' }}>
+        <LinearGradient colors={['#0A2247', '#031634', '#3A1020']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <View style={{ padding: 18, paddingBottom: 15 }}>
+            <Row justify="space-between" align="center" style={{ marginBottom: 16 }}>
+              <Text style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: PASS.onNavyMut }}>{t('driver:cardLabel').toUpperCase()}</Text>
+              <Row gap={6} align="center" style={{ backgroundColor: '#27B36B', borderRadius: radius.full, paddingHorizontal: 11, paddingVertical: 5 }}>
+                <MaterialIcons name="verified" size={13} color="#0A2247" />
+                <Text variant="labelSm" color="#0A2247" numberOfLines={1}>{statusLabel(t, profile.status).toUpperCase()}</Text>
+              </Row>
+            </Row>
+            <Row gap={14} align="center">
+              <LinearGradient colors={['#E0433F', '#C8102E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' }}>
+                <Text variant="headlineSm" color="#fff">{initialsOf(name)}</Text>
+              </LinearGradient>
+              <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
+                <Text variant="headlineSm" color={PASS.onNavy} numberOfLines={1}>{name}</Text>
+                {subline ? <Text style={{ fontFamily: MONO, fontSize: 12, color: PASS.onNavyMut }} numberOfLines={1}>{subline}</Text> : null}
+              </Stack>
+            </Row>
+          </View>
+          <View style={{ height: 20, justifyContent: 'center' }}>
+            <View style={{ position: 'absolute', start: -10, top: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: notch }} />
+            <View style={{ position: 'absolute', end: -10, top: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: notch }} />
+            <View style={{ marginHorizontal: 16, borderTopWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)' }} />
+          </View>
+          <Row style={{ padding: 18, paddingTop: 14 }}>
+            <DriverStat label={t('driver:ratingShort')} value={'★ ' + rating} align="flex-start" />
+            <DriverStat label={t('passenger:trips')} value={String(profile.trips_completed ?? 0)} align="center" />
+            <DriverStat label={t('driver:sinceShort')} value={memberSince} align="flex-end" />
+          </Row>
+        </LinearGradient>
+      </View>
     </View>
+  );
+}
+
+function DriverStat({ label, value, align }) {
+  const items = align === 'flex-start' ? 'flex-start' : align === 'flex-end' ? 'flex-end' : 'center';
+  return (
+    <Stack gap={3} style={{ flex: 1, alignItems: items }}>
+      <Text variant="labelXs" color={PASS.onNavyFaint} style={{ letterSpacing: 0.5 }}>{String(label).toUpperCase()}</Text>
+      <Text variant="headlineSm" color={PASS.onNavy} numberOfLines={1}>{value}</Text>
+    </Stack>
   );
 }
 

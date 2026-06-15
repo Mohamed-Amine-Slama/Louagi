@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
-import { View, Pressable } from 'react-native';
+import { View, Pressable, ScrollView, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
-import { ScreenHeader } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
 import { Stepper } from '../../components/Stepper';
 import { Banner } from '../../components/Banner';
-import { Stack, Row, Section } from '../../components/Section';
-import { Chip } from '../../components/Chip';
-import { CityPicker } from '../../components/CityPicker';
+import { Stack, Row } from '../../components/Section';
+import { SectionLabel } from '../../components/SectionLabel';
+import { CityPickerModal } from '../../components/CityPicker';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { ridesApi } from '../../api';
@@ -23,6 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius, withAlpha } from '../../theme';
 import { formatWeekday } from '../../i18n/format';
+import { MONO, PASS, cityCode } from '../../lib/tickets';
 
 export default function CreateRideScreen() {
   const { colors } = useTheme();
@@ -44,19 +44,14 @@ export default function CreateRideScreen() {
   const [error, setError] = useState(null);
   const [cities, setCities] = useState([]);
   const [routes, setRoutes] = useState([]);
-  const [activeField, setActiveField] = useState(null);
+  const [editing, setEditing] = useState(null); // 'origin' | 'destination' | null
 
   useEffect(() => {
-    ridesApi.listCities().then((res) => {
-      if (Array.isArray(res)) setCities(res);
-    });
-    ridesApi.listRoutes().then((res) => {
-      if (Array.isArray(res)) setRoutes(res);
-    });
+    ridesApi.listCities().then((res) => { if (Array.isArray(res)) setCities(res); });
+    ridesApi.listRoutes().then((res) => { if (Array.isArray(res)) setRoutes(res); });
   }, []);
 
-  // Look up the government-set fare for the selected route. Returns null
-  // until both endpoints match a known route.
+  // Government-set fare for the selected route (null until both endpoints match).
   const govFare = (() => {
     if (!origin || !destination) return null;
     const r = routes.find(
@@ -70,13 +65,7 @@ export default function CreateRideScreen() {
   const submit = async () => {
     setError(null);
     setLoading(true);
-    const res = await ridesApi.createRide({
-      actor: user,
-      origin,
-      destination,
-      departureTime: date,
-      availableSeats: Number(seats),
-    });
+    const res = await ridesApi.createRide({ actor: user, origin, destination, departureTime: date, availableSeats: Number(seats) });
     setLoading(false);
     if (!res.ok) {
       setError(res.error);
@@ -92,142 +81,178 @@ export default function CreateRideScreen() {
     return d;
   });
 
+  const setHour = (txt) => {
+    const h = Math.max(0, Math.min(23, parseInt(txt || '0', 10) || 0));
+    const d = new Date(date); d.setHours(h); setDate(d);
+  };
+  const setMinute = (txt) => {
+    const m = Math.max(0, Math.min(59, parseInt(txt || '0', 10) || 0));
+    const d = new Date(date); d.setMinutes(m); setDate(d);
+  };
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const swap = () => { setOrigin(destination); setDestination(origin); };
+
+  const timeBox = {
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerHigh,
+    borderRadius: radius.md,
+    paddingVertical: 8,
+    width: 46,
+    textAlign: 'center',
+    fontFamily: MONO,
+    fontSize: 16,
+    color: colors.onSurface,
+  };
+
   return (
     <Screen>
-      <ScreenHeader title={t('driver:createNewRide')} subtitle={t('driver:createNewRideSubtitle')} showBack />
+      {/* Header */}
+      <Row gap={spacing.sm} align="center" style={{ marginTop: spacing.xs }}>
+        <PressableScale onPress={() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs'))} hitSlop={10} scaleTo={0.9} style={{ width: 38, height: 38, borderRadius: radius.full, backgroundColor: colors.surfaceContainerLowest, alignItems: 'center', justifyContent: 'center' }}>
+          <MaterialIcons name="arrow-back" size={20} color={colors.onSurface} />
+        </PressableScale>
+        <Text variant="headlineMd">{t('driver:newRide')}</Text>
+      </Row>
 
+      {/* Boarding-pass preview */}
       <FadeSlideIn index={0}>
-      <Section title={t('driver:route')}>
-        <Stack gap={spacing.sm}>
-          <View style={{ zIndex: 2 }}>
-            <CityPicker
-              label={t('landing:from')}
-              value={origin || ''}
-              onChange={(val) => {
-                setOrigin(val);
-                setActiveField(null);
-              }}
-              cities={cities}
-            />
-          </View>
-          <View style={{ zIndex: 1 }}>
-            <CityPicker
-              label={t('landing:to')}
-              value={destination || ''}
-              onChange={(val) => {
-                setDestination(val);
-                setActiveField(null);
-              }}
-              cities={cities}
-            />
-          </View>
-        </Stack>
-      </Section>
+        <View style={{ borderRadius: 20, overflow: 'hidden' }}>
+          <LinearGradient colors={['#0A2247', '#031634', '#3A1020']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16 }}>
+            <Row justify="space-between" align="center" style={{ marginBottom: 13 }}>
+              <Text style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.2, color: PASS.onNavyFaint }}>{t('driver:ridePreview').toUpperCase()}</Text>
+              <Row gap={4} align="flex-end">
+                <Text color="#fff" style={{ fontFamily: MONO, fontSize: 18, lineHeight: 20 }}>{govFare != null ? govFare : '—'}</Text>
+                <Text variant="labelSm" color={PASS.onNavyMut} style={{ marginBottom: 1 }}>{t('common:tnd')}</Text>
+              </Row>
+            </Row>
+            <Row justify="space-between" align="flex-start">
+              <Stack gap={3}>
+                <Text color="#fff" style={{ fontFamily: MONO, fontSize: 26, lineHeight: 28 }}>{cityCode(origin)}</Text>
+                <Text variant="labelSm" color={PASS.onNavyMut} numberOfLines={1}>{origin || '—'}</Text>
+              </Stack>
+              <MaterialIcons name="flight" size={20} color="rgba(255,255,255,0.6)" style={{ transform: [{ rotate: '90deg' }], marginTop: 4 }} />
+              <Stack gap={3} style={{ alignItems: 'flex-end' }}>
+                <Text color={PASS.toCode} style={{ fontFamily: MONO, fontSize: 26, lineHeight: 28 }}>{cityCode(destination)}</Text>
+                <Text variant="labelSm" color={PASS.onNavyMut} numberOfLines={1}>{destination || '—'}</Text>
+              </Stack>
+            </Row>
+            <Row gap={20} style={{ marginTop: 14, paddingTop: 13, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.14)' }}>
+              <PreviewStat label={t('passenger:dateShort')} value={`${formatWeekday(date, { locale })} ${date.getDate()}`} />
+              <PreviewStat label={t('common:departure')} value={`${hh}:${mm}`} />
+              <PreviewStat label={t('passenger:seatsShort')} value={String(seats)} />
+            </Row>
+          </LinearGradient>
+        </View>
       </FadeSlideIn>
 
+      {/* Route selector */}
       <FadeSlideIn index={1}>
-      <Section title={t('driver:departure')}>
-        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-          {days.map((d) => {
-            const same = d.toDateString() === date.toDateString();
-            return (
-              <Chip
-                key={d.toISOString()}
-                label={`${formatWeekday(d, { locale })} ${d.getDate()}`}
-                selected={same}
-                onPress={() => {
-                  const nd = new Date(d);
-                  nd.setHours(date.getHours(), date.getMinutes());
-                  setDate(nd);
-                }}
-              />
-            );
-          })}
-        </Row>
-        <Row gap={spacing.sm} style={{ marginTop: spacing.sm }}>
-          <View style={{ flex: 1 }}>
-            <Input
-              label={t('driver:hour')}
-              value={String(date.getHours()).padStart(2, '0')}
-              onChangeText={(txt) => {
-                const h = Math.max(0, Math.min(23, parseInt(txt || '0', 10)));
-                const d = new Date(date);
-                d.setHours(h);
-                setDate(d);
-              }}
-              keyboardType="number-pad"
-            />
+        <Card padding={spacing.sm}>
+          <View style={{ position: 'relative' }}>
+            <Pressable onPress={() => setEditing('origin')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+              <View style={{ width: 11, height: 11, borderRadius: 6, borderWidth: 3, borderColor: colors.secondaryContainer }} />
+              <Stack gap={1} style={{ flex: 1 }}>
+                <Text variant="labelXs" color={colors.onSurfaceVariant} style={{ letterSpacing: 0.5 }}>{t('landing:from').toUpperCase()}</Text>
+                <Text variant="bodyLg" numberOfLines={1}>{origin || t('search:anyOrigin', 'Anywhere')}</Text>
+              </Stack>
+            </Pressable>
+            <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginStart: 40 }} />
+            <Pressable onPress={() => setEditing('destination')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+              <MaterialIcons name="place" size={18} color={colors.primary} />
+              <Stack gap={1} style={{ flex: 1 }}>
+                <Text variant="labelXs" color={colors.onSurfaceVariant} style={{ letterSpacing: 0.5 }}>{t('landing:to').toUpperCase()}</Text>
+                <Text variant="bodyLg" numberOfLines={1}>{destination || t('search:anyDestination', 'Anywhere')}</Text>
+              </Stack>
+            </Pressable>
+            <PressableScale onPress={swap} hitSlop={10} scaleTo={0.9} style={{ position: 'absolute', end: 10, top: '50%', marginTop: -19, width: 38, height: 38, borderRadius: radius.full, backgroundColor: colors.surfaceContainerHigh, borderWidth: 1, borderColor: colors.outlineVariant, alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialIcons name="swap-vert" size={18} color={colors.primary} />
+            </PressableScale>
           </View>
-          <View style={{ flex: 1 }}>
-            <Input
-              label={t('driver:minute')}
-              value={String(date.getMinutes()).padStart(2, '0')}
-              onChangeText={(txt) => {
-                const m = Math.max(0, Math.min(59, parseInt(txt || '0', 10)));
-                const d = new Date(date);
-                d.setMinutes(m);
-                setDate(d);
-              }}
-              keyboardType="number-pad"
-            />
-          </View>
-        </Row>
-      </Section>
+        </Card>
       </FadeSlideIn>
 
+      {/* Date */}
       <FadeSlideIn index={2}>
-      <Section title={t('driver:pricePerSeat')}>
-        <Banner
-          variant="info"
-          title={t('driver:govFareTitle', 'Government-set fare')}
-          body={t(
-            'driver:govFareBody',
-            'The Tunisian transport authority sets the per-seat fare for every route. Passengers also pay a 3 TND service fee — 2 TND goes to you, 1 TND to the platform.',
-          )}
-        />
+        <Stack gap={spacing.sm}>
+          <SectionLabel>{t('driver:departure')}</SectionLabel>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+            {days.map((d) => {
+              const same = d.toDateString() === date.toDateString();
+              return (
+                <PressableScale
+                  key={d.toISOString()}
+                  scaleTo={0.94}
+                  onPress={() => { const nd = new Date(d); nd.setHours(date.getHours(), date.getMinutes()); setDate(nd); }}
+                >
+                  <View style={{ paddingHorizontal: 15, paddingVertical: 9, borderRadius: radius.full, borderWidth: 1, borderColor: same ? colors.secondaryContainer : colors.outlineVariant, backgroundColor: same ? colors.secondaryContainer : colors.surfaceContainerLowest }}>
+                    <Text variant="labelMd" color={same ? colors.onSecondaryContainer : colors.onSurface}>{`${formatWeekday(d, { locale })} ${d.getDate()}`}</Text>
+                  </View>
+                </PressableScale>
+              );
+            })}
+          </ScrollView>
+        </Stack>
+      </FadeSlideIn>
+
+      {/* Departure time */}
+      <FadeSlideIn index={3}>
         <Card>
-          <Row justify="space-between" align="center">
-            <View style={{ flex: 1 }}>
-              <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                {govFare != null
-                  ? t('driver:govFareLine', 'Fare for this route')
-                  : t('driver:govFarePending', 'Pick origin and destination to see the fare')}
-              </Text>
-              {govFare != null && (
-                <Text variant="headlineMd">
-                  {govFare} {t('common:tnd')}
-                  <Text variant="labelMd" color={colors.onSurfaceVariant}>
-                    {' '}/ {t('common:seat', 'seat')}
-                  </Text>
-                </Text>
-              )}
+          <Row gap={spacing.md} align="center">
+            <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialIcons name="schedule" size={18} color={colors.primary} />
             </View>
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: radius.full,
-                backgroundColor: colors.primaryFixed,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialIcons name="account-balance" size={22} color={colors.primary} />
-            </View>
+            <Stack gap={1} style={{ flex: 1 }}>
+              <Text variant="labelMd">{t('driver:departure')}</Text>
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('driver:minute')} · {t('driver:hour')}</Text>
+            </Stack>
+            <Row gap={5} align="center">
+              <TextInput value={hh} onChangeText={setHour} keyboardType="number-pad" maxLength={2} style={timeBox} selectTextOnFocus />
+              <Text variant="bodyLg" color={colors.onSurfaceVariant}>:</Text>
+              <TextInput value={mm} onChangeText={setMinute} keyboardType="number-pad" maxLength={2} style={timeBox} selectTextOnFocus />
+            </Row>
           </Row>
         </Card>
-      </Section>
       </FadeSlideIn>
 
-      <FadeSlideIn index={3}>
-      <Section title={t('driver:capacity')}>
-        <Card accent={colors.primary}>
-          <Row justify="space-between">
-            <Text variant="bodyMd">{t('driver:seatsAvailable')}</Text>
+      {/* Fare (government-set) */}
+      <FadeSlideIn index={4}>
+        <Stack gap={spacing.sm}>
+          <SectionLabel>{t('driver:pricePerSeat')}</SectionLabel>
+          <Banner variant="info" title={t('driver:govFareTitle')} body={t('driver:govFareBody')} />
+          <Card>
+            <Row justify="space-between" align="center">
+              <View style={{ flex: 1 }}>
+                <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                  {govFare != null ? t('driver:govFareLine') : t('driver:govFarePending')}
+                </Text>
+                {govFare != null ? (
+                  <Row gap={4} align="flex-end" style={{ marginTop: 2 }}>
+                    <Text variant="headlineMd">{govFare}</Text>
+                    <Text variant="labelMd" color={colors.onSurfaceVariant} style={{ marginBottom: 3 }}>{t('common:tnd')} / {t('common:seat')}</Text>
+                  </Row>
+                ) : null}
+              </View>
+              <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: withAlpha(colors.primary, 0.1), alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialIcons name="account-balance" size={22} color={colors.primary} />
+              </View>
+            </Row>
+          </Card>
+        </Stack>
+      </FadeSlideIn>
+
+      {/* Seats */}
+      <FadeSlideIn index={5}>
+        <Card>
+          <Row justify="space-between" align="center">
+            <Stack gap={1} style={{ flex: 1 }}>
+              <Text variant="labelMd">{t('driver:seatsAvailable')}</Text>
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('driver:capacity')}</Text>
+            </Stack>
             <Stepper value={Number(seats)} onChange={setSeats} min={1} max={8} />
           </Row>
         </Card>
-      </Section>
       </FadeSlideIn>
 
       {error ? (
@@ -236,18 +261,36 @@ export default function CreateRideScreen() {
         </FadeSlideIn>
       ) : null}
 
-      <FadeSlideIn index={4}>
-      <Row gap={spacing.sm}>
-        <View style={{ flex: 1 }}>
-          <Button label={t('common:cancel')} variant="outline" onPress={() => nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')} />
-        </View>
-        <View style={{ flex: 1.5 }}>
-          <PressableScale onPress={submit} disabled={loading} pointerEvents="box-only">
-            <Button label={t('driver:publishRide')} variant="secondary" loading={loading} onPress={submit} />
-          </PressableScale>
-        </View>
-      </Row>
+      <FadeSlideIn index={6}>
+        <Button label={t('driver:publishRide')} variant="secondary" iconLeft="check" loading={loading} onPress={submit} />
       </FadeSlideIn>
+
+      <CityPickerModal
+        visible={editing === 'origin'}
+        label={t('landing:from')}
+        value={origin}
+        cities={cities}
+        onChange={setOrigin}
+        onClose={() => setEditing(null)}
+      />
+      <CityPickerModal
+        visible={editing === 'destination'}
+        label={t('landing:to')}
+        value={destination}
+        cities={cities}
+        onChange={setDestination}
+        onClose={() => setEditing(null)}
+      />
     </Screen>
   );
 }
+
+function PreviewStat({ label, value }) {
+  return (
+    <Stack gap={2}>
+      <Text variant="labelXs" color={PASS.onNavyFaint} style={{ letterSpacing: 0.4 }}>{String(label).toUpperCase()}</Text>
+      <Text variant="labelMd" color="#fff" numberOfLines={1}>{value}</Text>
+    </Stack>
+  );
+}
+

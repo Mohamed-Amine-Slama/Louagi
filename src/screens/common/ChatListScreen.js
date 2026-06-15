@@ -6,11 +6,11 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { Screen } from '../../components/Screen';
-import { ScreenHeader } from '../../components/Header';
 import { Text } from '../../components/Text';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { SkeletonList } from '../../components/Skeleton';
+import { Row, Stack } from '../../components/Section';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { messagesApi } from '../../api';
@@ -20,7 +20,7 @@ import { formatTime } from '../../i18n/format';
 
 export default function ChatListScreen() {
   const { colors } = useTheme();
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const { user } = useAuth();
   const nav = useNavigation();
 
@@ -38,62 +38,48 @@ export default function ChatListScreen() {
     }
   }, [user]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const filtered = search.trim()
-    ? chats.filter(c =>
-        (c.other_user?.full_name || '').toLowerCase().includes(search.toLowerCase())
-      )
+    ? chats.filter((c) => (c.other_user?.full_name || '').toLowerCase().includes(search.toLowerCase()))
     : chats;
 
   return (
     <Screen padded={false} scroll={false}>
-      <ScreenHeader title={t('passenger:messages')} showBack />
+      {/* Header */}
+      <Row gap={spacing.md} align="center" style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.sm }}>
+        <PressableScale onPress={() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs'))} hitSlop={10} scaleTo={0.9} style={{ width: 38, height: 38, borderRadius: radius.full, backgroundColor: colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center' }}>
+          <MaterialIcons name="arrow-back" size={20} color={colors.onSurface} />
+        </PressableScale>
+        <Stack gap={1} style={{ flex: 1 }}>
+          <Text variant="headlineMd">{t('passenger:messages')}</Text>
+          <Text variant="bodySm" color={colors.onSurfaceVariant}>{t('chat:inboxSubtitle')}</Text>
+        </Stack>
+      </Row>
 
-      {/* Search Bar */}
-      <FadeSlideIn index={0} style={{
-        paddingHorizontal: spacing.md,
-        paddingTop: spacing.sm,
-        paddingBottom: spacing.md,
-      }}>
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: colors.surfaceContainerHigh,
-          borderRadius: radius.full,
-          paddingHorizontal: spacing.md,
-          height: 44,
-          gap: spacing.sm,
-        }}>
+      {/* Search */}
+      <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+        <Row gap={spacing.sm} align="center" style={{ backgroundColor: colors.surfaceContainerHigh, borderRadius: radius.full, paddingHorizontal: spacing.md, height: 44 }}>
           <MaterialIcons name="search" size={20} color={colors.onSurfaceVariant} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder={t('chat:searchConversations')}
             placeholderTextColor={colors.onSurfaceVariant}
-            style={{
-              flex: 1,
-              color: colors.onSurface,
-              fontSize: 16,
-              paddingVertical: 0,
-            }}
+            style={{ flex: 1, color: colors.onSurface, fontSize: 16, paddingVertical: 0 }}
           />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}>
+          {search.length > 0 ? (
+            <Pressable onPress={() => setSearch('')} hitSlop={8}>
               <MaterialIcons name="close" size={18} color={colors.onSurfaceVariant} />
             </Pressable>
-          )}
-        </View>
-      </FadeSlideIn>
+          ) : null}
+        </Row>
+      </View>
 
       <FlatList
         data={filtered}
         keyExtractor={chatKeyExtractor}
-        contentContainerStyle={{ paddingHorizontal: spacing.md, flexGrow: 1 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.lg, flexGrow: 1 }}
         ItemSeparatorComponent={ChatSeparator}
         ListEmptyComponent={loading ? <ChatListSkeleton /> : <EmptyChatList />}
         renderItem={({ item, index }) => (
@@ -110,13 +96,7 @@ const chatKeyExtractor = (item) => item.other_user?.id ?? item.other_user?.full_
 
 const ChatSeparator = memo(() => {
   const { colors } = useTheme();
-  return (
-    <View style={{
-      height: 1,
-      backgroundColor: withAlpha(colors.outlineVariant, 0.3),
-      marginStart: 72,
-    }} />
-  );
+  return <View style={{ height: 1, backgroundColor: withAlpha(colors.outlineVariant, 0.5), marginStart: 75 }} />;
 });
 
 const ChatListSkeleton = memo(() => (
@@ -143,55 +123,25 @@ const ChatRow = memo(({ item, onPress }) => {
   return (
     <PressableScale
       onPress={() => onPress(item.other_user?.id, item.other_user?.full_name, item.other_user?.phone_number)}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: spacing.md,
-        gap: spacing.md,
-        borderRadius: radius.lg,
-        paddingHorizontal: spacing.xs,
-      }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 13, paddingHorizontal: spacing.sm }}
     >
-      <Avatar name={item.other_user?.full_name} size={52} badge />
-      <View style={{ flex: 1, gap: 3 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text
-            variant="headlineSm"
-            numberOfLines={1}
-            style={{ flex: 1, fontWeight: hasUnread ? '700' : '500' }}
-          >
-            {item.other_user?.full_name ?? t('chat:unknownContact')}
-          </Text>
-          <Text
-            variant="labelSm"
-            color={hasUnread ? colors.primary : colors.onSurfaceVariant}
-            style={{ fontWeight: hasUnread ? '600' : '400', marginStart: spacing.sm }}
-          >
-            {formatTime(item.updated_at, { locale })}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text
-            variant="bodyMd"
-            color={hasUnread ? colors.onSurface : colors.onSurfaceVariant}
-            numberOfLines={1}
-            style={{ flex: 1, fontWeight: hasUnread ? '600' : '400' }}
-          >
-            {item.last_message || t('chat:noMessagesYet')}
-          </Text>
-          {hasUnread && (
-            <View style={{
-              minWidth: 22, height: 22, borderRadius: radius.full,
-              backgroundColor: colors.secondaryContainer, alignItems: 'center',
-              justifyContent: 'center', paddingHorizontal: 6, marginStart: spacing.sm,
-            }}>
-              <Text variant="labelSm" color={colors.onSecondaryContainer} style={{ fontWeight: '700' }}>
-                {item.unread_count > 99 ? '99+' : item.unread_count}
-              </Text>
-            </View>
-          )}
-        </View>
+      <View>
+        <Avatar name={item.other_user?.full_name} size={50} />
+        {hasUnread ? (
+          <View style={{ position: 'absolute', top: -2, end: -2, minWidth: 20, height: 20, borderRadius: radius.full, backgroundColor: colors.secondaryContainer, borderWidth: 2, borderColor: colors.surface, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}>
+            <Text variant="labelXs" color={colors.onSecondaryContainer}>{item.unread_count > 99 ? '99+' : item.unread_count}</Text>
+          </View>
+        ) : null}
       </View>
+      <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
+        <Row justify="space-between" align="center" gap={spacing.sm}>
+          <Text variant="bodyLg" numberOfLines={1} style={{ flex: 1 }}>{item.other_user?.full_name ?? t('chat:unknownContact')}</Text>
+          <Text variant="labelSm" color={hasUnread ? colors.secondaryContainer : colors.onSurfaceVariant}>{formatTime(item.updated_at, { locale })}</Text>
+        </Row>
+        <Text variant="bodyMd" color={hasUnread ? colors.onSurface : colors.onSurfaceVariant} numberOfLines={1}>
+          {item.last_message || t('chat:noMessagesYet')}
+        </Text>
+      </Stack>
     </PressableScale>
   );
 });

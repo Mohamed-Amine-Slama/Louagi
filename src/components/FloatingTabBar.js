@@ -1,18 +1,10 @@
-import React, { useEffect } from 'react';
-import { View, Pressable, Dimensions } from 'react-native';
-import Animated, {
-  interpolateColor,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import React from 'react';
+import { View, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './Text';
 import { useTheme } from '../context/ThemeContext';
 import { useLocale } from '../context/LocaleContext';
-import { radius, spacing, shadows, floatingTabBar, withAlpha } from '../theme';
-import { SPRING } from './motion';
 
 // Map navigation route names → MaterialIcons glyph + display label
 const ROUTE_META = {
@@ -30,39 +22,14 @@ const ROUTE_META = {
   Audit: { icon: 'fact-check', label: 'Audit' },
 };
 
-const ACTIVE_SIZE = 52;
-const INACTIVE_SIZE = 40;
+// Design dock: warm espresso bar, no active circle — the active tab simply reads
+// brand red, inactive tabs faint white. Fixed-light colors since the bar is dark
+// in both themes.
+const ACTIVE = '#FF5A6E';
+const INACTIVE = 'rgba(255,255,255,0.5)';
 
-function barWidthForTabs(count) {
-  // 4 tabs → 70% of screen; ramp wider for denser admin bar so circles fit.
-  if (count <= 4) return 0.72;
-  if (count === 5) return 0.84;
-  return 0.94;
-}
-
-function TabItem({ focused, meta, label, onPress, onLongPress, colors, inactiveColor }) {
-  const focus = useSharedValue(focused ? 1 : 0);
-
-  useEffect(() => {
-    focus.value = withSpring(focused ? 1 : 0, SPRING);
-  }, [focused, focus]);
-
-  const transparentSecondary = withAlpha(colors.secondaryContainer, 0);
-
-  const circleStyle = useAnimatedStyle(() => {
-    const size = INACTIVE_SIZE + (ACTIVE_SIZE - INACTIVE_SIZE) * focus.value;
-    return {
-      width: size,
-      height: size,
-      borderRadius: size / 2,
-      backgroundColor: interpolateColor(
-        focus.value,
-        [0, 1],
-        [transparentSecondary, colors.secondaryContainer]
-      ),
-    };
-  });
-
+function TabItem({ focused, meta, label, onPress, onLongPress }) {
+  const color = focused ? ACTIVE : INACTIVE;
   return (
     <Pressable
       accessibilityRole="tab"
@@ -70,46 +37,21 @@ function TabItem({ focused, meta, label, onPress, onLongPress, colors, inactiveC
       accessibilityLabel={label}
       onPress={onPress}
       onLongPress={onLongPress}
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        gap: 2,
-      }}
+      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 4 }}
     >
-      <Animated.View
-        style={[
-          {
-            overflow: 'hidden',
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-          circleStyle,
-        ]}
-      >
-        <MaterialIcons
-          name={meta.icon}
-          size={focused ? 26 : 20}
-          color={focused ? colors.onSecondaryContainer : inactiveColor}
-        />
-      </Animated.View>
-      <Text
-        variant="labelXs"
-        color={focused ? colors.onPrimary : inactiveColor}
-        numberOfLines={1}
-      >
+      <MaterialIcons name={meta.icon} size={22} color={color} />
+      <Text variant="labelXs" color={color} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
   );
 }
 
-export function FloatingTabBar({ state, descriptors, navigation }) {
+export function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const { t } = useLocale();
-  const screen = Dimensions.get('window');
-  const widthFrac = barWidthForTabs(state.routes.length);
-  const inactiveColor = isDark ? withAlpha(colors.onPrimary, 0.75) : colors.onPrimaryContainer;
+  const dockBg = isDark ? '#0C0A06' : '#241A12';
 
   return (
     <View
@@ -117,25 +59,27 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
       importantForAccessibility="no"
       style={{
         position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: Math.max(insets.bottom, floatingTabBar.bottomGap),
-        alignItems: 'center',
+        left: 14,
+        right: 14,
+        bottom: Math.max(insets.bottom, 14),
       }}
     >
       <View
         accessibilityRole="tablist"
         importantForAccessibility="yes"
         style={{
-          width: screen.width * widthFrac,
+          height: 66,
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: colors.primary,
-          borderRadius: radius.full,
-          paddingHorizontal: spacing.xs,
-          paddingTop: 8,
-          paddingBottom: 10,
-          ...shadows.floating,
+          justifyContent: 'space-around',
+          backgroundColor: dockBg,
+          borderRadius: 22,
+          paddingHorizontal: 6,
+          shadowColor: '#000',
+          shadowOpacity: 0.45,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 16 },
+          elevation: 12,
         }}
       >
         {state.routes.map((route, index) => {
@@ -166,8 +110,6 @@ export function FloatingTabBar({ state, descriptors, navigation }) {
               label={label}
               onPress={onPress}
               onLongPress={onLongPress}
-              colors={colors}
-              inactiveColor={inactiveColor}
             />
           );
         })}

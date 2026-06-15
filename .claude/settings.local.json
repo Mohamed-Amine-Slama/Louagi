@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const j=require\\('./src/i18n/locales/en.json'\\); console.log\\(JSON.stringify\\(j.passenger,null,1\\)\\)\")",
+      "Bash(node -e \"const j=require\\('./src/i18n/locales/en.json'\\); const c=j.common||{}; console.log\\(Object.keys\\(c\\).join\\(', '\\)\\)\")",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(node -e \"const d=require\\('./src/theme/colors-dark'\\).colorsDark; const k=['primary','onPrimary','secondaryContainer','onSecondaryContainer','surface','surfaceContainerLowest','surfaceContainerHigh','onSurface','onSurfaceVariant','primaryContainer','onPrimaryContainer','secondaryFixed','onSecondaryFixed','outlineVariant','success']; k.forEach\\(x=>console.log\\(x.padEnd\\(24\\), d[x]\\)\\)\")",
+      "Bash(sed -n '1,40p' src/components/RideCard.js)"
     ]
   }
 }

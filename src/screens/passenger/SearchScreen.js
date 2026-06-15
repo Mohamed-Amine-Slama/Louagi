@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
@@ -21,13 +20,13 @@ import { Row } from '../../components/Section';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
 import { CityPickerModal } from '../../components/CityPicker';
 import { ridesApi } from '../../api';
-import { spacing, radius, withAlpha } from '../../theme';
+import { spacing, radius } from '../../theme';
 import { formatDate, formatWeekday } from '../../i18n/format';
 
 const DEFAULT_FILTERS = { priceMax: null, ratingMin: 0 };
 
 export default function SearchScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t, locale } = useLocale();
   const nav = useNavigation();
   const route = useRoute();
@@ -107,124 +106,59 @@ export default function SearchScreen() {
     setSort('departure');
   }, []);
 
-  const heroFg = isDark ? colors.onSurface : colors.onPrimary;
-  const heroMuted = withAlpha(heroFg, 0.8);
 
   return (
     <Screen padded={false}>
       {/* ─── Banner ──────────────────────────────────────────────────────── */}
-      <LinearGradient
-        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingHorizontal: spacing.containerMargin,
-          paddingTop: spacing.md,
-          paddingBottom: spacing.lg,
-          borderBottomLeftRadius: radius.xxl,
-          borderBottomRightRadius: radius.xxl,
-          gap: spacing.md,
-        }}
-      >
+      <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.sm, gap: spacing.md }}>
         <Row align="center" gap={spacing.sm}>
           <PressableScale
             onPress={() => nav.canGoBack() && nav.goBack()}
             hitSlop={10}
             scaleTo={0.9}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: radius.full,
-              backgroundColor: withAlpha(heroFg, 0.16),
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center" }}
           >
-            <MaterialIcons name="arrow-back" size={20} color={heroFg} />
+            <MaterialIcons name="arrow-back" size={20} color={colors.onSurface} />
           </PressableScale>
-          <Text variant="labelMd" color={heroMuted}>
-            {t('search:title', 'Find a ride')}
-          </Text>
+          <Text variant="headlineSm">{t("search:title", "Find a ride")}</Text>
         </Row>
 
-        <View
-          style={{
-            backgroundColor: withAlpha(heroFg, 0.12),
-            borderRadius: radius.lg,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-          }}
-        >
-          <Row align="center" gap={spacing.sm}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Pressable
-                onPress={() => setEditing('origin')}
-                hitSlop={6}
-                style={{ paddingVertical: 6 }}
-              >
-                <Row align="center" gap={spacing.xs}>
-                  <MaterialIcons name="trip-origin" size={14} color={heroFg} />
-                  <Text variant="bodyMd" color={heroFg} numberOfLines={1}>
-                    {origin || t('search:anyOrigin', 'Anywhere')}
-                  </Text>
-                </Row>
-              </Pressable>
-              <View
-                style={{
-                  height: 1,
-                  backgroundColor: withAlpha(heroFg, 0.15),
-                  marginVertical: 2,
-                }}
-              />
-              <Pressable
-                onPress={() => setEditing('destination')}
-                hitSlop={6}
-                style={{ paddingVertical: 6 }}
-              >
-                <Row align="center" gap={spacing.xs}>
-                  <MaterialIcons name="place" size={14} color={heroFg} />
-                  <Text variant="bodyMd" color={heroFg} numberOfLines={1}>
-                    {destination || t('search:anyDestination', 'Anywhere')}
-                  </Text>
-                </Row>
-              </Pressable>
-            </View>
+        <Card padding={spacing.sm}>
+          <View style={{ position: "relative" }}>
+            <Pressable onPress={() => setEditing("origin")} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12 }}>
+              <View style={{ width: 12, height: 12, borderRadius: 6, borderWidth: 3, borderColor: colors.secondaryContainer }} />
+              <Text variant="bodyLg" color={colors.onSurface} numberOfLines={1} style={{ flex: 1 }}>
+                {origin || t("search:anyOrigin", "Anywhere")}
+              </Text>
+            </Pressable>
+            <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginStart: 36 }} />
+            <Pressable onPress={() => setEditing("destination")} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12 }}>
+              <MaterialIcons name="place" size={18} color={colors.primary} />
+              <Text variant="bodyLg" color={colors.onSurface} numberOfLines={1} style={{ flex: 1 }}>
+                {destination || t("search:anyDestination", "Anywhere")}
+              </Text>
+            </Pressable>
             <PressableScale
-              onPress={() => {
-                setOrigin(destination);
-                setDestination(origin);
-              }}
+              onPress={() => { setOrigin(destination); setDestination(origin); }}
               hitSlop={10}
               scaleTo={0.9}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: radius.full,
-                backgroundColor: withAlpha(heroFg, 0.16),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={{ position: "absolute", end: 8, top: "50%", marginTop: -18, width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.surfaceContainerHigh, alignItems: "center", justifyContent: "center" }}
             >
-              <MaterialIcons name="swap-vert" size={20} color={heroFg} />
+              <MaterialIcons name="swap-vert" size={18} color={colors.primary} />
             </PressableScale>
+          </View>
+          <Row justify="space-between" align="center" style={{ paddingHorizontal: 12, paddingTop: spacing.sm, paddingBottom: 4 }}>
+            <Row gap={6} align="center">
+              <MaterialIcons name="event" size={15} color={colors.onSurfaceVariant} />
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>{formatDate(date)}</Text>
+            </Row>
+            <Row gap={6} align="center">
+              <MaterialIcons name="person" size={15} color={colors.onSurfaceVariant} />
+              <Text variant="labelSm" color={colors.onSurfaceVariant}>{t("common:seatsCount", { count: Number(seats) || 1 })}</Text>
+            </Row>
           </Row>
-        </View>
-
-        <Row gap={spacing.sm} align="center">
-          <Row gap={4} align="center" style={{ flex: 1 }}>
-            <MaterialIcons name="event" size={14} color={heroMuted} />
-            <Text variant="labelSm" color={heroMuted}>
-              {formatDate(date)}
-            </Text>
-          </Row>
-          <Row gap={4} align="center">
-            <MaterialIcons name="person" size={14} color={heroMuted} />
-            <Text variant="labelSm" color={heroMuted}>
-              {t('common:seatsCount', { count: Number(seats) || 1 })}
-            </Text>
-          </Row>
-        </Row>
-      </LinearGradient>
+        </Card>
+      </View>
 
       {/* ─── Day strip ───────────────────────────────────────────────────── */}
       <View style={{ paddingTop: spacing.md, gap: spacing.md }}>

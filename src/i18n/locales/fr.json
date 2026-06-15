@@ -141,7 +141,11 @@
     "mustReadToContinue": "Veuillez lire tous les documents et cocher la case d'acceptation.",
     "refundPolicy": "Politique de remboursement",
     "acceptAndClose": "Accepter & Fermer",
-    "scrollToBottom": "Faites défiler vers le bas pour accepter"
+    "scrollToBottom": "Faites défiler vers le bas pour accepter",
+    "yourPassword": "Votre mot de passe",
+    "passwordCreate": "Créez un mot de passe",
+    "namePlaceholder": "Mariem Ben Salem",
+    "emailPlaceholder": "vous@exemple.tn"
   },
   "landing": {
     "heroTitle": "Voyagez en Tunisie,\nplace par place.",
@@ -164,7 +168,13 @@
     "becomeDriver": "Devenir chauffeur",
     "chooseCity": "Choisir une ville",
     "searchCity": "Rechercher une ville",
-    "noCitiesMatch": "Aucune ville ne correspond"
+    "noCitiesMatch": "Aucune ville ne correspond",
+    "whereTo": "On va où aujourd’hui ?",
+    "yourNextLouage": "Votre prochain louage",
+    "louageTicket": "Billet de louage",
+    "today": "Aujourd’hui",
+    "popularRoutes": "Trajets populaires",
+    "fromPrice": "dès {{price}} TND"
   },
   "search": {
     "filters": "Filtres",
@@ -323,6 +333,12 @@
     "driverShort": "Chauffeur",
     "seatsShort": "Places",
     "paidShort": "Payé",
+    "nextTrip": "Votre prochain trajet",
+    "boardingPass": "Carte d'embarquement",
+    "dateShort": "Date",
+    "recentPayments": "Paiements récents",
+    "totalSpent": "Total dépensé",
+    "rebook": "Réserver à nouveau",
     "versionFooter": "Louagi Version Bêta",
     "departsInLabel": "Départ dans {{duration}}",
     "rateDriver": "Noter le chauffeur",
@@ -331,7 +347,23 @@
     "rateDriverPlaceholder": "Laissez un commentaire facultatif...",
     "ratingSubmitted": "Merci pour votre avis !",
     "noPastRidesTitle": "Aucun trajet passé",
-    "noPastRidesBody": "Les trajets terminés ou annulés apparaîtront ici."
+    "noPastRidesBody": "Les trajets terminés ou annulés apparaîtront ici.",
+    "member": "Membre Louagi",
+    "pointsBalance": "Solde de points",
+    "pts": "pts",
+    "memberSince": "Membre depuis",
+    "pointsToNext": "{{points}} pts avant {{tier}}",
+    "tierBronze": "Bronze",
+    "tierSilver": "Argent",
+    "tierGold": "Or",
+    "tierPlatinum": "Platine",
+    "achievements": "Réalisations",
+    "achProgress": "{{count}} sur {{total}}",
+    "achFirstTrip": "Premier trajet",
+    "achExplorer": "Explorateur",
+    "ach10Trips": "10 trajets",
+    "achEcoRider": "Éco-voyageur",
+    "achVeteran": "Vétéran"
   },
   "driver": {
     "verified": "Vérifié",
@@ -466,7 +498,18 @@
     "deletionRequested": "Demande de suppression soumise. Notre équipe la traitera sous 30 jours.",
     "sessionRevoked": "Session révoquée",
     "originPlaceholder": "ex. Tunis",
-    "destinationPlaceholder": "ex. Sousse"
+    "destinationPlaceholder": "ex. Sousse",
+    "viewDetails": "Voir les détails",
+    "deliveryActive": "Actif",
+    "acceptingParcels": "Colis acceptés",
+    "incomingRequests": "Demandes entrantes",
+    "enableDeliveries": "Activer les livraisons",
+    "pauseDeliveries": "Suspendre les livraisons",
+    "enableDeliveriesBody": "Activez la livraison de colis pour gagner plus sur vos trajets habituels.",
+    "cardLabel": "Chauffeur Louagi",
+    "ratingShort": "Note",
+    "sinceShort": "Depuis",
+    "ridePreview": "Aperçu du trajet"
   },
   "admin": {
     "platformOverview": "Vue d'ensemble",
@@ -784,7 +827,21 @@
     "receiptTitle": "Colis réservé",
     "receiptSubtitle": "Remettez le colis au chauffeur à la station",
     "priceLabel": "Prix de livraison",
-    "fixedPrice": "Prix fixe : {{price}} TND"
+    "fixedPrice": "Prix fixe : {{price}} TND",
+    "subtitle": "Envoyez un colis sur un louage qui part déjà dans votre direction.",
+    "sendBoxKicker": "Louagi livraison",
+    "sendBoxTitle": "Envoyez un colis sur un trajet déjà en route.",
+    "newDelivery": "Nouvelle livraison",
+    "stepDrop": "Dépôt",
+    "stepRide": "Trajet",
+    "stepCollect": "Retrait",
+    "routesWithSpace": "Trajets avec de la place aujourd’hui",
+    "routesCount": "{{count}} trajets",
+    "slotsFree": "{{free}} sur {{total}} places libres",
+    "reserve": "Réserver",
+    "from": "dès",
+    "trackParcel": "Suivre un colis",
+    "trackParcelBody": "Saisissez un code de suivi pour suivre votre colis"
   },
   "support": {
     "title": "Support",
@@ -834,7 +891,11 @@
     "deleteForEveryone": "Supprimer pour tout le monde",
     "searchConversations": "Rechercher des conversations…",
     "unknownContact": "Inconnu",
-    "noMessagesYet": "Aucun message"
+    "noMessagesYet": "Aucun message",
+    "inboxSubtitle": "Vos chauffeurs et le support",
+    "quickWhereAreYou": "Où êtes-vous ?",
+    "quickImHere": "Je suis là",
+    "quickRunningLate": "5 min de retard"
   },
   "tabs": {
     "Home": "Accueil",

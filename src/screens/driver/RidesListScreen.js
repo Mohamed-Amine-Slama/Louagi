@@ -6,19 +6,16 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { Screen } from '../../components/Screen';
-import { ScreenHeader } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Text } from '../../components/Text';
-import { Badge } from '../../components/Badge';
 import { FAB } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { Row, Stack } from '../../components/Section';
-import { Tabs } from '../../components/Tabs';
 import { SkeletonList } from '../../components/Skeleton';
-import { FadeSlideIn } from '../../components/motion';
+import { FadeSlideIn, PressableScale } from '../../components/motion';
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { spacing, withAlpha } from '../../theme';
+import { spacing, radius, shadows } from '../../theme';
 import { formatDateTime } from '../../i18n/format';
 
 const EMPTY_TITLE_KEY = {
@@ -27,6 +24,25 @@ const EMPTY_TITLE_KEY = {
   completed: 'driver:noTabRidesDone',
   cancelled: 'driver:noTabRidesCancelled',
 };
+
+// Pill segmented control for the four ride states.
+function Segmented({ value, onChange, items }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: colors.surfaceContainerHigh, borderRadius: 13, padding: 4, gap: 4 }}>
+      {items.map((it) => {
+        const active = it.key === value;
+        return (
+          <PressableScale key={it.key} onPress={() => onChange(it.key)} style={{ flex: 1 }}>
+            <View style={[{ borderRadius: 10, paddingVertical: 9, alignItems: 'center', backgroundColor: active ? colors.surfaceContainerLowest : 'transparent' }, active ? shadows.soft : null]}>
+              <Text variant="labelSm" color={active ? colors.secondaryContainer : colors.onSurfaceVariant} numberOfLines={1}>{it.label}</Text>
+            </View>
+          </PressableScale>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function DriverRides() {
   const { colors } = useTheme();
@@ -43,25 +59,22 @@ export default function DriverRides() {
     setLoading(false);
   }, [tab, user]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
     <Screen>
-      <ScreenHeader title={t('driver:ridesTitle')} />
-      <Tabs
+      <Text variant="headlineMd" style={{ marginTop: spacing.xs }}>{t('driver:ridesTitle')}</Text>
+      <Segmented
         value={tab}
         onChange={setTab}
-        tabs={[
+        items={[
           { key: 'scheduled', label: t('driver:tabsScheduled') },
           { key: 'in_progress', label: t('driver:tabsLive') },
           { key: 'completed', label: t('driver:tabsDone') },
           { key: 'cancelled', label: t('driver:tabsCancelled') },
         ]}
       />
+
       {loading ? (
         <SkeletonList count={4} lines={1} />
       ) : rows.length === 0 ? (
@@ -73,49 +86,36 @@ export default function DriverRides() {
           onAction={() => nav.navigate('CreateRide')}
         />
       ) : (
-        rows.map((r, i) => {
-          const sold = (r.total_seats ?? r.available_seats) - r.available_seats;
-          return (
-            <FadeSlideIn key={r.id} index={Math.min(i, 8)}>
-              <Card onPress={() => nav.navigate('RideManagement', { id: r.id })}>
-                <Row justify="space-between">
-                  <Stack gap={2}>
-                    <Text variant="bodyLg">
-                      {r.route?.origin_city} → {r.route?.destination_city}
-                    </Text>
-                    <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                      {formatDateTime(r.departure_time)}
-                    </Text>
-                  </Stack>
-                  <Stack gap={2} style={{ alignItems: 'flex-end' }}>
-                    <Text variant="headlineSm" color={colors.primary}>
-                      {sold * r.price_per_seat} {t('common:tnd')}
-                    </Text>
-                    <Badge label={t('driver:seatsCount', { count: sold, total: r.total_seats })} variant="info" icon="event-seat" />
-                  </Stack>
-                </Row>
-                {/* Tap hint */}
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginTop: spacing.sm,
-                  paddingTop: spacing.sm,
-                  borderTopWidth: 1,
-                  borderTopColor: withAlpha(colors.outlineVariant, 0.3),
-                  gap: 4,
-                }}>
-                  <MaterialIcons name="touch-app" size={14} color={colors.onSurfaceVariant} />
-                  <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                    {t('driver:tapForDetails', 'Tap to view details')}
-                  </Text>
-                  <MaterialIcons name="chevron-right" size={16} color={colors.onSurfaceVariant} />
-                </View>
-              </Card>
-            </FadeSlideIn>
-          );
-        })
+        <Stack gap={spacing.md}>
+          {rows.map((r, i) => {
+            const sold = (r.total_seats ?? r.available_seats) - r.available_seats;
+            return (
+              <FadeSlideIn key={r.id} index={Math.min(i, 8)}>
+                <Card onPress={() => nav.navigate('RideManagement', { id: r.id })}>
+                  <Row justify="space-between" align="flex-start">
+                    <Stack gap={2} style={{ flex: 1, minWidth: 0, paddingEnd: spacing.sm }}>
+                      <Text variant="headlineSm" numberOfLines={1}>{r.route?.origin_city} → {r.route?.destination_city}</Text>
+                      <Text variant="labelSm" color={colors.onSurfaceVariant}>{formatDateTime(r.departure_time)}</Text>
+                    </Stack>
+                    <Text variant="headlineSm" color={colors.primary} numberOfLines={1}>{sold * r.price_per_seat} {t('common:tnd')}</Text>
+                  </Row>
+                  <Row justify="space-between" align="center" style={{ marginTop: 13, paddingTop: 13, borderTopWidth: 1, borderTopColor: colors.outlineVariant }}>
+                    <Row gap={7} align="center" style={{ backgroundColor: colors.surfaceContainerHigh, borderRadius: radius.full, paddingHorizontal: 11, paddingVertical: 6 }}>
+                      <MaterialIcons name="group" size={14} color={colors.primary} />
+                      <Text variant="labelSm" color={colors.primary}>{t('driver:seatsCount', { count: sold, total: r.total_seats })}</Text>
+                    </Row>
+                    <Row gap={4} align="center">
+                      <Text variant="labelMd" color={colors.onSurfaceVariant}>{t('driver:viewDetails')}</Text>
+                      <MaterialIcons name="chevron-right" size={18} color={colors.onSurfaceVariant} />
+                    </Row>
+                  </Row>
+                </Card>
+              </FadeSlideIn>
+            );
+          })}
+        </Stack>
       )}
+
       <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
     </Screen>
   );

@@ -141,7 +141,11 @@
     "mustReadToContinue": "يرجى قراءة جميع المستندات والموافقة على الشروط للمتابعة.",
     "refundPolicy": "سياسة الاسترداد وإلغاء الحجز",
     "acceptAndClose": "قبول وإغلاق",
-    "scrollToBottom": "يرجى التمرير لأسفل للقبول"
+    "scrollToBottom": "يرجى التمرير لأسفل للقبول",
+    "yourPassword": "كلمة مرورك",
+    "passwordCreate": "أنشئ كلمة مرور",
+    "namePlaceholder": "مريم بن سالم",
+    "emailPlaceholder": "you@example.tn"
   },
   "landing": {
     "heroTitle": "تنقل في تونس،\nمقعدا تلو الآخر.",
@@ -164,7 +168,13 @@
     "becomeDriver": "كن سائقا",
     "chooseCity": "اختر المدينة",
     "searchCity": "ابحث عن مدينة",
-    "noCitiesMatch": "لا توجد مدينة مطابقة"
+    "noCitiesMatch": "لا توجد مدينة مطابقة",
+    "whereTo": "إلى أين اليوم؟",
+    "yourNextLouage": "لواجك القادم",
+    "louageTicket": "تذكرة اللواج",
+    "today": "اليوم",
+    "popularRoutes": "الوجهات الشائعة",
+    "fromPrice": "من {{price}} د.ت"
   },
   "search": {
     "filters": "المرشحات",
@@ -323,6 +333,12 @@
     "driverShort": "السائق",
     "seatsShort": "المقاعد",
     "paidShort": "مدفوع",
+    "nextTrip": "رحلتك القادمة",
+    "boardingPass": "بطاقة الصعود",
+    "dateShort": "التاريخ",
+    "recentPayments": "المدفوعات الأخيرة",
+    "totalSpent": "إجمالي الإنفاق",
+    "rebook": "إعادة الحجز",
     "versionFooter": "لواج · نسخة بيتا",
     "departsInLabel": "ينطلق خلال {{duration}}",
     "rateDriver": "قيّم السائق",
@@ -331,7 +347,23 @@
     "rateDriverPlaceholder": "اكتب تعليقا اختياريا...",
     "ratingSubmitted": "شكرا على ملاحظاتك!",
     "noPastRidesTitle": "لا توجد رحلات سابقة",
-    "noPastRidesBody": "ستظهر هنا الرحلات المكتملة أو الملغاة."
+    "noPastRidesBody": "ستظهر هنا الرحلات المكتملة أو الملغاة.",
+    "member": "عضو لواجي",
+    "pointsBalance": "رصيد النقاط",
+    "pts": "نقطة",
+    "memberSince": "عضو منذ",
+    "pointsToNext": "{{points}} نقطة للوصول إلى {{tier}}",
+    "tierBronze": "برونزي",
+    "tierSilver": "فضي",
+    "tierGold": "ذهبي",
+    "tierPlatinum": "بلاتيني",
+    "achievements": "الإنجازات",
+    "achProgress": "{{count}} من {{total}}",
+    "achFirstTrip": "أول رحلة",
+    "achExplorer": "مستكشف",
+    "ach10Trips": "10 رحلات",
+    "achEcoRider": "صديق البيئة",
+    "achVeteran": "محترف"
   },
   "driver": {
     "verified": "موثق",
@@ -466,7 +498,18 @@
     "deletionRequested": "تم تقديم طلب الحذف. سيعالج فريقنا الطلب خلال 30 يوماً.",
     "sessionRevoked": "تم إلغاء الجلسة",
     "originPlaceholder": "مثال: تونس",
-    "destinationPlaceholder": "مثال: سوسة"
+    "destinationPlaceholder": "مثال: سوسة",
+    "viewDetails": "عرض التفاصيل",
+    "deliveryActive": "نشط",
+    "acceptingParcels": "قبول الطرود",
+    "incomingRequests": "الطلبات الواردة",
+    "enableDeliveries": "تفعيل التوصيل",
+    "pauseDeliveries": "إيقاف التوصيل مؤقتًا",
+    "enableDeliveriesBody": "فعّل توصيل الطرود لتربح أكثر على الطرق التي تقودها أصلًا.",
+    "cardLabel": "سائق لواجي",
+    "ratingShort": "التقييم",
+    "sinceShort": "منذ",
+    "ridePreview": "معاينة الرحلة"
   },
   "admin": {
     "platformOverview": "نظرة عامة",
@@ -784,7 +827,21 @@
     "receiptTitle": "تم حجز الطرد",
     "receiptSubtitle": "سلم الطرد للسائق في المحطة",
     "priceLabel": "سعر التوصيل",
-    "fixedPrice": "سعر ثابت: {{price}} د.ت"
+    "fixedPrice": "سعر ثابت: {{price}} د.ت",
+    "subtitle": "أرسل طردًا مع لواج متّجه إلى وجهتك.",
+    "sendBoxKicker": "لواجي للتوصيل",
+    "sendBoxTitle": "أرسل صندوقًا مع رحلة متّجهة إلى وجهتك.",
+    "newDelivery": "توصيل جديد",
+    "stepDrop": "تسليم",
+    "stepRide": "رحلة",
+    "stepCollect": "استلام",
+    "routesWithSpace": "رحلات بها مساحة اليوم",
+    "routesCount": "{{count}} رحلات",
+    "slotsFree": "{{free}} من {{total}} أماكن متاحة",
+    "reserve": "احجز",
+    "from": "من",
+    "trackParcel": "تتبّع طردًا",
+    "trackParcelBody": "أدخل رمز التتبّع لمتابعة طردك"
   },
   "support": {
     "title": "الدعم",
@@ -834,7 +891,11 @@
     "deleteForEveryone": "حذف لدى الجميع",
     "searchConversations": "البحث في المحادثات…",
     "unknownContact": "غير معروف",
-    "noMessagesYet": "لا توجد رسائل بعد"
+    "noMessagesYet": "لا توجد رسائل بعد",
+    "inboxSubtitle": "سائقوك والدعم",
+    "quickWhereAreYou": "أين أنت؟",
+    "quickImHere": "أنا هنا",
+    "quickRunningLate": "متأخر 5 دقائق"
   },
   "tabs": {
     "Home": "الرئيسية",

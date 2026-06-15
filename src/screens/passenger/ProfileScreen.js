@@ -11,11 +11,10 @@ import { Text } from '../../components/Text';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { Avatar } from '../../components/Avatar';
 import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
 import { Chip } from '../../components/Chip';
-import { KpiTile } from '../../components/KpiTile';
+import { MembershipCard, ProfileStatTile, AchievementsRail } from '../../components/Membership';
 import { SkeletonList } from '../../components/Skeleton';
 import { Stack, Row, Section } from '../../components/Section';
 import { Stepper } from '../../components/Stepper';
@@ -54,7 +53,7 @@ export default function PassengerProfile() {
   const toast = useToast();
 
   const [profile, setProfile] = useState(null);
-  const [stats, setStats] = useState({ trips: 0, spent: 0, favouriteRoute: null });
+  const [stats, setStats] = useState({ trips: 0, spent: 0, favouriteRoute: null, points: 0, achievements: [] });
 
   // Editable state
   const [fullName, setFullName] = useState('');
@@ -108,6 +107,8 @@ export default function PassengerProfile() {
         trips: p.stats?.trips ?? 0,
         spent: p.stats?.spent ?? 0,
         favouriteRoute: p.stats?.favouriteRoute ?? null,
+        points: p.stats?.points ?? 0,
+        achievements: p.stats?.achievements ?? [],
       });
     } catch (err) {
       setLoadError(err?.message || t('auth:profileLoadFailed'));
@@ -187,12 +188,6 @@ export default function PassengerProfile() {
   }
 
   const memberSince = formatMonthYear(profile.created_at || new Date(), { locale });
-  const roleLabel =
-    profile.role === 'driver'
-      ? t('auth:driver')
-      : profile.role === 'passenger'
-        ? t('auth:passenger')
-        : profile.role;
 
   const saveAccount = async () => {
     setErrors({});
@@ -363,77 +358,33 @@ export default function PassengerProfile() {
 
   return (
     <Screen padded={false}>
-      <LinearGradient
-        colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingHorizontal: spacing.containerMargin,
-          paddingTop: spacing.md,
-          paddingBottom: spacing.xl,
-          borderBottomLeftRadius: radius.xxl,
-          borderBottomRightRadius: radius.xxl,
-          gap: spacing.md,
-        }}
-      >
-        <Text variant="labelSm" color={withAlpha(heroFg, 0.8)}>
-          {t('passenger:profileTitle')}
-        </Text>
-        <Row gap={spacing.md} align="center">
-          <View
-            style={{
-              borderWidth: 3,
-              borderColor: withAlpha(heroFg, 0.24),
-              borderRadius: radius.full,
-            }}
-          >
-            <Avatar name={profile.full_name} size={72} badge />
-          </View>
-          <Stack gap={6} style={{ flex: 1 }}>
-            <Text variant="headlineMd" color={heroFg} numberOfLines={1}>
-              {profile.full_name}
-            </Text>
-            <Text variant="bodySm" color={withAlpha(heroFg, 0.8)} numberOfLines={1}>
-              {profile.email}
-            </Text>
-            <Row gap={spacing.xs} style={{ flexWrap: 'wrap' }}>
-              <ProfileMetaPill icon="badge" label={roleLabel} />
-              <ProfileMetaPill icon="event" label={t('common:since', { date: memberSince })} />
-            </Row>
-          </Stack>
-        </Row>
-      </LinearGradient>
-
-      <View style={{ paddingHorizontal: spacing.containerMargin, gap: spacing.md }}>
+      <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.sm, gap: spacing.md }}>
+        <Text variant="headlineSm">{t("passenger:profileTitle")}</Text>
         <FadeSlideIn index={0}>
-          <Row gap={spacing.sm}>
-            <KpiTile icon="route" value={stats.trips} label={t('passenger:trips')} tone="primary" />
-            <KpiTile icon="payments" value={`${stats.spent} ${t('common:tnd')}`} label={t('passenger:spent')} tone="success" />
-          </Row>
+          <MembershipCard name={profile.full_name} id={profile.id} points={stats.points} memberSince={memberSince} notch={colors.surface} />
         </FadeSlideIn>
         <FadeSlideIn index={1}>
-        <Card>
-          <Row gap={spacing.md}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: radius.lg,
-                backgroundColor: withAlpha(colors.primary, 0.1),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialIcons name="star" size={20} color={colors.primary} />
-            </View>
-            <Stack gap={2} style={{ flex: 1 }}>
-              <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('passenger:favouriteRoute')}</Text>
-              <Text variant="labelMd" numberOfLines={1}>
-                {stats.favouriteRoute || t('support:noFavouriteRoute')}
-              </Text>
-            </Stack>
+          <Row gap={spacing.sm}>
+            <ProfileStatTile icon="route" value={String(stats.trips)} label={t("passenger:trips")} />
+            <ProfileStatTile icon="payments" value={String(stats.spent)} unit={t("common:tnd")} label={t("passenger:spent")} />
+            <ProfileStatTile icon="eco" value={String(stats.trips * 8)} unit="kg" label={t("passenger:co2Saved")} tone="success" />
           </Row>
-        </Card>
+        </FadeSlideIn>
+        <FadeSlideIn index={2}>
+          <Card>
+            <Row gap={spacing.md} align="center">
+              <View style={{ width: 42, height: 42, borderRadius: radius.lg, backgroundColor: withAlpha(colors.secondaryContainer, 0.12), alignItems: "center", justifyContent: "center" }}>
+                <MaterialIcons name="star" size={20} color={colors.secondaryContainer} />
+              </View>
+              <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                <Text variant="labelSm" color={colors.onSurfaceVariant}>{t("passenger:favouriteRoute")}</Text>
+                <Text variant="labelMd" numberOfLines={1}>{stats.favouriteRoute || t("support:noFavouriteRoute")}</Text>
+              </Stack>
+            </Row>
+          </Card>
+        </FadeSlideIn>
+        <FadeSlideIn index={3}>
+          <AchievementsRail unlocked={stats.achievements} />
         </FadeSlideIn>
 
         {/* Account info */}
@@ -903,30 +854,6 @@ export default function PassengerProfile() {
   );
 }
 
-function ProfileMetaPill({ icon, label }) {
-  const { colors, isDark } = useTheme();
-  const fg = isDark ? colors.onSurface : colors.onPrimary;
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 6,
-        borderRadius: radius.full,
-        backgroundColor: withAlpha(fg, 0.14),
-        maxWidth: '100%',
-        flexShrink: 1,
-      }}
-    >
-      <MaterialIcons name={icon} size={14} color={fg} />
-      <Text variant="labelSm" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
 
 function SettingRow({ icon, title, subtitle, right, onPress }) {
   const { colors } = useTheme();

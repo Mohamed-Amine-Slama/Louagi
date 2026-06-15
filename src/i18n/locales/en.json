@@ -141,7 +141,11 @@
     "mustReadToContinue": "Please read all documents and check the agreement box.",
     "refundPolicy": "Refund & Cancellation Policy",
     "acceptAndClose": "Accept & Close",
-    "scrollToBottom": "Scroll to bottom to accept"
+    "scrollToBottom": "Scroll to bottom to accept",
+    "yourPassword": "Your password",
+    "passwordCreate": "Create a password",
+    "namePlaceholder": "Mariem Ben Salem",
+    "emailPlaceholder": "you@example.tn"
   },
   "landing": {
     "heroTitle": "Travel Tunisia,\nseat by seat.",
@@ -164,7 +168,13 @@
     "becomeDriver": "Become a driver",
     "chooseCity": "Choose city",
     "searchCity": "Search a city",
-    "noCitiesMatch": "No cities match"
+    "noCitiesMatch": "No cities match",
+    "whereTo": "Where to today?",
+    "yourNextLouage": "Your next louage",
+    "louageTicket": "Louage ticket",
+    "today": "Today",
+    "popularRoutes": "Popular routes",
+    "fromPrice": "from {{price}} TND"
   },
   "search": {
     "filters": "Filters",
@@ -323,6 +333,12 @@
     "driverShort": "Driver",
     "seatsShort": "Seats",
     "paidShort": "Paid",
+    "nextTrip": "Your next trip",
+    "boardingPass": "Boarding pass",
+    "dateShort": "Date",
+    "recentPayments": "Recent payments",
+    "totalSpent": "Total spent",
+    "rebook": "Rebook",
     "versionFooter": "Louagi Beta Version",
     "departsInLabel": "Departs in {{duration}}",
     "noPastRidesTitle": "No Past Rides",
@@ -331,7 +347,23 @@
     "rateDriverTitle": "Rate Your Driver",
     "rateDriverBody": "How was your ride with {{name}}?",
     "rateDriverPlaceholder": "Leave an optional comment...",
-    "ratingSubmitted": "Thanks for your feedback!"
+    "ratingSubmitted": "Thanks for your feedback!",
+    "member": "Louagi member",
+    "pointsBalance": "Points balance",
+    "pts": "pts",
+    "memberSince": "Member since",
+    "pointsToNext": "{{points}} pts to {{tier}}",
+    "tierBronze": "Bronze",
+    "tierSilver": "Silver",
+    "tierGold": "Gold",
+    "tierPlatinum": "Platinum",
+    "achievements": "Achievements",
+    "achProgress": "{{count}} of {{total}}",
+    "achFirstTrip": "First trip",
+    "achExplorer": "Explorer",
+    "ach10Trips": "10 trips",
+    "achEcoRider": "Eco rider",
+    "achVeteran": "Veteran"
   },
   "driver": {
     "verified": "Verified",
@@ -466,7 +498,18 @@
     "callPassenger": "Call passenger",
     "tapForDetails": "Tap to view details",
     "originPlaceholder": "e.g. Tunis",
-    "destinationPlaceholder": "e.g. Sousse"
+    "destinationPlaceholder": "e.g. Sousse",
+    "viewDetails": "View details",
+    "deliveryActive": "Active",
+    "acceptingParcels": "Accepting parcels",
+    "incomingRequests": "Incoming requests",
+    "enableDeliveries": "Enable deliveries",
+    "pauseDeliveries": "Pause deliveries",
+    "enableDeliveriesBody": "Turn on parcel delivery to earn extra on routes you're already driving.",
+    "cardLabel": "Louagi driver",
+    "ratingShort": "Rating",
+    "sinceShort": "Since",
+    "ridePreview": "Ride preview"
   },
   "admin": {
     "platformOverview": "Platform overview",
@@ -784,7 +827,21 @@
     "receiptTitle": "Delivery booked",
     "receiptSubtitle": "Hand the parcel to the driver at the station",
     "priceLabel": "Delivery price",
-    "fixedPrice": "Fixed price: {{price}} TND"
+    "fixedPrice": "Fixed price: {{price}} TND",
+    "subtitle": "Send a parcel on a louage already going your way.",
+    "sendBoxKicker": "Louagi delivery",
+    "sendBoxTitle": "Send a box on a ride already going your way.",
+    "newDelivery": "New delivery",
+    "stepDrop": "Drop",
+    "stepRide": "Ride",
+    "stepCollect": "Collect",
+    "routesWithSpace": "Routes with space today",
+    "routesCount": "{{count}} routes",
+    "slotsFree": "{{free}} of {{total}} slots free",
+    "reserve": "Reserve",
+    "from": "from",
+    "trackParcel": "Track a parcel",
+    "trackParcelBody": "Enter a tracking code to follow your box"
   },
   "support": {
     "title": "Support",
@@ -834,7 +891,11 @@
     "deleteForEveryone": "Delete for everyone",
     "searchConversations": "Search conversations…",
     "unknownContact": "Unknown",
-    "noMessagesYet": "No messages yet"
+    "noMessagesYet": "No messages yet",
+    "inboxSubtitle": "Your drivers & support",
+    "quickWhereAreYou": "Where are you?",
+    "quickImHere": "I’m here",
+    "quickRunningLate": "Running 5 min late"
   },
   "tabs": {
     "Home": "Home",
