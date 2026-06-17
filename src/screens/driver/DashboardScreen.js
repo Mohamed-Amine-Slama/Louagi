@@ -13,6 +13,7 @@ import { Button, FAB } from '../../components/Button';
 import { Stack, Row, Section } from '../../components/Section';
 import { EmptyState } from '../../components/EmptyState';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
+import { DriverLiveLocationCard } from '../../components/DriverLiveLocationCard';
 
 import { ridesApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -253,8 +254,13 @@ export default function DriverDashboard() {
           </Section>
         </FadeSlideIn>
 
-        {/* Earnings */}
+        {/* Live location sharing */}
         <FadeSlideIn index={2}>
+          <DriverLiveLocationCard />
+        </FadeSlideIn>
+
+        {/* Earnings */}
+        <FadeSlideIn index={3}>
           <Section
             title={t('driver:earnings')}
             action={

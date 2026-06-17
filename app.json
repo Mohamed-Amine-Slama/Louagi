@@ -21,6 +21,11 @@
     },
     "android": {
       "package": "com.louagi.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_ANDROID_GOOGLE_MAPS_API_KEY"
+        }
+      },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
       "icon": "./assets/icon.png",
@@ -40,6 +45,14 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "Use Face ID to sign in to Louagi without your phone and password."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Louagi uses your location while you drive so passengers can track their parcels in real time.",
+          "isAndroidForegroundServiceEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
         }
       ]
     ],

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,26 +10,10 @@ import { Card } from './Card';
 import { Row, Stack, Section } from './Section';
 import { spacing, radius, withAlpha, shadows } from '../theme';
 import { MONO, PASS, initialsOf } from '../lib/tickets';
+import { tierForPoints } from '../lib/tiers';
+import { usersApi } from '../api';
 
 const GOLD = ['#F8D27A', '#E0A23C'];
-
-// Loyalty tiers keyed off the server-computed points balance.
-const BANDS = [
-  { key: 'tierBronze', min: 0, next: 500, nextKey: 'tierSilver' },
-  { key: 'tierSilver', min: 500, next: 1500, nextKey: 'tierGold' },
-  { key: 'tierGold', min: 1500, next: 3000, nextKey: 'tierPlatinum' },
-  { key: 'tierPlatinum', min: 3000, next: null, nextKey: null },
-];
-
-// Milestone badges. `id` matches the server's unlocked list; `i18n` is the label
-// key. The unlock logic lives server-side (GetProfile → passengerAchievements).
-const ACHIEVEMENTS = [
-  { id: 'firstTrip', i18n: 'achFirstTrip', icon: 'flag' },
-  { id: 'ecoRider', i18n: 'achEcoRider', icon: 'eco' },
-  { id: 'explorer', i18n: 'achExplorer', icon: 'explore' },
-  { id: 'tenTrips', i18n: 'ach10Trips', icon: 'military-tech' },
-  { id: 'veteran', i18n: 'achVeteran', icon: 'workspace-premium' },
-];
 
 const groupThousands = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
@@ -37,14 +21,14 @@ const groupThousands = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 // card. Tier and points are derived from the passenger's trip count.
 export function MembershipCard({ name, id, points = 0, memberSince, notch }) {
   const { t } = useLocale();
+  const [tiers, setTiers] = useState(null);
+  useEffect(() => { usersApi.listTiers().then(setTiers); }, []);
   const idStr = String(id ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().padEnd(8, '0');
   const memberNo = `LGI ${idStr.slice(0, 4)} ${idStr.slice(4, 8)}`;
 
-  let band = BANDS[0];
-  for (const b of BANDS) if (points >= b.min) band = b;
-  const hasNext = band.next != null;
-  const progress = hasNext ? Math.min(1, Math.max(0, (points - band.min) / (band.next - band.min))) : 1;
-  const toNext = hasNext ? Math.max(0, band.next - points) : 0;
+  const { tier: band, next, progress, pointsToNext: toNext } = tierForPoints(points, tiers);
+  const hasNext = next != null;
+  const discountPct = band.discount_pct;
 
   return (
     <View style={[{ borderRadius: 22 }, shadows.card]}>
@@ -57,7 +41,7 @@ export function MembershipCard({ name, id, points = 0, memberSince, notch }) {
               </Text>
               <LinearGradient colors={GOLD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.full, paddingHorizontal: 11, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                 <MaterialIcons name="star" size={12} color="#3A2A0A" />
-                <Text variant="labelSm" color="#3A2A0A" numberOfLines={1}>{t('passenger:' + band.key).toUpperCase()}</Text>
+                <Text variant="labelSm" color="#3A2A0A" numberOfLines={1}>{t('passenger:' + band.i18n_key).toUpperCase()}</Text>
               </LinearGradient>
             </Row>
             <Row gap={14} align="center">
@@ -95,11 +79,21 @@ export function MembershipCard({ name, id, points = 0, memberSince, notch }) {
             <View style={{ height: 7, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.14)', overflow: 'hidden' }}>
               <View style={{ height: '100%', width: `${Math.round(progress * 100)}%`, borderRadius: radius.full, backgroundColor: PASS.gold }} />
             </View>
-            {hasNext ? (
-              <Text variant="labelSm" color={PASS.onNavyMut} style={{ marginTop: 8 }}>
-                {t('passenger:pointsToNext', { points: toNext, tier: t('passenger:' + band.nextKey) })}
-              </Text>
-            ) : null}
+            <Row justify="space-between" align="center" style={{ marginTop: 8 }}>
+              {hasNext ? (
+                <Text variant="labelSm" color={PASS.onNavyMut}>
+                  {t('passenger:pointsToNext', { points: toNext, tier: t('passenger:' + next.i18n_key) })}
+                </Text>
+              ) : <View />}
+              {discountPct > 0 ? (
+                <Row gap={5} align="center">
+                  <MaterialIcons name="local-offer" size={12} color={PASS.gold} />
+                  <Text variant="labelSm" color={PASS.gold}>
+                    {t('passenger:discountOffRides', { pct: discountPct })}
+                  </Text>
+                </Row>
+              ) : null}
+            </Row>
           </View>
         </LinearGradient>
       </View>
@@ -125,24 +119,33 @@ export function ProfileStatTile({ icon, value, unit, label, tone }) {
   );
 }
 
-// Horizontally-scrolling milestone badges; locked ones dim with a padlock.
+// Horizontally-scrolling milestone badges; locked ones dim with a padlock. The
+// badge catalogue (icons + label keys + unlock thresholds) is fetched from the
+// DB (public.achievements); `unlocked` is the server-computed list of earned ids.
 export function AchievementsRail({ unlocked = [] }) {
   const { colors } = useTheme();
   const { t } = useLocale();
-  const count = ACHIEVEMENTS.filter((a) => unlocked.includes(a.id)).length;
+  const [catalogue, setCatalogue] = useState([]);
+
+  useEffect(() => {
+    usersApi.listAchievements().then(setCatalogue);
+  }, []);
+
+  if (!catalogue.length) return null;
+  const count = catalogue.filter((a) => unlocked.includes(a.id)).length;
   return (
     <Section
       title={t('passenger:achievements')}
       action={
         <View style={{ backgroundColor: colors.surfaceContainerHigh, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3 }}>
           <Text variant="labelSm" color={colors.onSurfaceVariant}>
-            {t('passenger:achProgress', { count, total: ACHIEVEMENTS.length })}
+            {t('passenger:achProgress', { count, total: catalogue.length })}
           </Text>
         </View>
       }
     >
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: 2 }}>
-        {ACHIEVEMENTS.map((a) => {
+        {catalogue.map((a) => {
           const got = unlocked.includes(a.id);
           return (
             <View
@@ -155,7 +158,7 @@ export function AchievementsRail({ unlocked = [] }) {
               <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: got ? withAlpha(colors.secondaryContainer, 0.14) : colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
                 <MaterialIcons name={got ? a.icon : 'lock'} size={22} color={got ? colors.secondaryContainer : colors.onSurfaceVariant} />
               </View>
-              <Text variant="labelSm" numberOfLines={1} style={{ textAlign: 'center' }}>{t('passenger:' + a.i18n)}</Text>
+              <Text variant="labelSm" numberOfLines={1} style={{ textAlign: 'center' }}>{t('passenger:' + a.i18n_key)}</Text>
             </View>
           );
         })}

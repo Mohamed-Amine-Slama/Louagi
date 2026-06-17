@@ -56,6 +56,7 @@ function passengerContact(user) {
 // server caches them for 24h; this saves the network hop too).
 const REF_TTL_MS = 10 * 60 * 1000;
 let routesCache = { at: 0, data: null };
+let popularRoutesCache = { at: 0, data: null };
 let citiesCache = { at: 0, data: null };
 
 export async function listRoutes() {
@@ -67,6 +68,19 @@ export async function listRoutes() {
   }
   await sleep(80);
   return db.routes.slice();
+}
+
+// Curated "popular routes" shortcuts shown on Home (was the LandingScreen
+// `POPULAR` constant). The is_popular flag + "from" price live in the DB.
+export async function listPopularRoutes() {
+  if (!useMocks) {
+    if (popularRoutesCache.data && Date.now() - popularRoutesCache.at < REF_TTL_MS) return popularRoutesCache.data;
+    const rows = await gqlList('ListPopularRoutes');
+    if (rows.length) popularRoutesCache = { at: Date.now(), data: rows };
+    return rows;
+  }
+  await sleep(60);
+  return db.routes.filter((r) => r.is_popular);
 }
 
 export async function listCities() {
@@ -450,18 +464,4 @@ export async function driverEarnings({ actor, period = 'week' } = {}) {
     rating: driver.rating ?? null,
     tripsCompleted: driver.trips_completed ?? 0,
   };
-}
-
-export async function adminListRides({ filters = {} } = {}) {
-  if (!useMocks) return gqlList('AdminListRides', { filters });
-  await sleep(120);
-  let rows = db.rides.slice();
-  if (filters.status) rows = rows.filter((r) => r.status === filters.status);
-  if (filters.driverId) rows = rows.filter((r) => r.driver_id === filters.driverId);
-  if (filters.routeId) rows = rows.filter((r) => r.route_id === filters.routeId);
-  return rows.map((r) => ({
-    ...r,
-    route: findRouteById(r.route_id),
-    driver: findDriverById(r.driver_id),
-  }));
 }

@@ -17,12 +17,15 @@ import PendingApprovalScreen from '../screens/public/PendingApprovalScreen';
 import SearchScreen from '../screens/passenger/SearchScreen';
 import RideDetailScreen from '../screens/passenger/RideDetailScreen';
 import BookingConfirmScreen from '../screens/passenger/BookingConfirmScreen';
+import MyDeliveriesScreen from '../screens/passenger/MyDeliveriesScreen';
+import TrackDeliveryScreen from '../screens/passenger/TrackDeliveryScreen';
 
 import CreateRideScreen from '../screens/driver/CreateRideScreen';
 import RideManagementScreen from '../screens/driver/RideManagementScreen';
 import DriverDeliveryScreen from '../screens/driver/DriverDeliveryScreen';
-import AdminProfileScreen from '../screens/admin/ProfileScreen';
+import AdminMovedScreen from '../screens/common/AdminMovedScreen';
 import { NotificationProvider } from '../context/NotificationContext';
+import { DriverLocationProvider } from '../context/DriverLocationContext';
 
 import SettingsScreen from '../screens/common/SettingsScreen';
 import SupportScreen from '../screens/common/SupportScreen';
@@ -31,7 +34,6 @@ import ChatScreen from '../screens/common/ChatScreen';
 
 import { PassengerTabs } from './PassengerTabs';
 import { DriverTabs } from './DriverTabs';
-import { AdminTabs } from './AdminTabs';
 
 import { typography } from '../theme';
 
@@ -65,6 +67,8 @@ function PassengerStack() {
       <Stack.Screen name="Tabs" component={PassengerTabs} />
       <Stack.Screen name="RideDetail" component={RideDetailScreen} />
       <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
+      <Stack.Screen name="MyDeliveries" component={MyDeliveriesScreen} />
+      <Stack.Screen name="TrackDelivery" component={TrackDeliveryScreen} />
       <Stack.Screen name="ChatList" component={ChatListScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
@@ -100,14 +104,13 @@ function DriverStack({ pending }) {
   );
 }
 
-function AdminStack() {
+// Admins no longer have an in-app dashboard — it now lives in the standalone
+// web app. They land on a single screen pointing them there.
+function AdminMovedStack() {
   const screenOptions = useStackScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="Tabs" component={AdminTabs} />
-      <Stack.Screen name="AdminProfile" component={AdminProfileScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="AdminMoved" component={AdminMovedScreen} />
     </Stack.Navigator>
   );
 }
@@ -153,9 +156,11 @@ export function RootNavigator() {
         ) : user.role === 'passenger' ? (
           <PassengerStack />
         ) : user.role === 'driver' ? (
-          <DriverStack pending={user.driverStatus !== 'verified'} />
+          <DriverLocationProvider>
+            <DriverStack pending={user.driverStatus !== 'verified'} />
+          </DriverLocationProvider>
         ) : user.role === 'admin' ? (
-          <AdminStack />
+          <AdminMovedStack />
         ) : (
           <PublicStack />
         )}

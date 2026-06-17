@@ -19,20 +19,13 @@ import { ridesApi, usersApi } from '../../api';
 import { spacing, radius } from '../../theme';
 import { MONO, cityCode } from '../../lib/tickets';
 
-// Static popular inter-city routes shown as quick shortcuts on Home — typical
-// "from" fares; tapping pre-fills the search.
-const POPULAR = [
-  { from: 'Tunis', to: 'Sfax', price: 25 },
-  { from: 'Tunis', to: 'Sousse', price: 12 },
-  { from: 'Sfax', to: 'Gabès', price: 18 },
-];
-
 export default function LandingScreen() {
   const { colors, isDark, setMode } = useTheme();
   const { t } = useLocale();
   const nav = useNavigation();
   const { user } = useAuth();
   const [cities, setCities] = useState([]);
+  const [popular, setPopular] = useState([]);
   const [origin, setOrigin] = useState('Tunis');
   const [destination, setDestination] = useState('Sfax');
   const [seats, setSeats] = useState(1);
@@ -40,6 +33,7 @@ export default function LandingScreen() {
 
   useEffect(() => {
     ridesApi.listCities().then(setCities);
+    ridesApi.listPopularRoutes().then(setPopular);
   }, []);
 
   useEffect(() => {
@@ -169,19 +163,19 @@ export default function LandingScreen() {
       <FadeSlideIn index={2}>
         <Stack gap={spacing.sm}>
           <SectionLabel>{t('landing:popularRoutes')}</SectionLabel>
-          {POPULAR.map((r, i) => (
-            <Card key={i} padding={spacing.md} onPress={() => nav.navigate('Search', { origin: r.from, destination: r.to, seats })}>
+          {popular.map((r) => (
+            <Card key={r.id} padding={spacing.md} onPress={() => nav.navigate('Search', { origin: r.origin_city, destination: r.destination_city, seats })}>
               <Row justify="space-between" align="center">
                 <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                   <Text style={{ fontFamily: MONO, fontSize: 14, color: colors.primary }}>
-                    {cityCode(r.from)} → {cityCode(r.to)}
+                    {cityCode(r.origin_city)} → {cityCode(r.destination_city)}
                   </Text>
                   <Text variant="bodySm" color={colors.onSurfaceVariant} numberOfLines={1} style={{ flexShrink: 1 }}>
-                    {r.from} · {r.to}
+                    {r.origin_city} · {r.destination_city}
                   </Text>
                 </View>
                 <Text variant="labelMd" color={colors.secondaryContainer} numberOfLines={1}>
-                  {t('landing:fromPrice', { price: r.price })}
+                  {t('landing:fromPrice', { price: r.base_price })}
                 </Text>
               </Row>
             </Card>

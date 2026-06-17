@@ -43,25 +43,29 @@ export default function RideDetailScreen() {
 
   const [ride, setRide] = useState(null);
   const [seats, setSeats] = useState(1);
+  const [discountPct, setDiscountPct] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [lockBanner, setLockBanner] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // The profile read (default seat preference) is independent of the ride
-      // detail — fetch both in parallel instead of waterfalling.
-      const needProfile = !params.seats && user?.role === 'passenger';
+      // The profile read is independent of the ride detail — fetch both in
+      // parallel. For passengers we always read it: it supplies both the default
+      // seat preference and the loyalty points that set the tier discount.
+      const isPassenger = user?.role === 'passenger';
       const [detail, profile] = await Promise.all([
         ridesApi.getRideDetail(id),
-        needProfile ? usersApi.getProfile({ actor: user }).catch(() => null) : null,
+        isPassenger ? usersApi.getProfile({ actor: user }).catch(() => null) : null,
       ]);
       if (cancelled) return;
       setRide(detail);
+      // The discount the tier grants is computed server-side from public.tiers.
+      setDiscountPct(profile?.stats?.discountPct ?? 0);
       if (!detail) return;
 
       let initialSeats = Number(params.seats) || 1;
-      if (needProfile) initialSeats = Number(profile?.preferences?.defaultSeats) || 1;
+      if (!params.seats && isPassenger) initialSeats = Number(profile?.preferences?.defaultSeats) || 1;
       const maxSeats = Math.max(1, detail.available_seats || 1);
       setSeats(Math.min(maxSeats, Math.max(1, initialSeats)));
     })();
@@ -90,8 +94,11 @@ export default function RideDetailScreen() {
   }
 
   const seatCost = seats * ride.price_per_seat;
+  // Loyalty tier discount on the seat fare only (mirrors the server). Round to
+  // millimes so the preview matches the authoritative price on confirmation.
+  const discountAmount = Math.round(seatCost * discountPct) / 100;
   const reservationFee = 3;
-  const total = seatCost + reservationFee;
+  const total = seatCost - discountAmount + reservationFee;
   const dep = new Date(ride.departure_time);
 
   const book = async () => {
@@ -263,6 +270,8 @@ export default function RideDetailScreen() {
         seats={seats}
         pricePerSeat={ride.price_per_seat}
         reservationFee={reservationFee}
+        discountPct={discountPct}
+        discountAmount={discountAmount}
         total={total}
         onBook={book}
         submitting={submitting}

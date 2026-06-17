@@ -4,7 +4,7 @@ export * as reservationsApi from './reservations';
 export * as paymentsApi from './payments';
 export * as driversApi from './drivers';
 export * as usersApi from './users';
-export * as adminApi from './admin';
 export * as deliveriesApi from './deliveries';
 export * as messagesApi from './messages';
 export * as reviewsApi from './reviews';
+export * as trackingApi from './tracking';

@@ -3,9 +3,42 @@ import { decryptField, hashPassword, verifyPassword } from '../security/crypto';
 import { appendAudit } from '../security/audit';
 import { validateEmail, validateName, validatePassword, sanitize } from '../validation/schemas';
 import { useMocks } from '../config';
-import { gql } from './graphql';
+import { DEFAULT_TIERS } from '../lib/tiers';
+import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Achievement catalogue (id/icon/label key + unlock threshold), sourced from the
+// DB (public.achievements) instead of a hard-coded array in the bundle. The
+// catalogue is global reference data, so memoise it for the session.
+let achievementsCache = null;
+
+export async function listAchievements() {
+  if (!useMocks) {
+    if (achievementsCache) return achievementsCache;
+    const rows = await gqlList('ListAchievements');
+    if (rows.length) achievementsCache = rows;
+    return rows;
+  }
+  await sleep(40);
+  return [];
+}
+
+// Loyalty tier ladder (code/label key + threshold/discount/perks), sourced from
+// the DB (public.tiers). Memoised for the session like the achievements list.
+// Mock mode falls back to the bundled default so the UI stays meaningful.
+let tiersCache = null;
+
+export async function listTiers() {
+  if (!useMocks) {
+    if (tiersCache) return tiersCache;
+    const rows = await gqlList('ListTiers');
+    if (rows.length) tiersCache = rows;
+    return rows.length ? rows : DEFAULT_TIERS;
+  }
+  await sleep(40);
+  return DEFAULT_TIERS;
+}
 
 export async function getProfile({ actor }) {
   if (!useMocks) {

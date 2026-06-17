@@ -139,6 +139,14 @@ export default function BookingConfirmScreen() {
               </Text>
               <Text variant="bodyMd" color={colors.success}>{reservation.total_price} {t('common:tnd')}</Text>
             </Row>
+            {Number(reservation.discount_pct) > 0 ? (
+              <Row justify="space-between">
+                <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                  {t('booking:loyaltyDiscount')}
+                </Text>
+                <Text variant="bodyMd" color={colors.success}>−{Number(reservation.discount_pct)}%</Text>
+              </Row>
+            ) : null}
             <Row justify="space-between">
               <Text variant="labelSm" color={colors.onSurfaceVariant}>
                 {t('booking:reservationFee')}

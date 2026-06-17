@@ -4,6 +4,25 @@ import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Flat delivery pricing, sourced from the DB (public.app_config) instead of a
+// hard-coded constant. Cached in memory — the value changes ~never.
+const DELIVERY_PRICING_FALLBACK = { price: 10, driver_fee: 8, platform_fee: 2 };
+let pricingCache = null;
+
+export async function getDeliveryPricing() {
+  if (!useMocks) {
+    if (pricingCache) return pricingCache;
+    const res = await gql('GetDeliveryPricing');
+    if (res && typeof res.price !== 'undefined') {
+      pricingCache = res;
+      return res;
+    }
+    return DELIVERY_PRICING_FALLBACK;
+  }
+  await sleep(40);
+  return DELIVERY_PRICING_FALLBACK;
+}
+
 export async function listAvailableDeliveryRides({ origin, destination }) {
   if (!useMocks) return gqlList('AvailableDeliveryRides', { origin, destination });
   await sleep(100);

@@ -1,7 +1,6 @@
 import { db, findDriverByUserId, findUserById, newId } from './mockDb';
 import { encryptField, decryptField } from '../security/crypto';
 import { appendAudit } from '../security/audit';
-import { can } from '../security/rbac';
 import { validateFileSize, validatePlate, validateSeatCount, sanitize } from '../validation/schemas';
 import { useMocks } from '../config';
 import { gql, gqlList } from './graphql';
@@ -180,53 +179,6 @@ export async function updateDriverPayout({ actor, account }) {
     action: 'driver.payout.updated',
     targetEntity: 'driver',
     targetId: d.id,
-  });
-  return { ok: true };
-}
-
-// --- Admin operations ---
-export async function adminListDrivers({ actor, status }) {
-  if (!useMocks) return gqlList('AdminListDrivers', { status });
-  if (!can(actor?.role, 'admin:read')) return [];
-  await sleep(80);
-  return db.drivers
-    .filter((d) => (status ? d.status === status : true))
-    .map((d) => ({
-      ...d,
-      user: findUserById(d.user_id),
-      plate_number: decryptField(d.plate_number),
-      id_card_number: decryptField(d.id_card_number),
-      license_number: decryptField(d.license_number),
-    }));
-}
-
-export async function adminVerifyDriver({ actor, driverId, approve, reason }) {
-  if (!useMocks) return gql('AdminVerifyDriver', { driverId, approve, reason });
-  if (!can(actor?.role, 'admin:verify-driver')) return { ok: false, error: 'Forbidden' };
-  await sleep(120);
-  const d = db.drivers.find((x) => x.id === driverId);
-  if (!d) return { ok: false, error: 'Not found' };
-  d.status = approve ? 'verified' : 'rejected';
-  d.verified_at = approve ? new Date().toISOString() : null;
-  d.rejection_reason = approve ? null : sanitize(reason || '');
-  appendAudit({
-    actorId: actor.id,
-    actorRole: actor.role,
-    action: approve ? 'driver.verified' : 'driver.rejected',
-    targetEntity: 'driver',
-    targetId: d.id,
-    metadata: { reason },
-  });
-  // In-app notification for the driver's next app open.
-  db.notifications.push({
-    id: newId(),
-    user_id: d.user_id,
-    title: approve ? 'Driver application approved' : 'Driver application rejected',
-    body: approve
-      ? 'Your account is now verified. You can start creating rides.'
-      : reason || 'See your profile for next steps.',
-    created_at: new Date().toISOString(),
-    read: false,
   });
   return { ok: true };
 }

@@ -5,6 +5,7 @@ import { randomBytesHex } from '../security/crypto';
 import { can } from '../security/rbac';
 import { useMocks } from '../config';
 import { pushLocalNotification } from '../services/notifications.service';
+import { loyaltyPoints, discountPctForPoints } from '../lib/tiers';
 import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -47,17 +48,26 @@ export async function createReservation({ actor, rideId, seats, paymentMethod = 
 
   // 2. Create pending reservation
   // Per the new government-pricing model: 3 TND flat surcharge on top of the
-  // government-set seat fare. Split: 1 TND platform / 2 TND driver.
+  // government-set seat fare. Split: 1 TND platform / 2 TND driver. The loyalty
+  // tier discount applies to the seat fare only (mirrors public.create_reservation).
   const PLATFORM_FEE = 1.0;
   const DRIVER_FEE = 2.0;
   const seatCost = ride.price_per_seat * seats;
-  const total = seatCost + PLATFORM_FEE + DRIVER_FEE;
+  const mine = db.reservations.filter((r) => r.user_id === actor.id);
+  const trips = mine.filter((r) => r.status === 'confirmed').length;
+  const spent = mine
+    .filter((r) => r.status !== 'cancelled')
+    .reduce((sum, r) => sum + (r.total_price || 0), 0);
+  const discountPct = discountPctForPoints(loyaltyPoints({ trips, spent }));
+  const discount = Math.round(seatCost * discountPct) / 100;
+  const total = seatCost - discount + PLATFORM_FEE + DRIVER_FEE;
   const reservation = {
     id: newId(),
     user_id: actor.id,
     ride_id: rideId,
     seats_booked: seats,
     total_price: total,
+    discount_pct: discountPct,
     status: 'pending',
     booked_at: new Date().toISOString(),
     cancelled_at: null,

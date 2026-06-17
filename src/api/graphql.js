@@ -97,11 +97,12 @@ const DEDUPE_OPS = new Set([
   'AdminListDrivers', 'AdminListRides', 'AdminListUserDocuments', 'AdminMetrics',
   'AdminPaymentsSummary', 'AdminSearchUsers', 'AdminStats', 'AdminTimeSeries',
   'AvailableDeliveryRides', 'DriverEarnings', 'DriverRides', 'Get2FAStatus',
-  'GetDriverProfile', 'GetDriverStatus', 'GetMessages', 'GetProfile',
-  'GetReservation', 'GetReviewForRide', 'GetRideDetail', 'Health', 'ListChats',
-  'ListCities', 'ListDriverSessions', 'ListPayments', 'ListReservations',
-  'ListRoutes', 'Me', 'MyDeliveries', 'RideDeliveries', 'RidePassengers',
-  'SearchRides',
+  'GetDeliveryPricing', 'GetDriverProfile', 'GetDriverStatus', 'GetMessages',
+  'GetProfile', 'GetReservation', 'GetReviewForRide', 'GetRideDetail', 'Health',
+  'ListAchievements', 'ListChats', 'ListCities', 'ListDriverSessions',
+  'ListPayments', 'ListPopularRoutes', 'ListReservations', 'ListRoutes',
+  'ListTiers', 'Me',
+  'MyDeliveries', 'RideDeliveries', 'RidePassengers', 'SearchRides',
 ]);
 const inflight = new Map();
 

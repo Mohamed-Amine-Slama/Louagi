@@ -15,6 +15,7 @@ import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
 import { Chip } from '../../components/Chip';
 import { MembershipCard, ProfileStatTile, AchievementsRail } from '../../components/Membership';
+import { TierBenefits } from '../../components/TierBenefits';
 import { SkeletonList } from '../../components/Skeleton';
 import { Stack, Row, Section } from '../../components/Section';
 import { Stepper } from '../../components/Stepper';
@@ -385,6 +386,9 @@ export default function PassengerProfile() {
         </FadeSlideIn>
         <FadeSlideIn index={3}>
           <AchievementsRail unlocked={stats.achievements} />
+        </FadeSlideIn>
+        <FadeSlideIn index={4}>
+          <TierBenefits points={stats.points} />
         </FadeSlideIn>
 
         {/* Account info */}

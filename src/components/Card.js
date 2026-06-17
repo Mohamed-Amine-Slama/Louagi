@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { radius, spacing, shadows } from '../theme';
 import { PressableScale } from './motion';
 
@@ -23,6 +23,14 @@ export function Card({
     tonal: colors.surfaceContainer,
     hero: colors.primaryContainer,
   };
+  const elevated = raised && variant !== 'tonal';
+  // Android composites an elevated + rounded + `overflow:'hidden'` view's
+  // children onto a separate layer that can paint blank — the card surface
+  // shows (a white rectangle) but its content doesn't until the view is
+  // re-laid-out (e.g. switching tabs). Drop the clip for elevated cards on
+  // Android; iOS/web have no such bug and keep the rounded clip.
+  const overflow =
+    allowOverflow || (elevated && Platform.OS === 'android') ? 'visible' : 'hidden';
   const node = (
     <View
       style={[
@@ -30,9 +38,9 @@ export function Card({
           backgroundColor: variantBg[variant] ?? variantBg.elevated,
           borderRadius: radius.xl,
           padding,
-          overflow: allowOverflow ? 'visible' : 'hidden',
+          overflow,
         },
-        raised && variant !== 'tonal' ? shadows.card : null,
+        elevated ? shadows.card : null,
         accent ? { borderStartWidth: 4, borderStartColor: accent } : null,
         style,
       ]}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, TextInput } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,9 +22,6 @@ import { spacing, radius, withAlpha } from '../../theme';
 import { formatDateTime } from '../../i18n/format';
 import { MONO, PASS, cityCode } from '../../lib/tickets';
 
-// Delivery price is fixed (see deliveriesApi); shown as a "from" estimate.
-const DELIVERY_PRICE = 10;
-
 export default function DeliveryScreen() {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -37,6 +34,13 @@ export default function DeliveryScreen() {
   const [selectedRide, setSelectedRide] = useState(null);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [pricing, setPricing] = useState(null);
+  const price = pricing?.price;
+
+  // Flat delivery price comes from the DB (app_config), not a bundled constant.
+  useEffect(() => {
+    deliveriesApi.getDeliveryPricing().then(setPricing);
+  }, []);
 
   const load = useCallback(async () => {
     const res = await deliveriesApi.listAvailableDeliveryRides({});
@@ -141,7 +145,7 @@ export default function DeliveryScreen() {
                       </Text>
                     </Stack>
                     <Stack gap={0} style={{ alignItems: 'flex-end' }}>
-                      <Text variant="labelMd" color={colors.secondaryContainer} numberOfLines={1}>{DELIVERY_PRICE} {t('common:tnd')}</Text>
+                      <Text variant="labelMd" color={colors.secondaryContainer} numberOfLines={1}>{price ?? '—'} {t('common:tnd')}</Text>
                       <Text variant="labelXs" color={colors.onSurfaceVariant}>{t('delivery:from')}</Text>
                     </Stack>
                   </Row>
@@ -162,9 +166,11 @@ export default function DeliveryScreen() {
 
                   {selected ? (
                     <FadeSlideIn style={{ marginTop: spacing.md, gap: spacing.sm }}>
-                      <Text variant="labelSm" color={colors.onSurfaceVariant}>
-                        {t('delivery:fixedPrice', { price: DELIVERY_PRICE })}
-                      </Text>
+                      {price != null ? (
+                        <Text variant="labelSm" color={colors.onSurfaceVariant}>
+                          {t('delivery:fixedPrice', { price })}
+                        </Text>
+                      ) : null}
                       <TextInput
                         placeholder={t('delivery:itemDescription')}
                         value={description}
@@ -198,7 +204,7 @@ export default function DeliveryScreen() {
 
       {/* Track a parcel */}
       <FadeSlideIn index={2}>
-        <Card onPress={() => nav.navigate('Tabs', { screen: 'Bookings' })} style={{ borderWidth: 1, borderColor: colors.outlineVariant, borderStyle: 'dashed' }}>
+        <Card onPress={() => nav.navigate('MyDeliveries')} style={{ borderWidth: 1, borderColor: colors.outlineVariant, borderStyle: 'dashed' }}>
           <Row gap={spacing.md} align="center">
             <View style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="search" size={18} color={colors.primary} />

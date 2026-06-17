@@ -63,6 +63,10 @@ if (!__DEV__ && apiUrl.startsWith('http://')) {
 export const useMocks =
   (process.env.EXPO_PUBLIC_USE_MOCKS ?? 'false') === 'true';
 
+// Where the admin dashboard now lives. Admins who sign in on mobile are shown a
+// pointer to this URL instead of the (removed) in-app admin dashboard.
+export const adminWebUrl = process.env.EXPO_PUBLIC_ADMIN_WEB_URL || '';
+
 export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 export const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
 

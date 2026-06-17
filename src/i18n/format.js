@@ -110,3 +110,13 @@ export function countdownFrom(fromIso, t) {
   if (h <= 0) return `${m}m`;
   return `${h}h ${m}m`;
 }
+
+// Localized "updated X ago" for live tracking (uses the delivery namespace).
+export function updatedAgo(date, t) {
+  if (!date) return '';
+  const then = date instanceof Date ? date.getTime() : new Date(date).getTime();
+  const sec = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (sec < 5) return t('delivery:updatedJustNow');
+  if (sec < 60) return t('delivery:updatedSecondsAgo', { count: sec });
+  return t('delivery:updatedMinutesAgo', { count: Math.round(sec / 60) });
+}
