@@ -55,3 +55,25 @@ export function ticketRef(id) {
   const slug = String(id ?? '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase();
   return `LGI-${slug || '----'}`;
 }
+
+// Louagi member number — 8 alphanumerics from the id, upper-cased, zero-padded,
+// grouped as "LGI 1234 5678". Shared by the membership card and the account
+// credential card so the format lives in one place.
+export function memberNo(id) {
+  const s = String(id ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().padEnd(8, '0');
+  return `LGI ${s.slice(0, 4)} ${s.slice(4, 8)}`;
+}
+
+// Decorative passport-style machine-readable line for the account credential
+// card, e.g. "LGI<<SALAH<<MOHAMED<<<<<<<<<<1234". Accent-stripped + upper-cased;
+// every non [A-Z<] char collapses to a filler "<"; the last 4 of the id are
+// appended. Purely visual + locale-independent — never parsed back.
+export function mrzLine(name, id) {
+  const clean = (name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  const surname = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+  const given = (parts.length > 1 ? parts.slice(0, -1) : []).join('<');
+  const tail = String(id ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(-4).padStart(4, '0');
+  const body = `LGI<<${surname}<<${given}`.replace(/[^A-Z<]/g, '<');
+  return body.padEnd(28, '<').slice(0, 28) + tail;
+}

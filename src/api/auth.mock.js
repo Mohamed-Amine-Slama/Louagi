@@ -1,5 +1,5 @@
-import { db, findUserByPhone, findDriverByUserId, newId } from './mockDb';
-import { hashPassword, verifyPassword, encryptField } from '../security/crypto';
+import { db, findUserByPhone, findUserById, findDriverByUserId, newId } from './mockDb';
+import { hashPassword, verifyPassword, encryptField, randomBytesHex } from '../security/crypto';
 import { signAccessToken, signRefreshToken, verifyToken } from '../security/jwt';
 import { issueOtp, verifyOtp, peekOtp } from '../security/otp';
 import { rateLimit, clearRateLimit } from '../security/rateLimit';
@@ -263,11 +263,15 @@ export async function biometricLogin(ticket) {
   };
 }
 
-export async function requestPasswordChangeOtp({ userId }) {
-  await sleep(100);
-  const user = db.users.find((u) => u.id === userId);
+// Step 1: prove the current password, then "email" the OTP. Mirrors the real
+// StartPasswordChange — the actor (not a userId) identifies the account.
+export async function startPasswordChange({ actor, currentPassword }) {
+  await sleep(120);
+  const user = findUserById(actor?.id);
   if (!user || !user.is_active) return { ok: false, error: 'User not found' };
-  const otp = issueOtp(`pwchange:${userId}`);
+  const ok = await verifyPassword(currentPassword || '', user.password_hash);
+  if (!ok) return { ok: false, errors: { currentPassword: 'Current password incorrect' } };
+  const otp = issueOtp(`pwchange:${user.id}`);
   appendAudit({
     actorId: user.id,
     actorRole: user.role,
@@ -276,6 +280,52 @@ export async function requestPasswordChangeOtp({ userId }) {
     targetId: user.id,
   });
   return { ok: true, devOtp: otp.code };
+}
+
+// In-memory reset tokens: token -> { userId, expiresAt }. Single-use, 30 min.
+const resetTokens = new Map();
+const RESET_TTL_MS = 30 * 60 * 1000;
+
+export async function requestPasswordReset({ email }) {
+  await sleep(140);
+  const generic = { ok: true };
+  if (!email) return generic;
+  const user = db.users.find((u) => u.email === email.toLowerCase() && u.is_active);
+  if (!user) return generic; // anti-enumeration — identical shape
+  const token = randomBytesHex(24);
+  resetTokens.set(token, { userId: user.id, expiresAt: Date.now() + RESET_TTL_MS });
+  appendAudit({
+    actorId: user.id,
+    actorRole: user.role,
+    action: 'password.reset_requested',
+    targetEntity: 'user',
+    targetId: user.id,
+  });
+  // Dev convenience: surface the deep link so the flow is testable.
+  return { ok: true, devLink: `louagi://reset-password?token=${token}` };
+}
+
+export async function resetPasswordWithToken({ token, newPassword }) {
+  await sleep(160);
+  const pwErr = validatePassword(newPassword);
+  if (pwErr) return { ok: false, errors: { newPassword: pwErr } };
+  const entry = resetTokens.get(token);
+  if (!entry || entry.expiresAt < Date.now()) {
+    resetTokens.delete(token);
+    return { ok: false, error: 'This reset link is invalid or has expired' };
+  }
+  resetTokens.delete(token); // single-use
+  const user = findUserById(entry.userId);
+  if (!user) return { ok: false, error: 'This reset link is invalid or has expired' };
+  user.password_hash = await hashPassword(newPassword);
+  appendAudit({
+    actorId: user.id,
+    actorRole: user.role,
+    action: 'password.reset_completed',
+    targetEntity: 'user',
+    targetId: user.id,
+  });
+  return { ok: true };
 }
 
 export async function verifyPasswordChangeOtp(userId, otp) {

@@ -9,9 +9,10 @@ import { Text } from './Text';
 import { Card } from './Card';
 import { Row, Stack, Section } from './Section';
 import { spacing, radius, withAlpha, shadows } from '../theme';
-import { MONO, PASS, initialsOf } from '../lib/tickets';
+import { MONO, PASS, initialsOf, memberNo } from '../lib/tickets';
 import { tierForPoints } from '../lib/tiers';
 import { usersApi } from '../api';
+import { PressableScale } from './motion';
 
 const GOLD = ['#F8D27A', '#E0A23C'];
 
@@ -19,13 +20,10 @@ const groupThousands = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 // Premium navy loyalty card — stays navy in both themes, like a real membership
 // card. Tier and points are derived from the passenger's trip count.
-export function MembershipCard({ name, id, points = 0, memberSince, notch }) {
+export function MembershipCard({ name, id, points = 0, memberSince, notch, onTierPress }) {
   const { t } = useLocale();
   const [tiers, setTiers] = useState(null);
   useEffect(() => { usersApi.listTiers().then(setTiers); }, []);
-  const idStr = String(id ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().padEnd(8, '0');
-  const memberNo = `LGI ${idStr.slice(0, 4)} ${idStr.slice(4, 8)}`;
-
   const { tier: band, next, progress, pointsToNext: toNext } = tierForPoints(points, tiers);
   const hasNext = next != null;
   const discountPct = band.discount_pct;
@@ -39,10 +37,19 @@ export function MembershipCard({ name, id, points = 0, memberSince, notch }) {
               <Text style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.4, color: PASS.onNavyMut }}>
                 {t('passenger:member').toUpperCase()}
               </Text>
-              <LinearGradient colors={GOLD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.full, paddingHorizontal: 11, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <MaterialIcons name="star" size={12} color="#3A2A0A" />
-                <Text variant="labelSm" color="#3A2A0A" numberOfLines={1}>{t('passenger:' + band.i18n_key).toUpperCase()}</Text>
-              </LinearGradient>
+              <PressableScale
+                onPress={onTierPress}
+                disabled={!onTierPress}
+                scaleTo={onTierPress ? 0.94 : 1}
+                accessibilityRole="button"
+                accessibilityLabel={t('passenger:tierBenefits')}
+              >
+                <LinearGradient colors={GOLD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.full, paddingHorizontal: 11, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <MaterialIcons name="star" size={12} color="#3A2A0A" />
+                  <Text variant="labelSm" color="#3A2A0A" numberOfLines={1}>{t('passenger:' + band.i18n_key).toUpperCase()}</Text>
+                  {onTierPress ? <MaterialIcons name="expand-more" size={14} color="#3A2A0A" /> : null}
+                </LinearGradient>
+              </PressableScale>
             </Row>
             <Row gap={14} align="center">
               <LinearGradient colors={GOLD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' }}>
@@ -50,7 +57,7 @@ export function MembershipCard({ name, id, points = 0, memberSince, notch }) {
               </LinearGradient>
               <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
                 <Text variant="headlineSm" color={PASS.onNavy} numberOfLines={1}>{name}</Text>
-                <Text style={{ fontFamily: MONO, fontSize: 12, color: PASS.onNavyMut }}>{memberNo}</Text>
+                <Text style={{ fontFamily: MONO, fontSize: 12, color: PASS.onNavyMut }}>{memberNo(id)}</Text>
               </Stack>
             </Row>
           </View>

@@ -15,7 +15,8 @@ import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
 import { Chip } from '../../components/Chip';
 import { MembershipCard, ProfileStatTile, AchievementsRail } from '../../components/Membership';
-import { TierBenefits } from '../../components/TierBenefits';
+import { AccountCard } from '../../components/ProfileCards';
+import { TierBenefitsModal } from '../../components/TierBenefits';
 import { SkeletonList } from '../../components/Skeleton';
 import { Stack, Row, Section } from '../../components/Section';
 import { Stepper } from '../../components/Stepper';
@@ -23,9 +24,7 @@ import { ScreenHeader } from '../../components/Header';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
 
 import { usersApi, authApi } from '../../api';
-import { StepIndicator } from '../../components/StepIndicator';
-import { PasswordStrength } from '../../components/PasswordStrength';
-import { validatePassword, validatePasswordMatch, validatePasswordNotReused } from '../../validation/schemas';
+import { ChangePasswordForm } from '../../components/ChangePasswordForm';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius, withAlpha } from '../../theme';
@@ -55,17 +54,11 @@ export default function PassengerProfile() {
 
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({ trips: 0, spent: 0, favouriteRoute: null, points: 0, achievements: [] });
+  const [showTierBenefits, setShowTierBenefits] = useState(false);
 
   // Editable state
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordStep, setPasswordStep] = useState(0);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpDevHint, setOtpDevHint] = useState(null);
-  const [pwChangeBusy, setPwChangeBusy] = useState(false);
   const [sms, setSms] = useState(true);
   const [push, setPush] = useState(true);
   const [marketing, setMarketing] = useState(false);
@@ -197,100 +190,11 @@ export default function PassengerProfile() {
     if (!res.ok) {
       setErrors(res.errors || {});
       setSaving(false);
-      return;
+      return false;
     }
     setSaving(false);
     toast.show(t('toast:savedAccount'), 'success');
-  };
-
-  const resetPasswordFlow = () => {
-    setPasswordStep(0);
-    setOtpCode('');
-    setOtpDevHint(null);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setErrors({});
-    setPwChangeBusy(false);
-  };
-
-  const handleSendOtp = async () => {
-    setErrors({});
-    setPwChangeBusy(true);
-    const res = await authApi.requestPasswordChangeOtp({ userId: user.id });
-    setPwChangeBusy(false);
-    if (!res.ok) {
-      setErrors({ otp: res.error });
-      return;
-    }
-    if (res.devOtp) setOtpDevHint(res.devOtp);
-    setPasswordStep(0.5); // show OTP input
-  };
-
-  const handleVerifyOtp = async () => {
-    setErrors({});
-    setPwChangeBusy(true);
-    const res = await authApi.verifyPasswordChangeOtp(user.id, otpCode);
-    setPwChangeBusy(false);
-    if (!res.ok) {
-      setErrors({ otp: res.error });
-      return;
-    }
-    setPasswordStep(1);
-  };
-
-  const handleVerifyOldPassword = async () => {
-    setErrors({});
-    if (!currentPassword) {
-      setErrors({ currentPassword: t('auth:currentPassword') });
-      return;
-    }
-    setPwChangeBusy(true);
-    const res = await usersApi.verifyCurrentPassword({ actor: user, password: currentPassword });
-    setPwChangeBusy(false);
-    if (!res.ok) {
-      setErrors({ currentPassword: res.error });
-      return;
-    }
-    setPasswordStep(2);
-  };
-
-  const handleNewPasswordNext = () => {
-    setErrors({});
-    const pwErr = validatePassword(newPassword);
-    if (pwErr) {
-      setErrors({ newPassword: pwErr });
-      return;
-    }
-    const reuseErr = validatePasswordNotReused(newPassword, currentPassword);
-    if (reuseErr) {
-      setErrors({ newPassword: reuseErr });
-      return;
-    }
-    setPasswordStep(3);
-  };
-
-  const handleChangePassword = async () => {
-    setErrors({});
-    const matchErr = validatePasswordMatch(newPassword, confirmPassword);
-    if (matchErr) {
-      setErrors({ confirmPassword: matchErr });
-      return;
-    }
-    setPwChangeBusy(true);
-    const res = await usersApi.changePasswordSecure({
-      actor: user,
-      currentPassword,
-      newPassword,
-    });
-    setPwChangeBusy(false);
-    if (!res.ok) {
-      setErrors(res.errors || {});
-      return;
-    }
-    resetPasswordFlow();
-    setShowPasswordForm(false);
-    toast.show(t('toast:passwordChanged'), 'success');
+    return true;
   };
 
   const saveNotifications = async (nextSms, nextPush, nextMarketing = marketing) => {
@@ -362,7 +266,7 @@ export default function PassengerProfile() {
       <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.sm, gap: spacing.md }}>
         <Text variant="headlineSm">{t("passenger:profileTitle")}</Text>
         <FadeSlideIn index={0}>
-          <MembershipCard name={profile.full_name} id={profile.id} points={stats.points} memberSince={memberSince} notch={colors.surface} />
+          <MembershipCard name={profile.full_name} id={profile.id} points={stats.points} memberSince={memberSince} notch={colors.surface} onTierPress={() => setShowTierBenefits(true)} />
         </FadeSlideIn>
         <FadeSlideIn index={1}>
           <Row gap={spacing.sm}>
@@ -387,36 +291,27 @@ export default function PassengerProfile() {
         <FadeSlideIn index={3}>
           <AchievementsRail unlocked={stats.achievements} />
         </FadeSlideIn>
-        <FadeSlideIn index={4}>
-          <TierBenefits points={stats.points} />
-        </FadeSlideIn>
+        <TierBenefitsModal
+          visible={showTierBenefits}
+          points={stats.points}
+          onClose={() => setShowTierBenefits(false)}
+        />
 
         {/* Account info */}
         <FadeSlideIn index={2}>
-        <Section title={t('passenger:account')}>
-          <Card>
-            <Stack gap={spacing.md}>
-              <Input label={t('auth:fullName')} value={fullName} onChangeText={setFullName} error={errors.fullName} iconLeft="person" />
-              <Input
-                label={t('auth:email')}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                error={errors.email}
-                iconLeft="email"
-              />
-              <Row justify="space-between" align="center">
-                <Stack gap={2} style={{ flex: 1 }}>
-                  <Text variant="labelSm" color={colors.onSurfaceVariant}>{t('passenger:phoneVerified')}</Text>
-                  <Text variant="bodyMd">{profile.phone_masked}</Text>
-                </Stack>
-                <MaterialIcons name="verified" size={22} color={colors.success} />
-              </Row>
-              <Button label={t('passenger:saveAccount')} variant="secondary" onPress={saveAccount} loading={saving} />
-            </Stack>
-          </Card>
-        </Section>
+          <AccountCard
+            title={t('passenger:account')}
+            displayName={profile.full_name}
+            memberId={profile.id}
+            name={fullName}
+            email={email}
+            onChangeName={setFullName}
+            onChangeEmail={setEmail}
+            phoneMasked={profile.phone_masked}
+            errors={errors}
+            saving={saving}
+            onSave={saveAccount}
+          />
         </FadeSlideIn>
 
         {/* Security */}
@@ -428,163 +323,14 @@ export default function PassengerProfile() {
               title={t('passenger:passwordRow')}
               subtitle={t('passenger:passwordRowSubtitle')}
               right={<MaterialIcons name={showPasswordForm ? 'expand-less' : 'expand-more'} size={22} color={colors.onSurfaceVariant} />}
-              onPress={() => {
-                if (showPasswordForm) resetPasswordFlow();
-                setShowPasswordForm((v) => !v);
-              }}
+              onPress={() => setShowPasswordForm((v) => !v)}
             />
             {showPasswordForm ? (
-              <Stack gap={spacing.md} style={{ marginTop: spacing.sm }}>
-                <StepIndicator
-                  steps={[
-                    t('passenger:stepVerify'),
-                    t('passenger:stepOldPassword'),
-                    t('passenger:stepNewPassword'),
-                    t('passenger:stepConfirm'),
-                  ]}
-                  current={Math.floor(passwordStep)}
-                />
-
-                {/* Step 0 — 2FA OTP */}
-                {passwordStep < 1 ? (
-                  <Stack gap={spacing.sm}>
-                    {passwordStep === 0 ? (
-                      <Button
-                        label={t('passenger:sendVerificationCode')}
-                        onPress={handleSendOtp}
-                        loading={pwChangeBusy}
-                        iconLeft="sms"
-                      />
-                    ) : (
-                      <>
-                        {otpDevHint ? (
-                          <Banner
-                            variant="info"
-                            title={t('auth:devModeTitle')}
-                            body={t('auth:devModeBody', { code: otpDevHint })}
-                          />
-                        ) : null}
-                        <Input
-                          label={t('auth:verifyPhone')}
-                          value={otpCode}
-                          onChangeText={setOtpCode}
-                          keyboardType="number-pad"
-                          maxLength={6}
-                          error={errors.otp}
-                          iconLeft="lock"
-                        />
-                        <Row gap={spacing.sm}>
-                          <View style={{ flex: 1 }}>
-                            <Button
-                              label={t('common:cancel')}
-                              variant="outline"
-                              onPress={() => { resetPasswordFlow(); setShowPasswordForm(false); }}
-                            />
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Button
-                              label={t('passenger:verifyCode')}
-                              onPress={handleVerifyOtp}
-                              loading={pwChangeBusy}
-                            />
-                          </View>
-                        </Row>
-                      </>
-                    )}
-                  </Stack>
-                ) : null}
-
-                {/* Step 1 — Current password */}
-                {passwordStep === 1 ? (
-                  <Stack gap={spacing.sm}>
-                    <Input
-                      label={t('auth:currentPassword')}
-                      value={currentPassword}
-                      onChangeText={setCurrentPassword}
-                      secureTextEntry
-                      error={errors.currentPassword}
-                      iconLeft="lock"
-                    />
-                    <Row gap={spacing.sm}>
-                      <View style={{ flex: 1 }}>
-                        <Button
-                          label={t('common:back')}
-                          variant="outline"
-                          onPress={() => setPasswordStep(0)}
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Button
-                          label={t('passenger:verifyOldPassword')}
-                          onPress={handleVerifyOldPassword}
-                          loading={pwChangeBusy}
-                        />
-                      </View>
-                    </Row>
-                  </Stack>
-                ) : null}
-
-                {/* Step 2 — New password */}
-                {passwordStep === 2 ? (
-                  <Stack gap={spacing.sm}>
-                    <Input
-                      label={t('auth:newPassword')}
-                      value={newPassword}
-                      onChangeText={setNewPassword}
-                      secureTextEntry
-                      error={errors.newPassword}
-                      iconLeft="vpn-key"
-                    />
-                    <PasswordStrength value={newPassword} />
-                    <Row gap={spacing.sm}>
-                      <View style={{ flex: 1 }}>
-                        <Button
-                          label={t('common:back')}
-                          variant="outline"
-                          onPress={() => { setNewPassword(''); setPasswordStep(1); }}
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Button
-                          label={t('common:next')}
-                          onPress={handleNewPasswordNext}
-                          disabled={!!validatePassword(newPassword)}
-                        />
-                      </View>
-                    </Row>
-                  </Stack>
-                ) : null}
-
-                {/* Step 3 — Confirm password */}
-                {passwordStep === 3 ? (
-                  <Stack gap={spacing.sm}>
-                    <Input
-                      label={t('auth:confirmNewPassword')}
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry
-                      error={errors.confirmPassword}
-                      iconLeft="vpn-key"
-                    />
-                    <Row gap={spacing.sm}>
-                      <View style={{ flex: 1 }}>
-                        <Button
-                          label={t('common:back')}
-                          variant="outline"
-                          onPress={() => { setConfirmPassword(''); setPasswordStep(2); }}
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Button
-                          label={t('passenger:changePassword')}
-                          onPress={handleChangePassword}
-                          loading={pwChangeBusy}
-                        />
-                      </View>
-                    </Row>
-                  </Stack>
-                ) : null}
-              </Stack>
+              <ChangePasswordForm
+                actor={user}
+                email={profile.email}
+                onClose={() => setShowPasswordForm(false)}
+              />
             ) : null}
             <Divider />
             <SettingRow

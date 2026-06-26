@@ -13,6 +13,7 @@ import LoginScreen from '../screens/public/LoginScreen';
 import RegisterScreen from '../screens/public/RegisterScreen';
 import DriverRegisterScreen from '../screens/public/DriverRegisterScreen';
 import PendingApprovalScreen from '../screens/public/PendingApprovalScreen';
+import ResetPasswordScreen from '../screens/public/ResetPasswordScreen';
 
 import SearchScreen from '../screens/passenger/SearchScreen';
 import RideDetailScreen from '../screens/passenger/RideDetailScreen';
@@ -40,6 +41,18 @@ import { typography } from '../theme';
 const Stack = createNativeStackNavigator();
 export const navigationRef = createNavigationContainerRef();
 
+// Deep linking. The password-reset email points at louagi://reset-password?token=…
+// `ResetPassword` is registered in every authenticated/public stack so the link
+// resolves regardless of whether the user happens to be signed in.
+const linking = {
+  prefixes: ['louagi://'],
+  config: {
+    screens: {
+      ResetPassword: 'reset-password',
+    },
+  },
+};
+
 function useStackScreenOptions() {
   const { colors } = useTheme();
   return { headerShown: false, contentStyle: { backgroundColor: colors.surface } };
@@ -53,6 +66,7 @@ function PublicStack() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="DriverRegister" component={DriverRegisterScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="RideDetail" component={RideDetailScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
@@ -65,6 +79,7 @@ function PassengerStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="Tabs" component={PassengerTabs} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="RideDetail" component={RideDetailScreen} />
       <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
       <Stack.Screen name="MyDeliveries" component={MyDeliveriesScreen} />
@@ -85,11 +100,13 @@ function DriverStack({ pending }) {
         <>
           <Stack.Screen name="DriverRegister" component={DriverRegisterScreen} />
           <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </>
       ) : (
         <>
           <Stack.Screen name="Tabs" component={DriverTabs} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           <Stack.Screen name="CreateRide" component={CreateRideScreen} />
           <Stack.Screen name="RideManagement" component={RideManagementScreen} />
           <Stack.Screen name="DriverDelivery" component={DriverDeliveryScreen} />
@@ -132,6 +149,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer
       ref={navigationRef}
+      linking={linking}
       theme={{
         dark: isDark,
         colors: {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme, THEME_MODES } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
 import { View, Switch, Pressable, ScrollView, Modal, FlatList } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -14,14 +14,17 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Banner } from '../../components/Banner';
+import { Chip } from '../../components/Chip';
 import { Stack, Row, Section } from '../../components/Section';
+import { AccountCard, VehicleCard } from '../../components/ProfileCards';
 import { SkeletonList } from '../../components/Skeleton';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
+import { ChangePasswordForm } from '../../components/ChangePasswordForm';
 
-import { driversApi, authApi } from '../../api';
+import { driversApi, usersApi, authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
-import { spacing, radius, withAlpha, shadows } from '../../theme';
+import { spacing, radius, withAlpha, shadows, floatingTabBar } from '../../theme';
 import { formatMonthYear, statusLabel } from '../../i18n/format';
 import { MONO, PASS, initialsOf } from '../../lib/tickets';
 import {
@@ -33,6 +36,13 @@ import {
   BIOMETRIC_KIND,
 } from '../../security/biometric';
 
+// Autonym labels — each language displayed in its own script.
+const LANGUAGES = [
+  { code: 'fr', label: 'Français' },
+  { code: 'ar', label: 'العربية' },
+  { code: 'en', label: 'English' },
+];
+
 function expiryWarning(iso, t) {
   if (!iso) return null;
   const ms = new Date(iso).getTime() - Date.now();
@@ -43,8 +53,8 @@ function expiryWarning(iso, t) {
 }
 
 export default function DriverProfile() {
-  const { colors } = useTheme();
-  const { t, locale } = useLocale();
+  const { colors, mode, setMode } = useTheme();
+  const { t, locale, setLocale, switching } = useLocale();
   const { user, signOut } = useAuth();
   const nav = useNavigation();
   const toast = useToast();
@@ -66,15 +76,38 @@ export default function DriverProfile() {
   const [sessionsBusy, setSessionsBusy] = useState(false);
   const [deletionBusy, setDeletionBusy] = useState(false);
 
+  // Shared user-account fields (name/email/phone/notifications) come from the
+  // role-agnostic GetProfile — GetDriverProfile does not return them.
+  const [account, setAccount] = useState(null);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [sms, setSms] = useState(true);
+  const [push, setPush] = useState(true);
+  const [marketing, setMarketing] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [errors, setErrors] = useState({});
+
   const load = useCallback(async () => {
-    const p = await driversApi.getDriverProfile({ actor: user });
+    const [p, fa, acct] = await Promise.all([
+      driversApi.getDriverProfile({ actor: user }),
+      driversApi.get2FAStatus({ actor: user }),
+      usersApi.getProfile({ actor: user }),
+    ]);
     setProfile(p);
     setBrand(p?.vehicle_brand || '');
     setModel(p?.vehicle_model || '');
     setSeats(String(p?.seat_count ?? ''));
     setPayout(p?.payout_account || '');
-    const fa = await driversApi.get2FAStatus({ actor: user });
     setTwoFA(fa?.enabled ?? false);
+    if (acct) {
+      setAccount(acct);
+      setFullName(acct.full_name || '');
+      setEmail(acct.email || '');
+      setSms(acct.notifications?.sms ?? true);
+      setPush(acct.notifications?.push ?? true);
+      setMarketing(acct.notifications?.marketing ?? false);
+    }
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -178,12 +211,30 @@ export default function DriverProfile() {
     }
   };
 
+  const saveAccount = async () => {
+    setErrors({});
+    setSavingAccount(true);
+    const res = await usersApi.updateProfile({ actor: user, fullName, email });
+    setSavingAccount(false);
+    if (!res.ok) { setErrors(res.errors || {}); return false; }
+    toast.show(t('toast:savedAccount'), 'success');
+    return true;
+  };
+
+  const saveNotifications = async (nextSms, nextPush, nextMarketing = marketing) => {
+    setSms(nextSms);
+    setPush(nextPush);
+    setMarketing(nextMarketing);
+    await usersApi.updateNotificationPrefs({ actor: user, sms: nextSms, push: nextPush, marketing: nextMarketing });
+  };
+
   const saveVehicle = async () => {
     setBusy(true);
     const res = await driversApi.updateDriverVehicle({ actor: user, brand, model, seatCount: Number(seats) });
     setBusy(false);
-    if (!res.ok) return toast.show(res.error, 'error');
+    if (!res.ok) { toast.show(res.error, 'error'); return false; }
     toast.show(t('toast:vehicleUpdated'), 'success');
+    return true;
   };
 
   const savePayout = async () => {
@@ -204,15 +255,16 @@ export default function DriverProfile() {
 
   const lic = expiryWarning(profile.license_expires_at, t);
   const idc = expiryWarning(profile.id_expires_at, t);
-  const memberSince = formatMonthYear(profile.created_at || new Date(), { locale });
+  const memberSince = formatMonthYear(account?.created_at || profile.created_at || new Date(), { locale });
 
   return (
-    <Screen padded={false} scroll={false}>
+    <Screen padded={false} scroll={false} contentStyle={{ paddingBottom: 0 }}>
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{
           padding: spacing.containerMargin,
           gap: spacing.lg,
-          paddingBottom: 100,
+          paddingBottom: insets.bottom + floatingTabBar.contentClearance,
         }}
       >
         <FadeSlideIn index={0}>
@@ -228,28 +280,35 @@ export default function DriverProfile() {
         </FadeSlideIn>
 
         <FadeSlideIn index={1}>
-        <Section title={t('driver:vehicle')}>
-          <Card>
-            <Row gap={spacing.sm} style={{ marginBottom: spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Input label={t('driver:brand')} value={brand} onChangeText={setBrand} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Input label={t('driver:model')} value={model} onChangeText={setModel} />
-              </View>
-            </Row>
-            <Input
-              label={t('driver:seatCount')}
-              value={seats}
-              onChangeText={setSeats}
-              keyboardType="number-pad"
-            />
-            <Text variant="labelSm" color={colors.onSurfaceVariant} style={{ marginTop: 4, marginBottom: spacing.sm }}>
-              {t('driver:plateLabel', { plate: profile.plate_number_masked })}
-            </Text>
-            <Button label={t('driver:saveVehicle')} variant="secondary" onPress={saveVehicle} loading={busy} />
-          </Card>
-        </Section>
+          <AccountCard
+            title={t('passenger:account')}
+            displayName={profile.full_name || user?.name}
+            memberId={account?.id || profile.id}
+            name={fullName}
+            email={email}
+            onChangeName={setFullName}
+            onChangeEmail={setEmail}
+            phoneMasked={account?.phone_masked}
+            errors={errors}
+            saving={savingAccount}
+            onSave={saveAccount}
+          />
+        </FadeSlideIn>
+
+        <FadeSlideIn index={1}>
+          <VehicleCard
+            title={t('driver:vehicle')}
+            brand={brand}
+            model={model}
+            seats={seats}
+            onChangeBrand={setBrand}
+            onChangeModel={setModel}
+            onChangeSeats={setSeats}
+            plateMasked={profile.plate_number_masked}
+            plateNote={t('driver:plateLabel', { plate: profile.plate_number_masked })}
+            saving={busy}
+            onSave={saveVehicle}
+          />
         </FadeSlideIn>
 
         <FadeSlideIn index={2}>
@@ -296,6 +355,21 @@ export default function DriverProfile() {
         <FadeSlideIn index={4}>
         <Section title={t('passenger:security')}>
           <Card>
+            <SettingRow
+              icon="lock"
+              title={t('passenger:passwordRow')}
+              subtitle={t('passenger:passwordRowSubtitle')}
+              right={<MaterialIcons name={showPasswordForm ? 'expand-less' : 'expand-more'} size={22} color={colors.onSurfaceVariant} />}
+              onPress={() => setShowPasswordForm((v) => !v)}
+            />
+            {showPasswordForm ? (
+              <ChangePasswordForm
+                actor={user}
+                email={account?.email}
+                onClose={() => setShowPasswordForm(false)}
+              />
+            ) : null}
+            <Divider />
             <SettingRow
               icon={biometricCap.kind === BIOMETRIC_KIND.FACE ? 'face' : 'fingerprint'}
               title={t('auth:biometricSignIn')}
@@ -346,6 +420,93 @@ export default function DriverProfile() {
         </FadeSlideIn>
 
         <FadeSlideIn index={6}>
+        <Section title={t('passenger:notifications')}>
+          <Card>
+            <SettingRow
+              icon="sms"
+              title={t('passenger:sms')}
+              subtitle={t('passenger:smsSubtitle')}
+              right={<Switch value={sms} onValueChange={(v) => saveNotifications(v, push)} />}
+            />
+            <Divider />
+            <SettingRow
+              icon="notifications"
+              title={t('passenger:push')}
+              subtitle={t('passenger:pushSubtitle')}
+              right={<Switch value={push} onValueChange={(v) => saveNotifications(sms, v)} />}
+            />
+            <Divider />
+            <SettingRow
+              icon="campaign"
+              title={t('passenger:marketing')}
+              subtitle={t('passenger:marketingSubtitle')}
+              right={<Switch value={marketing} onValueChange={(v) => saveNotifications(sms, push, v)} />}
+            />
+          </Card>
+        </Section>
+        </FadeSlideIn>
+
+        <FadeSlideIn index={6}>
+        <Section title={t('passenger:preferences')}>
+          <Card>
+            <SettingRow
+              icon="translate"
+              title={t('passenger:language')}
+              subtitle={LANGUAGES.find((l) => l.code === locale)?.label}
+              right={
+                <Row gap={4}>
+                  {LANGUAGES.map((l) => (
+                    <Chip
+                      key={l.code}
+                      disabled={switching}
+                      selected={l.code === locale}
+                      onPress={() => setLocale(l.code)}
+                      label={l.code.toUpperCase()}
+                      style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}
+                    />
+                  ))}
+                </Row>
+              }
+            />
+            <Divider />
+            <SettingRow
+              icon="palette"
+              title={t('passenger:theme')}
+              subtitle={
+                { light: t('passenger:themeLight'), dark: t('passenger:themeDark'), system: t('passenger:themeSystemFollows') }[mode]
+              }
+              right={
+                <Row gap={4}>
+                  {THEME_MODES.map((m) => (
+                    <Chip
+                      key={m}
+                      selected={m === mode}
+                      onPress={() => setMode(m)}
+                      icon={{ light: 'light-mode', dark: 'dark-mode', system: 'brightness-auto' }[m]}
+                      style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}
+                    />
+                  ))}
+                </Row>
+              }
+            />
+            <Divider />
+            <SettingRow
+              icon="payments"
+              title={t('passenger:currency')}
+              subtitle={t('passenger:currencySubtitle')}
+              right={<Badge label={t('common:tnd')} variant="neutral" />}
+            />
+            <Divider />
+            <LinkRow
+              icon="tune"
+              title={t('passenger:allSettings')}
+              onPress={() => nav.navigate('Settings')}
+            />
+          </Card>
+        </Section>
+        </FadeSlideIn>
+
+        <FadeSlideIn index={6}>
         <Section title={t('driver:privacyAndData')}>
           <Card>
             <LinkRow icon="download" title={t('driver:exportMyData')} onPress={() => nav.navigate('Support', { section: 'data' })} />
@@ -361,6 +522,8 @@ export default function DriverProfile() {
             <LinkRow icon="gavel" title={t('driver:termsOfService')} onPress={() => nav.navigate('Support', { section: 'terms' })} />
             <Divider />
             <LinkRow icon="policy" title={t('driver:privacyPolicy')} onPress={() => nav.navigate('Support', { section: 'privacy' })} />
+            <Divider />
+            <LinkRow icon="request-quote" title={t('driver:refundPolicy')} onPress={() => nav.navigate('Support', { section: 'refund' })} />
           </Card>
         </Section>
         </FadeSlideIn>

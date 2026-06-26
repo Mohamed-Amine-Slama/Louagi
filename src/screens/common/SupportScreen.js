@@ -15,6 +15,7 @@ import { Section, Row, Stack } from '../../components/Section';
 import { FadeSlideIn } from '../../components/motion';
 
 import { usersApi } from '../../api';
+import { LEGAL_CONTENT } from '../public/LegalContent';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -26,6 +27,7 @@ const TABS = [
   { key: 'contact', icon: 'chat', label: 'passenger:contactSupport' },
   { key: 'terms', icon: 'description', label: 'passenger:terms' },
   { key: 'privacy', icon: 'privacy-tip', label: 'passenger:privacy' },
+  { key: 'refund', icon: 'request-quote', label: 'passenger:refund' },
   { key: 'data', icon: 'download', label: 'passenger:downloadData' },
 ];
 
@@ -123,6 +125,7 @@ export default function SupportScreen() {
       ) : null}
       {section === 'terms' ? <LegalPanel mode="terms" /> : null}
       {section === 'privacy' ? <LegalPanel mode="privacy" /> : null}
+      {section === 'refund' ? <LegalPanel mode="refund" /> : null}
       {section === 'data' ? (
         <DataPanel
           exportData={exportData}
@@ -201,29 +204,23 @@ function ContactPanel({ topic, setTopic, message, setMessage, errors, ticket, se
   );
 }
 
+// Renders a legal document (Terms / Privacy / Refund) from the shared
+// LEGAL_CONTENT source, localised to the active language with an English
+// fallback. `mode` maps to a LEGAL_CONTENT key — 'refund' → 'refunds'.
 function LegalPanel({ mode }) {
-  const { t } = useLocale();
-  const terms = [
-    { title: t('support:termsBookingTitle'), body: t('support:termsBookingBody') },
-    { title: t('support:termsPaymentTitle'), body: t('support:termsPaymentBody') },
-    { title: t('support:termsConductTitle'), body: t('support:termsConductBody') },
-  ];
-  const privacy = [
-    { title: t('support:privacyDataTitle'), body: t('support:privacyDataBody') },
-    { title: t('support:privacySecurityTitle'), body: t('support:privacySecurityBody') },
-    { title: t('support:privacyRightsTitle'), body: t('support:privacyRightsBody') },
-  ];
-  const items = mode === 'terms' ? terms : privacy;
+  const { locale } = useLocale();
+  const key = mode === 'refund' ? 'refunds' : mode;
+  const doc = LEGAL_CONTENT[locale]?.[key] ?? LEGAL_CONTENT.en[key];
   return (
     <FadeSlideIn index={1}>
-      <Section title={mode === 'terms' ? t('passenger:terms') : t('passenger:privacy')}>
+      <Section title={doc.title}>
         <Stack gap={spacing.sm}>
-          {items.map((item, i) => (
-            <FadeSlideIn key={item.title} index={Math.min(i, 8)}>
+          {doc.sections.map((item, i) => (
+            <FadeSlideIn key={item.heading} index={Math.min(i, 8)}>
               <Card>
                 <Stack gap={spacing.xs}>
-                  <Text variant="labelMd">{item.title}</Text>
-                  <Text variant="bodySm">{item.body}</Text>
+                  <Text variant="labelMd">{item.heading}</Text>
+                  <Text variant="bodySm">{item.text}</Text>
                 </Stack>
               </Card>
             </FadeSlideIn>

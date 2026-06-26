@@ -2,6 +2,7 @@
   "expo": {
     "name": "Louagi",
     "slug": "louagi",
+    "scheme": "louagi",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -56,6 +57,11 @@
         }
       ]
     ],
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
   }
 }

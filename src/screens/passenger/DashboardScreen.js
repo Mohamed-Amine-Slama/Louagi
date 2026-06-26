@@ -23,8 +23,9 @@ import { useAuth } from '../../context/AuthContext';
 import { usePush } from '../../context/NotificationContext';
 import { useToast } from '../../components/Toast';
 import { spacing, radius, withAlpha, shadows } from '../../theme';
-import { formatDate, formatTime, formatDateTime, countdownFrom, statusLabel } from '../../i18n/format';
+import { formatDate, formatTime, formatDateTime, statusLabel, formatAmount } from '../../i18n/format';
 import { MONO, PASS, cityCode, initialsOf, ticketRef } from '../../lib/tickets';
+import { useDepartureLabel } from '../../lib/useDepartureLabel';
 import { SectionLabel } from '../../components/SectionLabel';
 
 // A single column in the ticket stub (DATE / SEATS / PAID).
@@ -51,6 +52,7 @@ function BoardingPass({ row, notch, onTicket, onMessage }) {
   const origin = row.route?.origin_city;
   const dest = row.route?.destination_city;
   const depart = row.ride?.departure_time;
+  const departLabel = useDepartureLabel(depart, t);
   const driverName = row.driverUser?.full_name;
 
   return (
@@ -74,7 +76,7 @@ function BoardingPass({ row, notch, onTicket, onMessage }) {
               >
                 <MaterialIcons name="schedule" size={12} color={PASS.gold} />
                 <Text variant="labelSm" color={PASS.gold} numberOfLines={1}>
-                  {t('common:departsIn', { duration: countdownFrom(depart, t) })}
+                  {departLabel}
                 </Text>
               </Row>
             ) : null}
@@ -202,6 +204,7 @@ function Segmented({ value, onChange, items }) {
 function UpcomingCard({ row, cancelling, onView, onCancelStart, onCancelConfirm, onCancelAbort }) {
   const { colors } = useTheme();
   const { t } = useLocale();
+  const departLabel = useDepartureLabel(row.ride?.departure_time, t);
   return (
     <Card accent={colors.secondaryContainer} onPress={onView}>
       <Row justify="space-between" align="flex-start">
@@ -209,7 +212,7 @@ function UpcomingCard({ row, cancelling, onView, onCancelStart, onCancelConfirm,
           {row.route?.origin_city} → {row.route?.destination_city}
         </Text>
         <Badge
-          label={t('common:departsIn', { duration: countdownFrom(row.ride?.departure_time, t) })}
+          label={departLabel}
           variant="warning"
           icon="schedule"
         />
@@ -337,10 +340,17 @@ function TotalSpentCard({ total }) {
           {t('passenger:totalSpent')} · {year}
         </Text>
         <Row align="flex-end" gap={6} style={{ marginTop: 4 }}>
-          <Text variant="displayLg" color={PASS.onNavy} style={{ fontSize: 34, lineHeight: 40 }}>
-            {total}
+          <Text
+            variant="displayLg"
+            color={PASS.onNavy}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+            style={{ fontSize: 34, lineHeight: 40, flexShrink: 1 }}
+          >
+            {formatAmount(total)}
           </Text>
-          <Text variant="bodyLg" color="rgba(255,255,255,0.7)" style={{ marginBottom: 5 }}>
+          <Text variant="bodyLg" color="rgba(255,255,255,0.7)" style={{ marginBottom: 5, flexShrink: 0 }}>
             {t('common:tnd')}
           </Text>
         </Row>

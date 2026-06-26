@@ -79,10 +79,20 @@ export default function DeliveryScreen() {
   return (
     <Screen>
       {/* Header */}
-      <Stack gap={2} style={{ marginTop: spacing.xs }}>
-        <Text variant="headlineMd">{t('delivery:title')}</Text>
-        <Text variant="bodySm" color={colors.onSurfaceVariant}>{t('delivery:subtitle')}</Text>
-      </Stack>
+      <Row align="center" justify="space-between" gap={spacing.md} style={{ marginTop: spacing.xs }}>
+        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+          <Text variant="headlineMd">{t('delivery:title')}</Text>
+          <Text variant="bodySm" color={colors.onSurfaceVariant}>{t('delivery:subtitle')}</Text>
+        </Stack>
+        <Button
+          label={t('delivery:trackParcelShort')}
+          variant="ghost"
+          iconLeft="search"
+          small
+          fullWidth={false}
+          onPress={() => nav.navigate('MyDeliveries')}
+        />
+      </Row>
 
       {/* Send-a-box hero */}
       <FadeSlideIn index={0}>
@@ -201,22 +211,6 @@ export default function DeliveryScreen() {
           })}
         </Stack>
       )}
-
-      {/* Track a parcel */}
-      <FadeSlideIn index={2}>
-        <Card onPress={() => nav.navigate('MyDeliveries')} style={{ borderWidth: 1, borderColor: colors.outlineVariant, borderStyle: 'dashed' }}>
-          <Row gap={spacing.md} align="center">
-            <View style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center' }}>
-              <MaterialIcons name="search" size={18} color={colors.primary} />
-            </View>
-            <Stack gap={2} style={{ flex: 1 }}>
-              <Text variant="labelMd">{t('delivery:trackParcel')}</Text>
-              <Text variant="bodySm" color={colors.onSurfaceVariant}>{t('delivery:trackParcelBody')}</Text>
-            </Stack>
-            <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
-          </Row>
-        </Card>
-      </FadeSlideIn>
     </Screen>
   );
 }

@@ -100,6 +100,18 @@ export function seatsLabel(count, t) {
   return t('common:seatsCount', { count });
 }
 
+// Group a money/number value with thousands separators and trim floating-point
+// noise to at most two decimals (e.g. 1234.5600000000002 -> "1,234.56"). Manual
+// grouping (not Intl.NumberFormat) to stay safe on Hermes, matching the loyalty
+// card's points formatting.
+export function formatAmount(value) {
+  const num = Number(value) || 0;
+  const fixed = Math.round(num * 100) / 100;
+  const [intPart, decPart] = String(fixed).split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return decPart ? `${grouped}.${decPart}` : grouped;
+}
+
 // Returns "Xh Ym" style countdown using locale-aware unit suffixes.
 export function countdownFrom(fromIso, t) {
   const ms = new Date(fromIso).getTime() - Date.now();
@@ -109,6 +121,18 @@ export function countdownFrom(fromIso, t) {
   const m = totalMin % 60;
   if (h <= 0) return `${m}m`;
   return `${h}h ${m}m`;
+}
+
+// Full badge label for a booking's departure: the localized "Departs in Xh Ym"
+// countdown while the trip is still ahead, falling back to a standalone
+// "Departing now" once the scheduled time passes. Guards against the broken
+// "Departs in Departure" that pairing departsIn with countdownFrom's overdue
+// fallback used to produce.
+export function departureLabel(fromIso, t) {
+  if (!fromIso) return '';
+  const ms = new Date(fromIso).getTime() - Date.now();
+  if (ms <= 0) return t('common:departingNow');
+  return t('common:departsIn', { duration: countdownFrom(fromIso, t) });
 }
 
 // Localized "updated X ago" for live tracking (uses the delivery namespace).

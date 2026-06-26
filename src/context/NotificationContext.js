@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import {
   initNotifications,
@@ -6,7 +7,7 @@ import {
   registerForRemoteNotifications,
 } from '../services/notifications.service';
 import { useAuth } from './AuthContext';
-import { messagesApi } from '../api';
+import { messagesApi, usersApi } from '../api';
 
 const NotificationCtx = createContext(null);
 
@@ -38,6 +39,16 @@ export function NotificationProvider({ children, navigationRef }) {
 
     return () => subscription.remove();
   }, [navigationRef]);
+
+  // Once the user is authenticated and we have an Expo push token, register it
+  // with the backend so admin broadcasts (and future server-sent pushes) can
+  // reach this device. Re-runs if the user or token changes (account switch).
+  useEffect(() => {
+    if (!user?.id || !pushToken) return;
+    usersApi
+      .registerPushToken({ token: pushToken, platform: Platform.OS })
+      .catch((e) => console.warn('Failed to register push token', e));
+  }, [user?.id, pushToken]);
 
   // Polling for new messages and unread counts
   useEffect(() => {

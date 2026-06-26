@@ -113,6 +113,18 @@ export async function updateNotificationPrefs({ actor, sms, push, marketing }) {
   return { ok: true };
 }
 
+// Registers this device's Expo push token with the backend so admins can send
+// it notifications. No-op in mock mode (no backend to store it).
+export async function registerPushToken({ token, platform }) {
+  if (!useMocks) return gql('RegisterPushToken', { token, platform });
+  return { ok: true };
+}
+
+export async function unregisterPushToken({ token }) {
+  if (!useMocks) return gql('UnregisterPushToken', { token });
+  return { ok: true };
+}
+
 export async function updateTravelPrefs({ actor, defaultSeats }) {
   if (!useMocks) return gql('UpdateTravelPrefs', { defaultSeats });
   await sleep(60);
