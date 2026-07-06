@@ -426,6 +426,7 @@
     "messagePassenger": "Envoyer un message au passager",
     "createRide": "Créer un trajet",
     "newRide": "Nouveau trajet",
+    "officialRoutes": "Lignes officielles",
     "weeklyEarnings": "Revenus hebdo",
     "thisWeek": "Cette semaine",
     "thisMonth": "Ce mois",
@@ -964,6 +965,19 @@
     "exportReady": "Export prêt",
     "exportReadyBody": "{{bookings}} réservations, {{deliveries}} livraisons, {{tickets}} tickets support inclus.",
     "exportFailed": "Impossible de préparer l'export",
+    "tabHelp": "Aide",
+    "tabContact": "Contact",
+    "tabLegal": "Légal",
+    "tabData": "Mes données",
+    "legalIntro": "Conditions, confidentialité et remboursements",
+    "searchFaq": "Rechercher dans l'aide",
+    "noResults": "Aucun sujet ne correspond à votre recherche. Essayez un autre mot ou écrivez-nous.",
+    "stillNeedHelp": "Besoin d'aide supplémentaire ?",
+    "stillNeedHelpBody": "Envoyez un message à notre équipe — nous répondons dans l'application et par e-mail.",
+    "statBookings": "Réservations",
+    "statDeliveries": "Livraisons",
+    "statTickets": "Tickets support",
+    "viewRaw": "Voir l'export brut (JSON)",
     "noFavouriteRoute": "Aucun itinéraire favori pour l'instant"
   },
   "chat": {
@@ -1012,5 +1026,12 @@
     "cash": "Espèces",
     "flouci": "Flouci",
     "unknown": "Inconnu"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Mises à jour de vos trajets et de votre compte",
+    "markAllRead": "Tout marquer comme lu",
+    "emptyTitle": "Vous êtes à jour",
+    "emptyBody": "Les mises à jour de réservation et les annonces apparaîtront ici."
   }
 }

@@ -156,6 +156,10 @@ export default function DriverDashboard() {
   const seatTints = ['#F2A33C', '#C8102E', '#6B5B14', '#0E2C57'];
 
   return (
+    // The FAB must live outside Screen's ScrollView: absolute positioning
+    // inside scroll content anchors to the full content height, so it would
+    // scroll away instead of floating over the viewport.
+    <View style={{ flex: 1 }}>
     <Screen padded={false}>
       <View style={{ paddingHorizontal: spacing.containerMargin, paddingTop: spacing.sm, gap: spacing.md }}>
         {/* Header */}
@@ -344,9 +348,10 @@ export default function DriverDashboard() {
           </FadeSlideIn>
         ) : null}
       </View>
-
-      <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
     </Screen>
+
+    <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
+    </View>
   );
 }
 

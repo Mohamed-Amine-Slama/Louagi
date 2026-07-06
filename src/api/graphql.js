@@ -100,7 +100,7 @@ const DEDUPE_OPS = new Set([
   'GetDeliveryPricing', 'GetDriverProfile', 'GetDriverStatus', 'GetMessages',
   'GetProfile', 'GetReservation', 'GetReviewForRide', 'GetRideDetail', 'Health',
   'ListAchievements', 'ListChats', 'ListCities', 'ListDriverSessions',
-  'ListPayments', 'ListPopularRoutes', 'ListReservations', 'ListRoutes',
+  'ListNotifications', 'ListPayments', 'ListPopularRoutes', 'ListReservations', 'ListRoutes',
   'ListTiers', 'Me',
   'MyDeliveries', 'RideDeliveries', 'RidePassengers', 'SearchRides',
 ]);

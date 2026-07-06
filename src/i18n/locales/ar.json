@@ -426,6 +426,7 @@
     "messagePassenger": "راسل الراكب",
     "createRide": "أنشئ رحلة",
     "newRide": "رحلة جديدة",
+    "officialRoutes": "الخطوط الرسمية",
     "weeklyEarnings": "أرباح الأسبوع",
     "thisWeek": "هذا الأسبوع",
     "thisMonth": "هذا الشهر",
@@ -964,6 +965,19 @@
     "exportReady": "التصدير جاهز",
     "exportReadyBody": "يشمل {{bookings}} حجوزات و{{deliveries}} توصيلات و{{tickets}} تذاكر دعم.",
     "exportFailed": "تعذر تحضير التصدير",
+    "tabHelp": "المساعدة",
+    "tabContact": "التواصل",
+    "tabLegal": "قانوني",
+    "tabData": "بياناتي",
+    "legalIntro": "الشروط والخصوصية والاسترداد",
+    "searchFaq": "ابحث في مواضيع المساعدة",
+    "noResults": "لا توجد مواضيع مطابقة لبحثك. جرّب كلمة أخرى أو أرسل لنا رسالة.",
+    "stillNeedHelp": "هل ما زلت بحاجة إلى المساعدة؟",
+    "stillNeedHelpBody": "أرسل رسالة إلى فريقنا — نرد داخل التطبيق وعبر البريد الإلكتروني.",
+    "statBookings": "الحجوزات",
+    "statDeliveries": "التوصيلات",
+    "statTickets": "تذاكر الدعم",
+    "viewRaw": "عرض التصدير الخام (JSON)",
     "noFavouriteRoute": "لا يوجد مسار مفضل بعد"
   },
   "chat": {
@@ -1012,5 +1026,12 @@
     "cash": "نقدًا",
     "flouci": "Flouci",
     "unknown": "غير معروف"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "subtitle": "تحديثات رحلاتك وحسابك",
+    "markAllRead": "تعليم الكل كمقروء",
+    "emptyTitle": "لا إشعارات جديدة",
+    "emptyBody": "ستظهر تحديثات الحجوزات والإعلانات هنا."
   }
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { View, Pressable, Platform, UIManager, LayoutAnimation } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -11,6 +11,7 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Banner } from '../../components/Banner';
 import { Chip } from '../../components/Chip';
+import { Tabs } from '../../components/Tabs';
 import { Section, Row, Stack } from '../../components/Section';
 import { FadeSlideIn } from '../../components/motion';
 
@@ -22,24 +23,46 @@ import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../components/Toast';
 import { radius, spacing } from '../../theme';
 
+// Android needs LayoutAnimation explicitly enabled for the FAQ collapse.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+const ease = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
 const TABS = [
-  { key: 'help', icon: 'help', label: 'passenger:helpCentre' },
-  { key: 'contact', icon: 'chat', label: 'passenger:contactSupport' },
+  { key: 'help', label: 'support:tabHelp', intro: 'support:helpIntro' },
+  { key: 'contact', label: 'support:tabContact', intro: 'support:contactIntro' },
+  { key: 'legal', label: 'support:tabLegal', intro: 'support:legalIntro' },
+  { key: 'data', label: 'support:tabData', intro: 'support:dataIntro' },
+];
+
+const LEGAL_DOCS = [
   { key: 'terms', icon: 'description', label: 'passenger:terms' },
   { key: 'privacy', icon: 'privacy-tip', label: 'passenger:privacy' },
   { key: 'refund', icon: 'request-quote', label: 'passenger:refund' },
-  { key: 'data', icon: 'download', label: 'passenger:downloadData' },
 ];
 
+// Profile screens deep-link with section ∈ help|contact|terms|privacy|refund|data.
+// Legal documents live under one tab, so the three doc sections map onto it.
+const SECTION_TO_TAB = {
+  help: 'help',
+  contact: 'contact',
+  terms: 'legal',
+  privacy: 'legal',
+  refund: 'legal',
+  data: 'data',
+};
+const isLegalSection = (s) => s === 'terms' || s === 'privacy' || s === 'refund';
+
 export default function SupportScreen() {
-  const { colors } = useTheme();
   const { t } = useLocale();
   const { user } = useAuth();
   const route = useRoute();
   const toast = useToast();
 
   const initialSection = route.params?.section || 'help';
-  const [section, setSection] = useState(initialSection);
+  const [tab, setTab] = useState(SECTION_TO_TAB[initialSection] || 'help');
+  const [doc, setDoc] = useState(isLegalSection(initialSection) ? initialSection : 'terms');
   const [topic, setTopic] = useState(t('support:defaultTopic'));
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState({});
@@ -49,10 +72,12 @@ export default function SupportScreen() {
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    setSection(route.params?.section || 'help');
+    const section = route.params?.section || 'help';
+    setTab(SECTION_TO_TAB[section] || 'help');
+    if (isLegalSection(section)) setDoc(section);
   }, [route.params?.section]);
 
-  const activeMeta = TABS.find((tab) => tab.key === section) || TABS[0];
+  const activeMeta = TABS.find((item) => item.key === tab) || TABS[0];
   const exportSummary = useMemo(() => {
     if (!exportData) return null;
     return {
@@ -91,27 +116,21 @@ export default function SupportScreen() {
   return (
     <Screen>
       <ScreenHeader
-        title={t('support:title')}
-        subtitle={t(activeMeta.label)}
+        title={t('passenger:helpCentre')}
+        subtitle={t(activeMeta.intro)}
         showBack
       />
 
       <FadeSlideIn index={0}>
-        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-          {TABS.map((tab) => (
-            <Chip
-              key={tab.key}
-              icon={tab.icon}
-              label={t(tab.label)}
-              selected={tab.key === section}
-              onPress={() => setSection(tab.key)}
-            />
-          ))}
-        </Row>
+        <Tabs
+          tabs={TABS.map((item) => ({ key: item.key, label: t(item.label) }))}
+          value={tab}
+          onChange={setTab}
+        />
       </FadeSlideIn>
 
-      {section === 'help' ? <HelpPanel /> : null}
-      {section === 'contact' ? (
+      {tab === 'help' ? <HelpPanel onContact={() => setTab('contact')} /> : null}
+      {tab === 'contact' ? (
         <ContactPanel
           topic={topic}
           setTopic={setTopic}
@@ -123,10 +142,8 @@ export default function SupportScreen() {
           submitTicket={submitTicket}
         />
       ) : null}
-      {section === 'terms' ? <LegalPanel mode="terms" /> : null}
-      {section === 'privacy' ? <LegalPanel mode="privacy" /> : null}
-      {section === 'refund' ? <LegalPanel mode="refund" /> : null}
-      {section === 'data' ? (
+      {tab === 'legal' ? <LegalPanel doc={doc} setDoc={setDoc} /> : null}
+      {tab === 'data' ? (
         <DataPanel
           exportData={exportData}
           exportSummary={exportSummary}
@@ -138,153 +155,88 @@ export default function SupportScreen() {
   );
 }
 
-function HelpPanel() {
+function HelpPanel({ onContact }) {
   const { t } = useLocale();
-  const items = [
-    { icon: 'event-available', title: t('support:faqBookingTitle'), body: t('support:faqBookingBody') },
-    { icon: 'payments', title: t('support:faqPaymentsTitle'), body: t('support:faqPaymentsBody') },
-    { icon: 'local-shipping', title: t('support:faqDeliveryTitle'), body: t('support:faqDeliveryBody') },
-    { icon: 'verified-user', title: t('support:faqSafetyTitle'), body: t('support:faqSafetyBody') },
-  ];
-  return (
-    <FadeSlideIn index={1}>
-      <Section title={t('support:helpIntro')}>
-        <Stack gap={spacing.sm}>
-          {items.map((item, i) => (
-            <FadeSlideIn key={item.title} index={Math.min(i, 8)}>
-              <InfoCard icon={item.icon} title={item.title} body={item.body} />
-            </FadeSlideIn>
-          ))}
-        </Stack>
-      </Section>
-    </FadeSlideIn>
-  );
-}
-
-function ContactPanel({ topic, setTopic, message, setMessage, errors, ticket, sending, submitTicket }) {
-  const { t } = useLocale();
-  return (
-    <FadeSlideIn index={1}>
-      <Section title={t('support:contactIntro')}>
-        <Card>
-          <Stack gap={spacing.md}>
-            {ticket ? (
-              <Banner
-                variant="success"
-                title={t('support:ticketCreated')}
-                body={t('support:ticketCreatedBody', { id: ticket?.id?.slice(0, 6)?.toUpperCase() || '—' })}
-              />
-            ) : null}
-            <Input
-              label={t('support:topic')}
-              value={topic}
-              onChangeText={setTopic}
-              iconLeft="subject"
-              error={errors.topic}
-            />
-            <Input
-              label={t('support:message')}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              iconLeft="message"
-              error={errors.message}
-            />
-            <Button
-              label={t('support:sendMessage')}
-              variant="secondary"
-              iconRight="send"
-              loading={sending}
-              onPress={submitTicket}
-            />
-          </Stack>
-        </Card>
-      </Section>
-    </FadeSlideIn>
-  );
-}
-
-// Renders a legal document (Terms / Privacy / Refund) from the shared
-// LEGAL_CONTENT source, localised to the active language with an English
-// fallback. `mode` maps to a LEGAL_CONTENT key — 'refund' → 'refunds'.
-function LegalPanel({ mode }) {
-  const { locale } = useLocale();
-  const key = mode === 'refund' ? 'refunds' : mode;
-  const doc = LEGAL_CONTENT[locale]?.[key] ?? LEGAL_CONTENT.en[key];
-  return (
-    <FadeSlideIn index={1}>
-      <Section title={doc.title}>
-        <Stack gap={spacing.sm}>
-          {doc.sections.map((item, i) => (
-            <FadeSlideIn key={item.heading} index={Math.min(i, 8)}>
-              <Card>
-                <Stack gap={spacing.xs}>
-                  <Text variant="labelMd">{item.heading}</Text>
-                  <Text variant="bodySm">{item.text}</Text>
-                </Stack>
-              </Card>
-            </FadeSlideIn>
-          ))}
-        </Stack>
-      </Section>
-    </FadeSlideIn>
-  );
-}
-
-function DataPanel({ exportData, exportSummary, exporting, prepareExport }) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const [query, setQuery] = useState('');
+  const [openKey, setOpenKey] = useState(null);
+
+  const items = [
+    { key: 'booking', icon: 'event-available', title: t('support:faqBookingTitle'), body: t('support:faqBookingBody') },
+    { key: 'payments', icon: 'payments', title: t('support:faqPaymentsTitle'), body: t('support:faqPaymentsBody') },
+    { key: 'delivery', icon: 'local-shipping', title: t('support:faqDeliveryTitle'), body: t('support:faqDeliveryBody') },
+    { key: 'safety', icon: 'verified-user', title: t('support:faqSafetyTitle'), body: t('support:faqSafetyBody') },
+  ];
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? items.filter((item) => `${item.title} ${item.body}`.toLowerCase().includes(q))
+    : items;
+
+  const toggle = (key) => {
+    ease();
+    setOpenKey((current) => (current === key ? null : key));
+  };
+
   return (
     <FadeSlideIn index={1}>
-      <Section title={t('support:dataIntro')}>
+      <Stack gap={spacing.md}>
+        <Input
+          placeholder={t('support:searchFaq')}
+          value={query}
+          onChangeText={setQuery}
+          iconLeft="search"
+        />
+
         <Card>
-          <Stack gap={spacing.md}>
-            <Text variant="bodyMd" color={colors.onSurfaceVariant}>
-              {t('support:dataBody')}
+          {visible.length === 0 ? (
+            <Text variant="bodySm" color={colors.onSurfaceVariant}>
+              {t('support:noResults')}
+            </Text>
+          ) : (
+            visible.map((item, i) => (
+              <View key={item.key}>
+                {i > 0 ? (
+                  <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginVertical: spacing.sm }} />
+                ) : null}
+                <FaqRow
+                  item={item}
+                  open={openKey === item.key}
+                  onPress={() => toggle(item.key)}
+                />
+              </View>
+            ))
+          )}
+        </Card>
+
+        <Card>
+          <Stack gap={spacing.sm}>
+            <Text variant="labelMd">{t('support:stillNeedHelp')}</Text>
+            <Text variant="bodySm" color={colors.onSurfaceVariant}>
+              {t('support:stillNeedHelpBody')}
             </Text>
             <Button
-              label={exportData ? t('support:refreshExport') : t('support:prepareExport')}
+              label={t('passenger:contactSupport')}
               variant="secondary"
-              iconRight="download"
-              loading={exporting}
-              onPress={prepareExport}
+              iconRight="chat"
+              onPress={onContact}
             />
-            {exportData ? (
-              <>
-                <Banner
-                  variant="success"
-                  title={t('support:exportReady')}
-                  body={t('support:exportReadyBody', {
-                    bookings: exportSummary.bookings,
-                    deliveries: exportSummary.deliveries,
-                    tickets: exportSummary.tickets,
-                  })}
-                />
-                <View
-                  style={{
-                    backgroundColor: colors.surfaceContainer,
-                    borderRadius: radius.lg,
-                    padding: spacing.md,
-                  }}
-                >
-                  <Text variant="labelSm" selectable numberOfLines={8}>
-                    {JSON.stringify(exportData, null, 2)}
-                  </Text>
-                </View>
-              </>
-            ) : null}
           </Stack>
         </Card>
-      </Section>
+      </Stack>
     </FadeSlideIn>
   );
 }
 
-function InfoCard({ icon, title, body }) {
+function FaqRow({ item, open, onPress }) {
   const { colors } = useTheme();
   return (
-    <Card>
-      <Row gap={spacing.md} align="flex-start">
+    <View>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xs }}
+      >
         <View
           style={{
             width: 40,
@@ -295,13 +247,199 @@ function InfoCard({ icon, title, body }) {
             justifyContent: 'center',
           }}
         >
-          <MaterialIcons name={icon} size={20} color={colors.onPrimaryFixed} />
+          <MaterialIcons name={item.icon} size={20} color={colors.onPrimaryFixed} />
         </View>
-        <Stack gap={4} style={{ flex: 1 }}>
-          <Text variant="labelMd">{title}</Text>
-          <Text variant="bodySm" color={colors.onSurfaceVariant}>{body}</Text>
+        <Text variant="labelMd" style={{ flex: 1 }}>
+          {item.title}
+        </Text>
+        <MaterialIcons
+          name={open ? 'expand-less' : 'expand-more'}
+          size={22}
+          color={colors.onSurfaceVariant}
+        />
+      </Pressable>
+      {open ? (
+        <Text
+          variant="bodySm"
+          color={colors.onSurfaceVariant}
+          style={{ marginTop: spacing.xs, marginStart: 40 + spacing.md }}
+        >
+          {item.body}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function ContactPanel({ topic, setTopic, message, setMessage, errors, ticket, sending, submitTicket }) {
+  const { t } = useLocale();
+  return (
+    <FadeSlideIn index={1}>
+      <Card>
+        <Stack gap={spacing.md}>
+          {ticket ? (
+            <Banner
+              variant="success"
+              title={t('support:ticketCreated')}
+              body={t('support:ticketCreatedBody', { id: ticket?.id?.slice(0, 6)?.toUpperCase() || '—' })}
+            />
+          ) : null}
+          <Input
+            label={t('support:topic')}
+            value={topic}
+            onChangeText={setTopic}
+            iconLeft="subject"
+            error={errors.topic}
+          />
+          <Input
+            label={t('support:message')}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            iconLeft="message"
+            error={errors.message}
+          />
+          <Button
+            label={t('support:sendMessage')}
+            variant="secondary"
+            iconRight="send"
+            loading={sending}
+            onPress={submitTicket}
+          />
         </Stack>
+      </Card>
+    </FadeSlideIn>
+  );
+}
+
+// Renders a legal document (Terms / Privacy / Refund) from the shared
+// LEGAL_CONTENT source, localised to the active language with an English
+// fallback. `doc` maps to a LEGAL_CONTENT key — 'refund' → 'refunds'.
+function LegalPanel({ doc, setDoc }) {
+  const { t, locale } = useLocale();
+  const { colors } = useTheme();
+  const key = doc === 'refund' ? 'refunds' : doc;
+  const content = LEGAL_CONTENT[locale]?.[key] ?? LEGAL_CONTENT.en[key];
+  return (
+    <FadeSlideIn index={1}>
+      <Stack gap={spacing.md}>
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+          {LEGAL_DOCS.map((item) => (
+            <Chip
+              key={item.key}
+              icon={item.icon}
+              label={t(item.label)}
+              selected={doc === item.key}
+              onPress={() => setDoc(item.key)}
+            />
+          ))}
+        </Row>
+
+        <Section title={content.title}>
+          <Card>
+            {content.sections.map((item, i) => (
+              <View key={item.heading}>
+                {i > 0 ? (
+                  <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginVertical: spacing.md }} />
+                ) : null}
+                <Stack gap={spacing.xs}>
+                  <Text variant="labelMd">{item.heading}</Text>
+                  <Text variant="bodySm" color={colors.onSurfaceVariant}>
+                    {item.text}
+                  </Text>
+                </Stack>
+              </View>
+            ))}
+          </Card>
+        </Section>
+      </Stack>
+    </FadeSlideIn>
+  );
+}
+
+function DataPanel({ exportData, exportSummary, exporting, prepareExport }) {
+  const { colors } = useTheme();
+  const { t } = useLocale();
+  const [showRaw, setShowRaw] = useState(false);
+
+  const toggleRaw = () => {
+    ease();
+    setShowRaw((current) => !current);
+  };
+
+  return (
+    <FadeSlideIn index={1}>
+      <Card>
+        <Stack gap={spacing.md}>
+          <Text variant="bodyMd" color={colors.onSurfaceVariant}>
+            {t('support:dataBody')}
+          </Text>
+          <Button
+            label={exportData ? t('support:refreshExport') : t('support:prepareExport')}
+            variant="secondary"
+            iconRight="download"
+            loading={exporting}
+            onPress={prepareExport}
+          />
+          {exportData ? (
+            <>
+              <Banner variant="success" title={t('support:exportReady')} />
+              <Stack gap={spacing.sm}>
+                <StatRow icon="event-available" label={t('support:statBookings')} value={exportSummary.bookings} />
+                <StatRow icon="local-shipping" label={t('support:statDeliveries')} value={exportSummary.deliveries} />
+                <StatRow icon="support-agent" label={t('support:statTickets')} value={exportSummary.tickets} />
+              </Stack>
+
+              <View style={{ height: 1, backgroundColor: colors.outlineVariant }} />
+
+              <Pressable
+                onPress={toggleRaw}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showRaw }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+              >
+                <MaterialIcons name="code" size={18} color={colors.onSurfaceVariant} />
+                <Text variant="labelMd" color={colors.onSurfaceVariant} style={{ flex: 1 }}>
+                  {t('support:viewRaw')}
+                </Text>
+                <MaterialIcons
+                  name={showRaw ? 'expand-less' : 'expand-more'}
+                  size={22}
+                  color={colors.onSurfaceVariant}
+                />
+              </Pressable>
+              {showRaw ? (
+                <View
+                  style={{
+                    backgroundColor: colors.surfaceContainer,
+                    borderRadius: radius.lg,
+                    padding: spacing.md,
+                  }}
+                >
+                  <Text variant="labelSm" selectable numberOfLines={12}>
+                    {JSON.stringify(exportData, null, 2)}
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          ) : null}
+        </Stack>
+      </Card>
+    </FadeSlideIn>
+  );
+}
+
+function StatRow({ icon, label, value }) {
+  const { colors } = useTheme();
+  return (
+    <Row justify="space-between" style={{ alignItems: 'center' }}>
+      <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
+        <MaterialIcons name={icon} size={18} color={colors.onSurfaceVariant} />
+        <Text variant="bodyMd" color={colors.onSurfaceVariant}>
+          {label}
+        </Text>
       </Row>
-    </Card>
+      <Text variant="labelMd">{value}</Text>
+    </Row>
   );
 }

@@ -14,6 +14,7 @@ import { Stepper } from '../../components/Stepper';
 import { Banner } from '../../components/Banner';
 import { Stack, Row } from '../../components/Section';
 import { SectionLabel } from '../../components/SectionLabel';
+import { RoutePair } from '../../components/RoutePair';
 import { CityPickerModal } from '../../components/CityPicker';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
 
@@ -92,6 +93,19 @@ export default function CreateRideScreen() {
   const hh = String(date.getHours()).padStart(2, '0');
   const mm = String(date.getMinutes()).padStart(2, '0');
   const swap = () => { setOrigin(destination); setDestination(origin); };
+
+  const sortedRoutes = [...routes].sort(
+    (a, b) =>
+      (a.origin_city || '').localeCompare(b.origin_city || '') ||
+      (a.destination_city || '').localeCompare(b.destination_city || ''),
+  );
+  const isSelectedRoute = (r) =>
+    r.origin_city?.toLowerCase() === origin.toLowerCase() &&
+    r.destination_city?.toLowerCase() === destination.toLowerCase();
+  const pickRoute = (r) => {
+    setOrigin(r.origin_city);
+    setDestination(r.destination_city);
+  };
 
   const timeBox = {
     borderWidth: 1,
@@ -172,6 +186,49 @@ export default function CreateRideScreen() {
           </View>
         </Card>
       </FadeSlideIn>
+
+      {/* All official routes — tap one to fill origin/destination */}
+      {sortedRoutes.length > 0 ? (
+        <FadeSlideIn index={2}>
+          <Stack gap={spacing.sm}>
+            <SectionLabel>{t('driver:officialRoutes')}</SectionLabel>
+            <Card padding={spacing.sm}>
+              {sortedRoutes.map((r, i) => {
+                const selected = isSelectedRoute(r);
+                return (
+                  <View key={r.id}>
+                    {i > 0 ? <View style={{ height: 1, backgroundColor: colors.outlineVariant, marginStart: 14 }} /> : null}
+                    <Pressable
+                      onPress={() => pickRoute(r)}
+                      style={({ pressed }) => ({
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: spacing.sm,
+                        padding: 14,
+                        borderRadius: radius.md,
+                        backgroundColor: selected
+                          ? withAlpha(colors.primary, 0.08)
+                          : pressed
+                            ? colors.surfaceContainer
+                            : 'transparent',
+                      })}
+                    >
+                      <RoutePair from={r.origin_city} to={r.destination_city} variant="bodyMd" size={14} />
+                      <Row gap={4} align="center">
+                        <Text variant="labelMd" color={selected ? colors.primary : colors.onSurfaceVariant}>
+                          {Number(r.base_price)} {t('common:tnd')}
+                        </Text>
+                        {selected ? <MaterialIcons name="check" size={16} color={colors.primary} /> : null}
+                      </Row>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </Card>
+          </Stack>
+        </FadeSlideIn>
+      ) : null}
 
       {/* Date */}
       <FadeSlideIn index={2}>

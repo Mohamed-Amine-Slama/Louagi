@@ -12,7 +12,7 @@ export const STAGGER_MS = 70;
 
 // Entrance wrapper for cards/sections/list items. Vertical slide only so it
 // stays RTL-neutral. Pass `index` to stagger siblings.
-export function FadeSlideIn({ index = 0, delay, children, style }) {
+export function FadeSlideIn({ index = 0, delay, children, style, ...rest }) {
   return (
     <Animated.View
       entering={FadeInDown.delay(delay ?? index * STAGGER_MS)
@@ -21,6 +21,7 @@ export function FadeSlideIn({ index = 0, delay, children, style }) {
         .stiffness(160)
         .mass(0.8)}
       style={style}
+      {...rest}
     >
       {children}
     </Animated.View>

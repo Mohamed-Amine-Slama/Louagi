@@ -22,7 +22,7 @@ if (!i18n.isInitialized) {
       lng: 'en',
       fallbackLng: 'en',
       defaultNS: 'common',
-      ns: ['common', 'auth', 'landing', 'search', 'ride', 'booking', 'passenger', 'driver', 'admin', 'settings', 'errors', 'toast', 'delivery', 'support', 'chat', 'tabs', 'status'],
+      ns: ['common', 'auth', 'landing', 'search', 'ride', 'booking', 'passenger', 'driver', 'admin', 'settings', 'errors', 'toast', 'delivery', 'support', 'chat', 'tabs', 'status', 'notifications'],
       interpolation: { escapeValue: false },
       react: { useSuspense: false },
       returnNull: false,

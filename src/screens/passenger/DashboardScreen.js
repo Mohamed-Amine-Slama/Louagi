@@ -18,7 +18,7 @@ import { RateDriverModal } from '../../components/RateDriverModal';
 import { SkeletonList } from '../../components/Skeleton';
 import { FadeSlideIn, PressableScale } from '../../components/motion';
 
-import { reservationsApi, paymentsApi, reviewsApi } from '../../api';
+import { reservationsApi, paymentsApi, reviewsApi, notificationsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { usePush } from '../../context/NotificationContext';
 import { useToast } from '../../components/Toast';
@@ -413,6 +413,7 @@ export default function PassengerDashboard() {
   const [cancellingId, setCancellingId] = useState(null);
   const [ratingRide, setRatingRide] = useState(null);
   const [ratingDriver, setRatingDriver] = useState(null);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   const load = useCallback(async () => {
     if (!user?.id) {
@@ -420,6 +421,11 @@ export default function PassengerDashboard() {
       return;
     }
     setRefreshing(true);
+    // Bell badge only — a failure here shouldn't block the bookings list.
+    notificationsApi
+      .listNotifications({ actor: user })
+      .then((list) => setUnreadNotifs((list || []).filter((n) => !n.read).length))
+      .catch(() => {});
     const [allRes, py] = await Promise.all([
       reservationsApi.listReservations({ actor: user }),
       paymentsApi.listPayments({ actor: user }),
@@ -534,9 +540,11 @@ export default function PassengerDashboard() {
               </View>
             ) : null}
           </PressableScale>
-          <PressableScale onPress={() => toast.show(t('toast:noNewNotifications'), 'info')} scaleTo={0.92} style={iconBtn}>
+          <PressableScale onPress={() => nav.navigate('Notifications')} scaleTo={0.92} style={iconBtn}>
             <MaterialIcons name="notifications-none" size={20} color={colors.onSurface} />
-            <View style={{ position: 'absolute', top: 9, end: 10, width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.secondaryContainer }} />
+            {unreadNotifs > 0 ? (
+              <View style={{ position: 'absolute', top: 9, end: 10, width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.secondaryContainer }} />
+            ) : null}
           </PressableScale>
         </Row>
       </Row>

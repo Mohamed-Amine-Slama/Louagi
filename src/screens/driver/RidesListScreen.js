@@ -62,6 +62,10 @@ export default function DriverRides() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
+    // The FAB must live outside Screen's ScrollView: absolute positioning
+    // inside scroll content anchors to the full content height, so it would
+    // scroll away instead of floating over the viewport.
+    <View style={{ flex: 1 }}>
     <Screen>
       <Text variant="headlineMd" style={{ marginTop: spacing.xs }}>{t('driver:ridesTitle')}</Text>
       <Segmented
@@ -115,8 +119,9 @@ export default function DriverRides() {
           })}
         </Stack>
       )}
-
-      <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
     </Screen>
+
+    <FAB icon="add" label={t('driver:newRide')} onPress={() => nav.navigate('CreateRide')} />
+    </View>
   );
 }

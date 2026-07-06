@@ -20,6 +20,7 @@ import RideDetailScreen from '../screens/passenger/RideDetailScreen';
 import BookingConfirmScreen from '../screens/passenger/BookingConfirmScreen';
 import MyDeliveriesScreen from '../screens/passenger/MyDeliveriesScreen';
 import TrackDeliveryScreen from '../screens/passenger/TrackDeliveryScreen';
+import NotificationCenterScreen from '../screens/passenger/NotificationCenterScreen';
 
 import CreateRideScreen from '../screens/driver/CreateRideScreen';
 import RideManagementScreen from '../screens/driver/RideManagementScreen';
@@ -84,6 +85,11 @@ function PassengerStack() {
       <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
       <Stack.Screen name="MyDeliveries" component={MyDeliveriesScreen} />
       <Stack.Screen name="TrackDelivery" component={TrackDeliveryScreen} />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationCenterScreen}
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
       <Stack.Screen name="ChatList" component={ChatListScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />

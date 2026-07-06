@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, ScrollView, StatusBar, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '../../context/ThemeContext';
 import { useLocale } from '../../context/LocaleContext';
@@ -11,13 +10,13 @@ import { useLocale } from '../../context/LocaleContext';
 import { Screen } from '../../components/Screen';
 import { Text } from '../../components/Text';
 import { Card } from '../../components/Card';
-import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Avatar } from '../../components/Avatar';
 import { Stepper } from '../../components/Stepper';
 import { RouteTimeline } from '../../components/RouteTimeline';
 import { Banner } from '../../components/Banner';
-import { Section, Row, Stack } from '../../components/Section';
+import { Section, Row } from '../../components/Section';
+import { ScreenHeader } from '../../components/Header';
 import { SkeletonList } from '../../components/Skeleton';
 import { FadeSlideIn } from '../../components/motion';
 import { PassengerActionButtons } from '../../components/PassengerActionButtons';
@@ -27,7 +26,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import { peekSeatLock } from '../../security/seatLock';
 import { randomBytesHex } from '../../security/crypto';
-import { spacing, radius, typography, withAlpha } from '../../theme';
+import { spacing, radius, withAlpha } from '../../theme';
 import { formatDate, formatTime } from '../../i18n/format';
 
 export default function RideDetailScreen() {
@@ -46,6 +45,7 @@ export default function RideDetailScreen() {
   const [discountPct, setDiscountPct] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [lockBanner, setLockBanner] = useState(null);
+  const [footerHeight, setFooterHeight] = useState(150 + insets.bottom);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,142 +128,126 @@ export default function RideDetailScreen() {
     nav.navigate('BookingConfirm', { id: res.reservation.id });
   };
 
-  const HEADER_HEIGHT = 220;
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Scrollable Content */}
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 150 + insets.bottom }}
-        bounces={false}
+        keyboardShouldPersistTaps="always"
+        contentContainerStyle={{
+          flexGrow: 1,
+          gap: spacing.md,
+          paddingTop: insets.top,
+          paddingHorizontal: spacing.containerMargin,
+          // The sticky booking footer replaces Screen's tab-bar clearance:
+          // pad by its measured height so the last card scrolls fully clear.
+          paddingBottom: footerHeight + spacing.lg,
+        }}
       >
-        {/* Hero Header */}
-        <LinearGradient
-          colors={isDark ? [colors.surfaceContainerHighest, colors.background] : [colors.primary, colors.secondary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.hero, { height: HEADER_HEIGHT, paddingTop: insets.top }]}
-        >
-          {/* Top Nav */}
-          <View style={styles.topNav}>
-            <Pressable
-              onPress={() => nav.goBack()}
-              style={[styles.backButton, { backgroundColor: withAlpha(isDark ? colors.onSurface : colors.onPrimary, 0.2) }]}
-            >
-              <MaterialIcons name="arrow-back" size={24} color={isDark ? colors.onSurface : colors.onPrimary} />
-            </Pressable>
-            <View style={styles.navTitleContainer}>
-              <Text style={[styles.navTitle, { color: isDark ? colors.onSurface : colors.onPrimary }]} numberOfLines={1}>
-                {ride.route.origin_city} → {ride.route.destination_city}
-              </Text>
-              <Text style={[styles.navSubtitle, { color: withAlpha(isDark ? colors.onSurface : colors.onPrimary, 0.8) }]}>{formatDate(dep)}</Text>
-            </View>
-            <View style={styles.headerSpacer} />
-          </View>
-        </LinearGradient>
+        <ScreenHeader
+          title={`${ride.route.origin_city} → ${ride.route.destination_city}`}
+          subtitle={formatDate(dep)}
+          showBack
+        />
 
-        {/* Content overlapping header */}
-        <View style={styles.contentWrapper}>
-          <FadeSlideIn index={0}>
-            <Card style={[styles.overlapCard, { shadowColor: colors.shadow }]}>
-              <Section title={t('ride:trip')}>
-                <RouteTimeline
-                  origin={ride.route.origin_city}
-                  destination={ride.route.destination_city}
-                  departureLabel={t('ride:departsAt', { time: formatTime(dep) })}
-                  arrivalLabel={t('ride:duration', { minutes: ride.route.estimated_duration_min })}
-                />
-              </Section>
-              <Row gap={spacing.sm} style={{ marginTop: spacing.md, flexWrap: 'wrap' }}>
-                <Pill icon="event-seat" label={t('ride:seatsLeft', { count: ride.available_seats })} />
-                <Pill icon="ac-unit" label={t('ride:ac')} />
-                <Pill icon="security" label={t('ride:verified')} tone="success" />
-              </Row>
-            </Card>
+        <FadeSlideIn index={0}>
+          <Card>
+            <Section title={t('ride:trip')}>
+              <RouteTimeline
+                origin={ride.route.origin_city}
+                destination={ride.route.destination_city}
+                departureLabel={t('ride:departsAt', { time: formatTime(dep) })}
+                arrivalLabel={t('ride:duration', { minutes: ride.route.estimated_duration_min })}
+              />
+            </Section>
+            <Row gap={spacing.sm} style={{ marginTop: spacing.md, flexWrap: 'wrap' }}>
+              <Pill icon="event-seat" label={t('ride:seatsLeft', { count: ride.available_seats })} />
+              <Pill icon="ac-unit" label={t('ride:ac')} />
+              <Pill icon="security" label={t('ride:verified')} tone="success" />
+            </Row>
+          </Card>
+        </FadeSlideIn>
+
+        {lockBanner ? (
+          <FadeSlideIn>
+            <Banner variant="warning" title={t('ride:seatLockActive')} body={lockBanner} />
           </FadeSlideIn>
+        ) : null}
 
-          {lockBanner ? (
-            <FadeSlideIn style={{ marginBottom: spacing.md }}>
-              <Banner variant="warning" title={t('ride:seatLockActive')} body={lockBanner} />
-            </FadeSlideIn>
-          ) : null}
-
-          <FadeSlideIn index={1}>
-            <Card style={styles.cardSpacing}>
-              <Section title={t('ride:driver')}>
-                <Row gap={spacing.md} style={styles.driverRow}>
-                  <Avatar name={ride.driver?.full_name} size={64} badge={ride.driver?.status === 'verified'} />
-                  <View style={{ flex: 1 }}>
-                    <Text variant="headlineSm">
-                      {ride.driver?.full_name}
-                    </Text>
-                    <Row gap={spacing.sm} style={{ marginTop: 4 }}>
-                      <Row gap={4} style={[styles.ratingBadge, { backgroundColor: withAlpha(colors.warning, 0.12) }]}>
-                        <MaterialIcons name="star" size={16} color={colors.warning} />
-                        <Text variant="labelMd">
-                          {(ride.driver?.rating ?? 0).toFixed(1)}
-                        </Text>
-                      </Row>
-                      <Text variant="labelMd" color={colors.onSurfaceVariant}>
-                        • {t('ride:trips', { count: ride.driver?.trips_completed ?? 0 })}
+        <FadeSlideIn index={1}>
+          <Card>
+            <Section title={t('ride:driver')}>
+              <Row gap={spacing.md} style={styles.driverRow}>
+                <Avatar name={ride.driver?.full_name} size={64} badge={ride.driver?.status === 'verified'} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="headlineSm">
+                    {ride.driver?.full_name}
+                  </Text>
+                  <Row gap={spacing.sm} style={{ marginTop: 4 }}>
+                    <Row gap={4} style={[styles.ratingBadge, { backgroundColor: withAlpha(colors.warning, 0.12) }]}>
+                      <MaterialIcons name="star" size={16} color={colors.warning} />
+                      <Text variant="labelMd">
+                        {(ride.driver?.rating ?? 0).toFixed(1)}
                       </Text>
                     </Row>
-                    <Text variant="bodySm" color={colors.onSurfaceVariant} style={{ marginTop: 4 }}>
-                      {ride.driver?.vehicle_brand} {ride.driver?.vehicle_model}
+                    <Text variant="labelMd" color={colors.onSurfaceVariant}>
+                      • {t('ride:trips', { count: ride.driver?.trips_completed ?? 0 })}
                     </Text>
-                  </View>
-                </Row>
-              </Section>
-            </Card>
-          </FadeSlideIn>
-
-          <FadeSlideIn index={2}>
-            <Card style={styles.cardSpacing}>
-              <Section title={t('ride:seats')}>
-                <Row
-                  justify="space-between"
-                  style={{
-                    alignItems: 'center',
-                    backgroundColor: colors.surfaceContainer,
-                    borderRadius: radius.lg,
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
-                  }}
-                >
-                  <Text variant="labelMd" style={{ flexShrink: 1 }}>
-                    {t('ride:howManySeats')}
+                  </Row>
+                  <Text variant="bodySm" color={colors.onSurfaceVariant} style={{ marginTop: 4 }}>
+                    {ride.driver?.vehicle_brand} {ride.driver?.vehicle_model}
                   </Text>
-                  <Stepper value={seats} onChange={setSeats} min={1} max={ride.available_seats} />
-                </Row>
-              </Section>
-
-              <View style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
-
-              <Section title={t('ride:payment')}>
-                <View
-                  style={[
-                    styles.paymentBox,
-                    { backgroundColor: isDark ? colors.surfaceContainerHighest : colors.primaryContainer }
-                  ]}
-                >
-                  <View style={[styles.iconBox, { backgroundColor: colors.primary }]}>
-                    <MaterialIcons name="account-balance-wallet" size={20} color={colors.onPrimary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text variant="labelMd" style={{ color: isDark ? colors.onSurface : colors.onPrimaryContainer }}>
-                      {t('ride:flouci')}
-                    </Text>
-                    <Text variant="bodySm" style={{ color: isDark ? colors.onSurfaceVariant : colors.onPrimaryContainer }}>
-                      {t('ride:flouciHint')}
-                    </Text>
-                  </View>
-                  <Badge label={t('ride:secure')} variant="success" icon="lock" />
                 </View>
-              </Section>
-            </Card>
-          </FadeSlideIn>
-        </View>
+              </Row>
+            </Section>
+          </Card>
+        </FadeSlideIn>
+
+        <FadeSlideIn index={2}>
+          <Card>
+            <Section title={t('ride:seats')}>
+              <Row
+                justify="space-between"
+                style={{
+                  alignItems: 'center',
+                  backgroundColor: colors.surfaceContainer,
+                  borderRadius: radius.lg,
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: spacing.sm,
+                }}
+              >
+                <Text variant="labelMd" style={{ flexShrink: 1 }}>
+                  {t('ride:howManySeats')}
+                </Text>
+                <Stepper value={seats} onChange={setSeats} min={1} max={ride.available_seats} />
+              </Row>
+            </Section>
+
+            <View style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+
+            <Section title={t('ride:payment')}>
+              <View
+                style={[
+                  styles.paymentBox,
+                  { backgroundColor: isDark ? colors.surfaceContainerHighest : colors.primaryContainer }
+                ]}
+              >
+                <View style={[styles.iconBox, { backgroundColor: colors.primary }]}>
+                  <MaterialIcons name="account-balance-wallet" size={20} color={colors.onPrimary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="labelMd" style={{ color: isDark ? colors.onSurface : colors.onPrimaryContainer }}>
+                    {t('ride:flouci')}
+                  </Text>
+                  <Text variant="bodySm" style={{ color: isDark ? colors.onSurfaceVariant : colors.onPrimaryContainer }}>
+                    {t('ride:flouciHint')}
+                  </Text>
+                </View>
+                <Badge label={t('ride:secure')} variant="success" icon="lock" />
+              </View>
+            </Section>
+          </Card>
+        </FadeSlideIn>
       </ScrollView>
 
       <PassengerActionButtons
@@ -276,6 +260,7 @@ export default function RideDetailScreen() {
         onBook={book}
         submitting={submitting}
         insets={insets}
+        onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
       />
     </View>
   );
@@ -298,56 +283,6 @@ function Pill({ icon, label, tone = 'neutral' }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  hero: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  topNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    height: 56,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitle: {
-    ...typography.titleMedium,
-    fontWeight: '700',
-  },
-  navSubtitle: {
-    ...typography.labelSmall,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  contentWrapper: {
-    paddingHorizontal: spacing.md,
-    paddingTop: 120, // To overlap the hero header
-    zIndex: 2,
-  },
-  overlapCard: {
-    marginBottom: spacing.lg,
-    elevation: 8,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-  },
-  cardSpacing: {
-    marginBottom: spacing.lg,
   },
   driverRow: {
     alignItems: 'center',

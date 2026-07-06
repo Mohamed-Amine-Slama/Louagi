@@ -17,7 +17,8 @@ export function PassengerActionButtons({
   total,
   onBook,
   submitting,
-  insets
+  insets,
+  onLayout
 }) {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -25,6 +26,7 @@ export function PassengerActionButtons({
 
   return (
     <FadeSlideIn
+      onLayout={onLayout}
       style={[
         styles.stickyBottom,
         {

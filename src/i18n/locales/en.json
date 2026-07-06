@@ -446,6 +446,7 @@
     "messagePassenger": "Message passenger",
     "createRide": "Create ride",
     "newRide": "New ride",
+    "officialRoutes": "Official routes",
     "weeklyEarnings": "Weekly earnings",
     "thisWeek": "This week",
     "thisMonth": "This month",
@@ -964,6 +965,19 @@
     "exportReady": "Export ready",
     "exportReadyBody": "{{bookings}} bookings, {{deliveries}} deliveries, {{tickets}} support tickets included.",
     "exportFailed": "Could not prepare your data export",
+    "tabHelp": "Help",
+    "tabContact": "Contact",
+    "tabLegal": "Legal",
+    "tabData": "My data",
+    "legalIntro": "Terms, privacy and refunds",
+    "searchFaq": "Search help topics",
+    "noResults": "No topics match your search. Try another word or send us a message.",
+    "stillNeedHelp": "Still need help?",
+    "stillNeedHelpBody": "Send our team a message — we reply in the app and by email.",
+    "statBookings": "Bookings",
+    "statDeliveries": "Deliveries",
+    "statTickets": "Support tickets",
+    "viewRaw": "View raw export (JSON)",
     "noFavouriteRoute": "No favourite route yet"
   },
   "chat": {
@@ -1012,5 +1026,12 @@
     "cash": "Cash",
     "flouci": "Flouci",
     "unknown": "Unknown"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Updates about your trips and account",
+    "markAllRead": "Mark all as read",
+    "emptyTitle": "You're all caught up",
+    "emptyBody": "Booking updates and announcements will appear here."
   }
 }
