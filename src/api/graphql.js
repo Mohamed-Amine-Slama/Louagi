@@ -1,4 +1,5 @@
 import { apiUrl } from '../config';
+import { clientContextHeader } from '../lib/clientContext';
 import {
   clearTokens,
   getAccessToken,
@@ -19,6 +20,10 @@ async function postGraphql(operationName, variables, token) {
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
+  // Security context for the admin audit trail (device fingerprint +
+  // last-known GPS). Best-effort: null just means the header is omitted.
+  const clientContext = await clientContextHeader().catch(() => null);
+  if (clientContext) headers['x-client-context'] = clientContext;
 
   try {
     const res = await fetch(`${apiUrl}/graphql`, {
