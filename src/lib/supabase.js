@@ -10,15 +10,15 @@
 
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-import * as SecureStore from 'expo-secure-store';
+import { getSecure, setSecure, clearSecure } from '../security/secureStorage';
 
 import { supabaseUrl, supabaseKey, supabaseConfigured } from '../config';
 
-// Bridge expo-secure-store into the Storage interface supabase-js expects.
+// Bridge secureStorage into the Storage interface supabase-js expects.
 const secureStoreAdapter = {
-  getItem: (key) => SecureStore.getItemAsync(key),
-  setItem: (key, value) => SecureStore.setItemAsync(key, value),
-  removeItem: (key) => SecureStore.deleteItemAsync(key),
+  getItem: (key) => getSecure(key),
+  setItem: (key, value) => setSecure(key, value),
+  removeItem: (key) => clearSecure(key),
 };
 
 let _client = null;

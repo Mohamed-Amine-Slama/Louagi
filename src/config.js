@@ -46,18 +46,29 @@ function resolveApiUrl() {
     if (Platform.OS === 'android') return 'http://10.0.2.2:3000';
   }
 
-  // 3. Web or CI fallback
+  // 3. Web production fallback: use current origin if HTTPS
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
+    if (window.location.protocol === 'https:') {
+      return window.location.origin;
+    }
+  }
+
+  // 4. Web or CI fallback
   return 'http://localhost:3000';
 }
 
 export const apiUrl = resolveApiUrl();
 
-// Production builds must never talk to the API over cleartext — tokens and
-// PII transit every request. Fail fast at startup rather than leak quietly.
+// Production builds must never talk to the API over cleartext in native production.
+// On web, log a warning if unconfigured instead of crashing the entire static bundle.
 if (!__DEV__ && apiUrl.startsWith('http://')) {
-  throw new Error(
-    `Insecure API URL in production build: ${apiUrl}. Set EXPO_PUBLIC_API_URL to an https:// endpoint.`
-  );
+  if (Platform.OS === 'web') {
+    console.warn(`[Louagi] API URL is unconfigured (${apiUrl}). Running in fallback mode.`);
+  } else {
+    throw new Error(
+      `Insecure API URL in production build: ${apiUrl}. Set EXPO_PUBLIC_API_URL to an https:// endpoint.`
+    );
+  }
 }
 
 export const useMocks =
