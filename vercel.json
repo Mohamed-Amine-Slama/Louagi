@@ -1,9 +1,9 @@
 {
-  "buildCommand": "npx expo export -p web",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!_expo|assets|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
