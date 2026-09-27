@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Louagi — Brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* ---- Fonts: the actual families the Louagi app ships ---- */
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_500Medium.ttf') format('truetype');   font-weight: 500; font-style: normal; font-display: block; }
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_600SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: block; }
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_700Bold.ttf') format('truetype');     font-weight: 700; font-style: normal; font-display: block; }
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_800ExtraBold.ttf') format('truetype');font-weight: 800; font-style: normal; font-display: block; }
+      @font-face { font-family: 'LGMono'; src: url('assets/fonts/UbuntuSansMono.ttf') format('truetype'); font-weight: 400 700; font-style: normal; font-display: block; }
+      @font-face { font-family: 'Cairo'; src: url('assets/fonts/Cairo_700Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+
+      /* ---- Palette: src/theme/colors.js + src/lib/tickets.js ---- */
+      :root {
+        --sand:        #F4EFE6;  /* surface */
+        --sand-dim:    #EAE2D2;  /* surfaceVariant */
+        --paper:       #ffffff;  /* surfaceContainerLowest */
+        --paper-warm:  #FAF6EE;  /* surfaceContainerLow */
+        --ink:         #1b1b1e;  /* onSurface */
+        --ink-mut:     #44474e;  /* onSurfaceVariant */
+        --line:        #DED5C3;  /* outlineVariant */
+        --navy:        #0A2247;  /* PASS.navy */
+        --navy-deep:   #031634;  /* PASS.navyDeep */
+        --primary:     #07214b;  /* primary */
+        --red:         #DC2626;  /* secondaryContainer — louage red */
+        --red-deep:    #b91c1c;
+        --logo-red:    #C8102E;
+        --gold:        #FFD27A;  /* PASS.gold */
+        --tocode:      #FF6470;  /* PASS.toCode */
+        --ok:          #157347;
+        --ok-bg:       #d1f1de;
+        --warn-ink:    #5c4300;
+        --warn-bg:     #ffdf9e;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--sand); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden;
+              font-family: 'PJS', sans-serif; color: var(--ink); background: var(--sand); }
+
+      /* ================= persistent background ================= */
+      #bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+      #glow-a { position: absolute; width: 1500px; height: 1500px; top: -560px; right: -420px; border-radius: 50%;
+                background: radial-gradient(circle, rgba(220,38,38,0.20) 0%, rgba(220,38,38,0.07) 45%, rgba(220,38,38,0) 70%); }
+      #glow-b { position: absolute; width: 1400px; height: 1400px; bottom: -700px; left: -420px; border-radius: 50%;
+                background: radial-gradient(circle, rgba(10,34,71,0.17) 0%, rgba(10,34,71,0.06) 45%, rgba(10,34,71,0) 70%); }
+      #grain  { position: absolute; inset: 0; opacity: 0.30; mix-blend-mode: multiply; }
+      /* outlined, not filled — texture behind the frame without fighting display type */
+      #ghost  { position: absolute; left: 96px; top: 372px; font-family: 'LGMono', monospace; font-weight: 700;
+                font-size: 430px; letter-spacing: 20px; color: transparent; white-space: nowrap;
+                -webkit-text-stroke: 3px rgba(10,34,71,0.085); }
+      .chrome-rule { position: absolute; left: 96px; right: 96px; height: 2px; background: var(--line); }
+      #chrome-rule-top { top: 84px; }
+      #chrome-rule-bot { bottom: 84px; }
+      .chrome-lab { position: absolute; font-family: 'LGMono', monospace; font-weight: 500; font-size: 22px;
+                    letter-spacing: 4px; color: var(--ink-mut); }
+      #chrome-tl { left: 96px; top: 44px; }
+      #chrome-tr { right: 96px; top: 44px; }
+      #chrome-bl { left: 96px; bottom: 42px; }
+      #chrome-br { right: 96px; bottom: 42px; text-align: right; }
+      #prog-track { position: absolute; left: 96px; right: 96px; bottom: 84px; height: 4px; background: transparent; }
+      #prog-fill  { display: block; width: 100%; height: 4px; background: var(--red); transform-origin: left center; }
+
+      /* ================= scenes ================= */
+      .scene { position: absolute; inset: 0; }
+      .inner { position: absolute; inset: 0; padding: 150px 120px 150px; display: flex; }
+      #s1 { z-index: 10; } #s2 { z-index: 11; } #s3 { z-index: 12; }
+      #s4 { z-index: 13; } #s5 { z-index: 14; } #s6 { z-index: 15; }
+
+      .kicker { display: block; font-family: 'LGMono', monospace; font-weight: 700; font-size: 26px;
+                letter-spacing: 7px; color: var(--red); }
+      .head   { font-family: 'PJS', sans-serif; font-weight: 800; color: var(--navy); letter-spacing: -3px; line-height: 1.02; }
+      .head span.l { display: block; }
+      .mask   { display: block; overflow: hidden; }
+
+      /* ---------- scene 1: the ticket ---------- */
+      #s1 .inner { align-items: center; gap: 96px; }
+      #s1-left { width: 640px; flex: 0 0 640px; }
+      #s1-head { font-size: 118px; margin-top: 30px; }
+      .ticket { position: relative; width: 880px; background: var(--navy); border-radius: 30px;
+                box-shadow: 0 46px 90px rgba(3,22,52,0.34); }
+      #s1-ticket { flex: 0 0 880px; }
+      .tk-top { padding: 42px 46px 34px; }
+      .tk-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+      .tk-mono-s { font-family: 'LGMono', monospace; font-weight: 500; font-size: 22px; letter-spacing: 5px; color: rgba(255,255,255,0.58); }
+      .tk-chip { font-family: 'LGMono', monospace; font-weight: 700; font-size: 22px; letter-spacing: 3px; color: #fff;
+                 background: rgba(255,255,255,0.14); border-radius: 9px; padding: 8px 16px; }
+      .tk-codes { display: flex; justify-content: space-between; align-items: flex-start; }
+      .tk-code-col { flex: 1 1 0; }
+      .tk-code-col.right { text-align: right; }
+      .tk-code { display: block; font-family: 'LGMono', monospace; font-weight: 700; font-size: 130px;
+                 line-height: 1; letter-spacing: -2px; }
+      .tk-code.from { color: var(--gold); }
+      .tk-code.to   { color: var(--tocode); }
+      .tk-city { display: block; font-weight: 600; font-size: 33px; color: #fff; margin-top: 12px; }
+      .tk-swap { flex: 0 0 96px; width: 96px; height: 96px; margin: 16px 18px 0; border-radius: 50%;
+                 background: var(--red); display: flex; align-items: center; justify-content: center; }
+      .tk-perf { position: relative; height: 34px; display: flex; align-items: center; }
+      .tk-notch { position: absolute; top: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--sand); }
+      .tk-notch.left  { left: -17px; }
+      .tk-notch.right { right: -17px; }
+      .tk-dash { display: block; width: calc(100% - 92px); margin: 0 46px; height: 0;
+                 border-top: 3px dashed rgba(255,255,255,0.38); transform-origin: left center; }
+      .tk-stub { display: flex; justify-content: space-between; align-items: center; padding: 30px 46px 40px; opacity: 0.34; }
+      .tk-lab { display: block; font-family: 'LGMono', monospace; font-weight: 500; font-size: 20px;
+                letter-spacing: 4px; color: rgba(255,255,255,0.58); margin-bottom: 10px; }
+      .tk-step { display: flex; align-items: center; gap: 18px; }
+      .tk-btn { width: 42px; height: 42px; border-radius: 11px; background: rgba(255,255,255,0.14); color: #fff;
+                font-weight: 700; font-size: 26px; display: flex; align-items: center; justify-content: center; }
+      .tk-num { font-family: 'LGMono', monospace; font-weight: 700; font-size: 36px; color: #fff; }
+      .tk-cta { background: var(--red); color: #fff; font-weight: 700; font-size: 30px;
+                border-radius: 9999px; padding: 21px 46px; }
+
+      /* ---------- scene 2: the rides ---------- */
+      #s2 .inner { flex-direction: column; justify-content: center; }
+      #s2-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 62px; }
+      #s2-route { font-family: 'PJS', sans-serif; font-weight: 800; font-size: 62px; color: var(--navy); letter-spacing: -1.6px; }
+      #s2-meta { display: block; font-family: 'LGMono', monospace; font-weight: 500; font-size: 24px;
+                 letter-spacing: 5px; color: var(--ink-mut); margin-top: 14px; }
+      #s2-count { text-align: right; }
+      .cnt-n { display: block; font-family: 'LGMono', monospace; font-weight: 700; font-size: 44px; color: var(--navy); }
+      .cnt-l { display: block; font-family: 'LGMono', monospace; font-weight: 500; font-size: 22px;
+               letter-spacing: 5px; color: var(--ink-mut); margin-top: 6px; }
+      #s2-cards { display: flex; gap: 44px; }
+      .rcard { position: relative; flex: 1 1 0; background: var(--paper); border: 3px solid var(--line);
+               border-radius: 22px; padding: 38px 38px 34px 44px; box-shadow: 0 26px 54px rgba(3,22,52,0.13); overflow: hidden; }
+      .rcard-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 9px; background: var(--red); }
+      .rc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+      .rc-time { display: block; font-weight: 800; font-size: 50px; color: var(--navy); letter-spacing: -1px; }
+      .rc-dur  { display: block; font-weight: 500; font-size: 24px; color: var(--ink-mut); margin-top: 8px; }
+      .rc-price{ display: block; font-weight: 800; font-size: 50px; color: var(--ink); letter-spacing: -1px; text-align: right; }
+      .rc-per  { display: block; font-weight: 600; font-size: 22px; color: var(--ink-mut); text-align: right; margin-top: 8px; }
+      .rc-route{ display: flex; align-items: center; gap: 14px; margin-bottom: 30px; }
+      .dot-o { width: 22px; height: 22px; border-radius: 50%; border: 4px solid var(--red); }
+      .dot-d { width: 22px; height: 22px; border-radius: 50%; background: var(--primary); }
+      .rc-city { font-weight: 600; font-size: 28px; color: var(--ink); }
+      .rc-arrow { color: var(--ink-mut); font-size: 26px; }
+      .rc-bot { display: flex; justify-content: space-between; align-items: center;
+                border-top: 2px solid var(--line); padding-top: 26px; }
+      .rc-drv { display: flex; align-items: center; gap: 14px; }
+      .av { width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: #fff;
+            font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+      .rc-dname { display: block; font-weight: 600; font-size: 25px; color: var(--ink); }
+      .rc-rate  { display: block; font-weight: 500; font-size: 22px; color: var(--ink-mut); margin-top: 4px; }
+      .seat-badge { font-weight: 700; font-size: 23px; border-radius: 9999px; padding: 11px 20px;
+                    background: #dce6f7; color: var(--primary); white-space: nowrap; }
+      .seat-badge.low { background: var(--warn-bg); color: var(--warn-ink); }
+
+      /* ---------- scene 3: the seat lock ---------- */
+      #s3 .inner { align-items: center; gap: 70px; }
+      #s3-left { flex: 1 1 0; background: var(--paper); border: 3px solid var(--line); border-radius: 26px;
+                 padding: 48px 50px; box-shadow: 0 30px 62px rgba(3,22,52,0.14); }
+      #s3-right { flex: 0 0 720px; display: flex; flex-direction: column; gap: 26px; }
+      #s3-title { font-weight: 800; font-size: 56px; color: var(--navy); letter-spacing: -1.4px; }
+      #s3-when { display: block; font-family: 'LGMono', monospace; font-weight: 500; font-size: 24px;
+                 letter-spacing: 5px; color: var(--ink-mut); margin-top: 12px; }
+      .tl-row { display: flex; align-items: stretch; gap: 22px; margin: 44px 0 40px; }
+      .tl-spine { flex: 0 0 22px; display: flex; flex-direction: column; align-items: center; }
+      .tl-line { display: block; width: 4px; flex: 1 1 auto; background: repeating-linear-gradient(
+                 to bottom, var(--line) 0 9px, transparent 9px 18px); transform-origin: top center; margin: 8px 0; }
+      .tl-body { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; }
+      .tl-stop { display: block; font-weight: 700; font-size: 32px; color: var(--ink); }
+      .tl-mid  { display: block; font-weight: 500; font-size: 25px; color: var(--ink-mut); padding: 16px 0; }
+      #s3-drv { display: flex; align-items: center; gap: 18px; border-top: 2px solid var(--line); padding-top: 32px; }
+      .av-lg { width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: #fff;
+               font-weight: 700; font-size: 28px; display: flex; align-items: center; justify-content: center; }
+      .ok-badge { font-weight: 700; font-size: 22px; background: var(--ok-bg); color: var(--ok);
+                  border-radius: 9999px; padding: 10px 18px; margin-left: auto; }
+      #s3-lock { display: flex; align-items: center; gap: 20px; background: var(--warn-bg); border-radius: 20px; padding: 26px 30px; }
+      .lock-t { display: block; font-weight: 700; font-size: 31px; color: var(--warn-ink); }
+      .lock-b { display: block; font-weight: 500; font-size: 26px; color: var(--warn-ink); margin-top: 6px; }
+      #s3-pay { display: flex; align-items: center; gap: 20px; background: var(--paper); border: 3px solid var(--line);
+                border-radius: 20px; padding: 26px 30px; }
+      .pay-t { display: block; font-weight: 700; font-size: 31px; color: var(--ink); }
+      .pay-b { display: block; font-weight: 500; font-size: 25px; color: var(--ink-mut); margin-top: 6px; }
+      .pay-chip { margin-left: auto; font-weight: 700; font-size: 22px; background: var(--primary); color: #fff;
+                  border-radius: 9999px; padding: 10px 20px; }
+      #s3-prices { background: var(--paper-warm); border: 3px solid var(--line); border-radius: 20px; padding: 24px 30px; }
+      .pr { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; }
+      .pr-l { font-weight: 500; font-size: 27px; color: var(--ink-mut); }
+      .pr-r { font-family: 'LGMono', monospace; font-weight: 700; font-size: 28px; color: var(--ink); }
+      .pr.total { border-top: 2px solid var(--line); margin-top: 10px; padding-top: 18px; }
+      .pr.total .pr-l { font-weight: 700; font-size: 30px; color: var(--ink); }
+      .pr.total .pr-r { font-size: 34px; color: var(--navy); }
+      #s3-btn { position: relative; background: var(--red); border-radius: 9999px; padding: 27px 0;
+                text-align: center; color: #fff; font-weight: 700; font-size: 33px; }
+      #s3-cursor { position: absolute; left: 0; top: 0; width: 46px; height: 46px; z-index: 40; }
+      #s3-ring { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px;
+                 border-radius: 50%; border: 4px solid var(--red); opacity: 0; }
+
+      /* ---------- scene 4: booked ---------- */
+      #s4 .inner { align-items: center; gap: 96px; }
+      #s4-left { flex: 1 1 0; }
+      #s4-ringwrap { position: relative; width: 168px; height: 168px; margin-bottom: 46px; }
+      #s4-check { position: absolute; inset: 0; border-radius: 50%; background: var(--ok-bg);
+                  display: flex; align-items: center; justify-content: center; }
+      #s4-ripple { position: absolute; inset: 0; border-radius: 50%; border: 5px solid var(--ok); opacity: 0; }
+      #s4-head { font-weight: 800; font-size: 88px; color: var(--navy); letter-spacing: -2.4px; }
+      #s4-ref { display: inline-flex; align-items: center; gap: 14px; margin-top: 34px; background: #dce6f7;
+                color: var(--primary); border-radius: 9999px; padding: 16px 28px;
+                font-family: 'LGMono', monospace; font-weight: 700; font-size: 30px; letter-spacing: 2px; }
+      #s4-stub { flex: 0 0 760px; background: var(--navy); border-radius: 30px; padding: 46px 48px;
+                 box-shadow: 0 44px 86px rgba(3,22,52,0.34); }
+      .st-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 38px; }
+      .st-codes { display: flex; align-items: baseline; gap: 26px; margin-bottom: 34px; }
+      .st-code { font-family: 'LGMono', monospace; font-weight: 700; font-size: 84px; line-height: 1; }
+      .st-code.from { color: var(--gold); } .st-code.to { color: var(--tocode); }
+      .st-dash { flex: 1 1 auto; align-self: center; height: 0; border-top: 3px dashed rgba(255,255,255,0.38); transform-origin: left center; }
+      .st-grid { display: flex; gap: 56px; border-top: 2px solid rgba(255,255,255,0.24); padding-top: 32px; }
+      .st-k { display: block; font-family: 'LGMono', monospace; font-weight: 500; font-size: 20px;
+              letter-spacing: 4px; color: rgba(255,255,255,0.58); margin-bottom: 10px; }
+      .st-v { display: block; font-weight: 700; font-size: 32px; color: #fff; }
+      #s4-paid { margin-left: auto; align-self: center; font-weight: 700; font-size: 24px;
+                 background: var(--ok-bg); color: var(--ok); border-radius: 9999px; padding: 12px 24px; }
+
+      /* ---------- scene 5: parcels ---------- */
+      #s5 .inner { align-items: center; gap: 84px; }
+      #s5-left { flex: 1 1 0; }
+      #s5-head { font-size: 76px; margin-top: 28px; letter-spacing: -2px; line-height: 1.08; max-width: 900px; }
+      #s5-steps { display: flex; align-items: center; margin-top: 62px; }
+      .step { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+      .step-dot { width: 76px; height: 76px; border-radius: 50%; background: var(--paper); border: 4px solid var(--line);
+                  display: flex; align-items: center; justify-content: center;
+                  font-family: 'LGMono', monospace; font-weight: 700; font-size: 30px; color: var(--navy); }
+      .step-lab { font-weight: 700; font-size: 28px; color: var(--ink); }
+      .step-link { flex: 1 1 auto; height: 4px; background: var(--line); margin: 0 18px 44px; transform-origin: left center; }
+      #s5-right { flex: 0 0 700px; background: var(--paper); border: 3px solid var(--line); border-radius: 26px;
+                  padding: 40px 42px; box-shadow: 0 30px 62px rgba(3,22,52,0.14); }
+      #s5-rtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+      .r-route { font-weight: 800; font-size: 42px; color: var(--navy); letter-spacing: -1px; }
+      #s5-live { display: flex; align-items: center; gap: 12px; background: var(--red); color: #fff;
+                 border-radius: 9999px; padding: 11px 22px; font-family: 'LGMono', monospace;
+                 font-weight: 700; font-size: 24px; letter-spacing: 3px; }
+      #s5-livedot { width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+      #s5-track { position: relative; height: 10px; background: var(--sand-dim); border-radius: 9999px; margin: 44px 0 40px; }
+      #s5-fill { display: block; height: 10px; border-radius: 9999px; background: var(--primary); transform-origin: left center; }
+      #s5-van { position: absolute; top: -21px; left: 0; width: 52px; height: 52px; border-radius: 50%;
+                background: var(--red); border: 4px solid var(--sand); }
+      .r-slots { display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--line); padding-top: 28px; }
+      .r-slotl { font-weight: 600; font-size: 28px; color: var(--ink-mut); }
+      .r-slotv { font-family: 'LGMono', monospace; font-weight: 700; font-size: 30px; color: var(--navy); }
+
+      /* ---------- scene 6: outro ---------- */
+      #s6 .inner { flex-direction: column; align-items: center; justify-content: center; gap: 0; }
+      #s6-logo { width: 196px; height: 196px; }
+      #s6-name { font-weight: 800; font-size: 112px; color: var(--navy); letter-spacing: -3.4px; margin-top: 42px; }
+      #s6-tagwrap { position: relative; height: 66px; width: 1100px; margin-top: 18px; }
+      .s6-tag { position: absolute; left: 0; right: 0; top: 0; font-weight: 500; font-size: 44px;
+                color: var(--ink-mut); text-align: center; }
+      #s6-tag-ar { font-family: 'Cairo', sans-serif; font-weight: 700; direction: rtl; color: var(--ink-mut); opacity: 0; }
+      #s6-chips { display: flex; gap: 18px; margin-top: 52px; }
+      .lchip { font-family: 'LGMono', monospace; font-weight: 700; font-size: 26px; letter-spacing: 4px;
+               border: 3px solid var(--line); border-radius: 9999px; padding: 14px 30px; color: var(--ink-mut); background: var(--paper); }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="louagi-brag"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="22.4"
+      data-fps="30"
+    >
+      <!-- ===================== persistent background ===================== -->
+      <div id="bg">
+        <div id="glow-a" data-layout-allow-overflow></div>
+        <div id="glow-b" data-layout-allow-overflow></div>
+        <div id="ghost" data-layout-ignore aria-hidden="true">TUN&nbsp;&rarr;&nbsp;SFX</div>
+        <svg id="grain" width="1920" height="1080" aria-hidden="true">
+          <filter id="grainf"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="7" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/></filter>
+          <rect width="1920" height="1080" filter="url(#grainf)" opacity="0.14"/>
+        </svg>
+        <div id="chrome-rule-top" class="chrome-rule"></div>
+        <div id="chrome-rule-bot" class="chrome-rule"></div>
+        <span id="chrome-tl" class="chrome-lab">LOUAGI &middot; v1.0</span>
+        <span id="chrome-tr" class="chrome-lab">TUNISIA &middot; INTERCITY LOUAGE</span>
+        <span id="chrome-bl" class="chrome-lab">EXPO &middot; REACT NATIVE &middot; SUPABASE</span>
+        <span id="chrome-br" class="chrome-lab">EN &middot; FR &middot; AR</span>
+        <div id="prog-track"><span id="prog-fill"></span></div>
+      </div>
+
+      <!-- ===================== scene 1 — the ticket ===================== -->
+      <section id="s1" class="clip scene" data-start="0" data-duration="4.5" data-track-index="1">
+        <div class="inner">
+          <div id="s1-left">
+            <span class="mask"><span id="s1-kicker" class="kicker" data-layout-allow-overlap>YOUR NEXT LOUAGE</span></span>
+            <h1 id="s1-head" class="head">
+              <span class="mask"><span class="l" id="s1-h1">Where to</span></span>
+              <span class="mask"><span class="l" id="s1-h2">today?</span></span>
+            </h1>
+          </div>
+
+          <div id="s1-ticket" class="ticket">
+            <div class="tk-top">
+              <div class="tk-row">
+                <span class="tk-mono-s">LOUAGE TICKET</span>
+                <span class="tk-chip">TODAY</span>
+              </div>
+              <div class="tk-codes">
+                <div class="tk-code-col">
+                  <span id="s1-code-a" class="tk-code from">TUN</span>
+                  <span id="s1-city-a" class="tk-city">Tunis</span>
+                </div>
+                <div id="s1-swap" class="tk-swap">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 8h14M14 4l4 4-4 4"/><path d="M20 16H6M10 20l-4-4 4-4"/>
+                  </svg>
+                </div>
+                <div class="tk-code-col right">
+                  <span id="s1-code-b" class="tk-code to">SFX</span>
+                  <span id="s1-city-b" class="tk-city">Sfax</span>
+                </div>
+              </div>
+            </div>
+            <div class="tk-perf">
+              <span id="s1-notch-l" class="tk-notch left"></span>
+              <span id="s1-perf" class="tk-dash"></span>
+              <span id="s1-notch-r" class="tk-notch right"></span>
+            </div>
+            <div id="s1-stub" class="tk-stub">
+              <div class="tk-seats">
+                <span class="tk-lab">SEATS</span>
+                <div class="tk-step">
+                  <span class="tk-btn">&minus;</span><span class="tk-num">1</span><span class="tk-btn">+</span>
+                </div>
+              </div>
+              <div id="s1-cta" class="tk-cta">Search rides</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== scene 2 — the rides ===================== -->
+      <section id="s2" class="clip scene" data-start="4.2" data-duration="4.3" data-track-index="2">
+        <div class="inner">
+          <div id="s2-head">
+            <div id="s2-route-wrap">
+              <span id="s2-route">Tunis &rarr; Sfax</span>
+              <span id="s2-meta">TODAY &middot; 1 SEAT</span>
+            </div>
+            <div id="s2-count">
+              <span class="cnt-n">12</span><span class="cnt-l">RESULTS</span>
+            </div>
+          </div>
+          <div id="s2-cards">
+            <article class="rcard" id="s2-c1">
+              <span class="rcard-accent"></span>
+              <div class="rc-top">
+                <div><span class="rc-time">06:30</span><span class="rc-dur">2h 15m</span></div>
+                <div><span class="rc-price">25 TND</span><span class="rc-per">per seat</span></div>
+              </div>
+              <div class="rc-route"><span class="dot-o"></span><span class="rc-city">Tunis</span>
+                <span class="rc-arrow">&rarr;</span><span class="dot-d"></span><span class="rc-city">Sfax</span></div>
+              <div class="rc-bot">
+                <div class="rc-drv"><span class="av">KB</span>
+                  <span><span class="rc-dname">Karim B.</span><span class="rc-rate">&#9733; 4.8</span></span></div>
+                <span class="seat-badge">3 seats left</span>
+              </div>
+            </article>
+            <article class="rcard" id="s2-c2">
+              <span class="rcard-accent"></span>
+              <div class="rc-top">
+                <div><span class="rc-time">07:30</span><span class="rc-dur">2h 15m</span></div>
+                <div><span class="rc-price">25 TND</span><span class="rc-per">per seat</span></div>
+              </div>
+              <div class="rc-route"><span class="dot-o"></span><span class="rc-city">Tunis</span>
+                <span class="rc-arrow">&rarr;</span><span class="dot-d"></span><span class="rc-city">Sfax</span></div>
+              <div class="rc-bot">
+                <div class="rc-drv"><span class="av">MT</span>
+                  <span><span class="rc-dname">Mehdi T.</span><span class="rc-rate">&#9733; 4.9</span></span></div>
+                <span class="seat-badge">4 seats left</span>
+              </div>
+            </article>
+            <article class="rcard" id="s2-c3">
+              <span class="rcard-accent"></span>
+              <div class="rc-top">
+                <div><span class="rc-time">09:15</span><span class="rc-dur">2h 30m</span></div>
+                <div><span class="rc-price">22 TND</span><span class="rc-per">per seat</span></div>
+              </div>
+              <div class="rc-route"><span class="dot-o"></span><span class="rc-city">Tunis</span>
+                <span class="rc-arrow">&rarr;</span><span class="dot-d"></span><span class="rc-city">Sfax</span></div>
+              <div class="rc-bot">
+                <div class="rc-drv"><span class="av">SA</span>
+                  <span><span class="rc-dname">Sami A.</span><span class="rc-rate">&#9733; 4.7</span></span></div>
+                <span class="seat-badge low">2 seats left</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== scene 3 — the seat lock ===================== -->
+      <section id="s3" class="clip scene" data-start="8.2" data-duration="4.7" data-track-index="3">
+        <div class="inner">
+          <div id="s3-left">
+            <span id="s3-title">Tunis &rarr; Sfax</span>
+            <span id="s3-when">TODAY &middot; DEPARTS 07:30</span>
+            <div class="tl-row">
+              <div class="tl-spine">
+                <span class="dot-o"></span><span id="s3-tl-line" class="tl-line"></span><span class="dot-d"></span>
+              </div>
+              <div class="tl-body">
+                <span class="tl-stop">07:30 &middot; Tunis</span>
+                <span class="tl-mid">~135 min ride</span>
+                <span class="tl-stop">09:45 &middot; Sfax</span>
+              </div>
+            </div>
+            <div id="s3-drv">
+              <span class="av-lg">MT</span>
+              <span><span class="rc-dname">Mehdi T.</span><span class="rc-rate">&#9733; 4.9 &middot; 128 trips</span></span>
+              <span class="ok-badge">Verified</span>
+            </div>
+          </div>
+
+          <div id="s3-right">
+            <div id="s3-lock">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#5c4300" stroke-width="2.2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+              </svg>
+              <span><span class="lock-t">Seat lock active</span>
+                <span class="lock-b">Another rider is booking now (<span id="s3-count">0:09</span>)</span></span>
+            </div>
+            <div id="s3-pay">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#07214b" stroke-width="2.2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/>
+              </svg>
+              <span><span class="pay-t">Flouci</span><span class="pay-b">Secure mobile payment</span></span>
+              <span class="pay-chip">Secure</span>
+            </div>
+            <div id="s3-prices">
+              <div class="pr"><span class="pr-l">1 seat</span><span class="pr-r">25 TND</span></div>
+              <div class="pr"><span class="pr-l">Reservation fee</span><span class="pr-r">3 TND</span></div>
+              <div class="pr total"><span class="pr-l">Total</span><span class="pr-r">28 TND</span></div>
+            </div>
+            <div id="s3-btn"><span id="s3-btn-label">Book 1 seat &middot; 28 TND</span><span id="s3-ring"></span></div>
+          </div>
+
+          <svg id="s3-cursor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 2l14 9-6.2 1.4L9.6 19z" fill="#0A2247" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- ===================== scene 4 — booked ===================== -->
+      <section id="s4" class="clip scene" data-start="12.6" data-duration="3.2" data-track-index="4">
+        <div class="inner">
+          <div id="s4-left">
+            <div id="s4-ringwrap">
+              <span id="s4-ripple"></span>
+              <span id="s4-check">
+                <svg width="88" height="88" viewBox="0 0 24 24" fill="none" stroke="#157347" stroke-width="2.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.8l5 5L20 6.6"/></svg>
+              </span>
+            </div>
+            <h2 id="s4-head" class="head">You&rsquo;re booked!</h2>
+            <span id="s4-ref">Ref: LGI-4F2A</span>
+          </div>
+          <div id="s4-stub">
+            <div class="st-row">
+              <span class="tk-mono-s">LOUAGE TICKET</span>
+              <span class="tk-chip">CONFIRMED</span>
+            </div>
+            <div class="st-codes">
+              <span class="st-code from">TUN</span>
+              <span id="s4-dash" class="st-dash"></span>
+              <span class="st-code to">SFX</span>
+            </div>
+            <div class="st-grid">
+              <span><span class="st-k">DEPARTS</span><span class="st-v">07:30</span></span>
+              <span><span class="st-k">DURATION</span><span class="st-v">~135 min ride</span></span>
+              <span id="s4-paid">Paid</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== scene 5 — parcels ===================== -->
+      <section id="s5" class="clip scene" data-start="15.5" data-duration="4.1" data-track-index="5">
+        <div class="inner">
+          <div id="s5-left">
+            <span class="mask"><span id="s5-kicker" class="kicker">LOUAGI DELIVERY</span></span>
+            <h2 id="s5-head" class="head">
+              <span class="mask"><span class="l" id="s5-h1">Send a box on a ride</span></span>
+              <span class="mask"><span class="l" id="s5-h2">already going your way.</span></span>
+            </h2>
+            <div id="s5-steps">
+              <div class="step" id="s5-st1"><span class="step-dot">1</span><span class="step-lab">Drop</span></div>
+              <span class="step-link" id="s5-lk1"></span>
+              <div class="step" id="s5-st2"><span class="step-dot">2</span><span class="step-lab">Ride</span></div>
+              <span class="step-link" id="s5-lk2"></span>
+              <div class="step" id="s5-st3"><span class="step-dot">3</span><span class="step-lab">Collect</span></div>
+            </div>
+          </div>
+          <div id="s5-right">
+            <div id="s5-rtop">
+              <span class="r-route">Tunis &rarr; Sfax</span>
+              <span id="s5-live"><span id="s5-livedot"></span>LIVE</span>
+            </div>
+            <div id="s5-track">
+              <span id="s5-fill"></span>
+              <span id="s5-van" data-layout-allow-overflow></span>
+            </div>
+            <div class="r-slots">
+              <span class="r-slotl">Slots free today</span>
+              <span class="r-slotv">4 of 6</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== scene 6 — outro ===================== -->
+      <section id="s6" class="clip scene" data-start="19.3" data-duration="3.1" data-track-index="6">
+        <div class="inner">
+          <svg id="s6-logo" viewBox="0 0 1024 1024" aria-hidden="true">
+            <rect width="1024" height="1024" rx="236" fill="#C8102E"/>
+            <rect x="221" y="284" width="583" height="536" rx="79" fill="#031634"/>
+            <rect x="284" y="347" width="457" height="173" rx="24" fill="#fbf8fc"/>
+            <rect x="221" y="567" width="583" height="47" fill="#fbf8fc"/>
+            <circle cx="315" cy="725" r="39" fill="#fbf8fc"/>
+            <circle cx="709" cy="725" r="39" fill="#fbf8fc"/>
+          </svg>
+          <span id="s6-name">Louagi</span>
+          <div id="s6-tagwrap">
+            <span id="s6-tag-en" class="s6-tag" data-layout-allow-overlap>No queues. No double-bookings.</span>
+            <span id="s6-tag-ar" class="s6-tag">&#1576;&#1604;&#1575; &#1591;&#1608;&#1575;&#1576;&#1610;&#1585;&#1548; &#1576;&#1604;&#1575; &#1581;&#1580;&#1608;&#1586;&#1575;&#1578; &#1605;&#1603;&#1585;&#1585;&#1577;.</span>
+          </div>
+          <div id="s6-chips">
+            <span class="lchip" id="chip-en">EN</span>
+            <span class="lchip" id="chip-fr">FR</span>
+            <span class="lchip" id="chip-ar">AR</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== audio ===================== -->
+      <!-- volume lane is absolute and replaces data-volume: 0.32 bed, 0.8s fade-in, fade out over the last 1.2s -->
+      <audio id="bgm" data-start="0" data-duration="22.4" data-track-index="10"
+             data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.8,"v":0.32},{"t":21.2,"v":0.32},{"t":22.4,"v":0}]}]}'
+             src="assets/music/happy-beats-business-moves-vol-11-by-ende-dot-app.mp3"></audio>
+
+      <audio id="sfx-ticket"  data-start="1.55"  data-duration="0.18" data-track-index="11" data-volume="0.72" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx-perf"    data-start="3.16"  data-duration="0.06" data-track-index="12" data-volume="0.40" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-card1"   data-start="5.26"  data-duration="0.60" data-track-index="13" data-volume="0.55" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <audio id="sfx-card2"   data-start="5.78"  data-duration="0.60" data-track-index="14" data-volume="0.45" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <audio id="sfx-card3"   data-start="6.32"  data-duration="0.60" data-track-index="15" data-volume="0.60" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <audio id="sfx-detail"  data-start="8.92"  data-duration="0.15" data-track-index="16" data-volume="0.66" src="assets/sfx/impact/impactSoft_medium_004.ogg"></audio>
+      <audio id="sfx-lock"    data-start="9.46"  data-duration="0.06" data-track-index="17" data-volume="0.44" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-tick1"   data-start="10.01" data-duration="0.01" data-track-index="18" data-volume="0.20" src="assets/sfx/interface/click_003.ogg"></audio>
+      <audio id="sfx-tick2"   data-start="10.54" data-duration="0.01" data-track-index="19" data-volume="0.20" src="assets/sfx/interface/click_003.ogg"></audio>
+      <audio id="sfx-tap"     data-start="11.93" data-duration="0.01" data-track-index="20" data-volume="0.76" src="assets/sfx/interface/click_002.ogg"></audio>
+      <audio id="sfx-booked"  data-start="12.62" data-duration="1.48" data-track-index="21" data-volume="0.70" src="assets/sfx/impact/impactBell_heavy_000.ogg"></audio>
+      <audio id="sfx-step1"   data-start="16.32" data-duration="0.11" data-track-index="22" data-volume="0.46" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sfx-step2"   data-start="16.84" data-duration="0.19" data-track-index="23" data-volume="0.46" src="assets/sfx/interface/drop_002.ogg"></audio>
+      <audio id="sfx-step3"   data-start="17.37" data-duration="0.19" data-track-index="24" data-volume="0.50" src="assets/sfx/interface/drop_003.ogg"></audio>
+      <audio id="sfx-logo"    data-start="19.36" data-duration="0.14" data-track-index="25" data-volume="0.68" src="assets/sfx/impact/impactSoft_medium_002.ogg"></audio>
+      <audio id="sfx-arflip"  data-start="21.13" data-duration="0.61" data-track-index="26" data-volume="0.40" src="assets/sfx/interface/switch_007.ogg"></audio>
+    </div>
+
+    <script src="assets/music/audio-data.js"></script>
+    <script>
+/* Louagi — /brag launch film.
+   One paused GSAP timeline, registered at the end on window.__timelines["louagi-brag"].
+   Music: happy-beats-business-moves-vol-11 (114.84 BPM, beat spacing ~0.52s).
+   Cue source: brag skill bundled preset
+   assets/music/cues/happy-beats-business-moves-vol-11-by-ende-dot-app.music-cues.json */
+
+(function () {
+  var tl = gsap.timeline({ paused: true });
+  var D = 22.4;
+
+  /* ============================ persistent chrome ============================ */
+  tl.fromTo(
+    ["#chrome-rule-top", "#chrome-rule-bot"],
+    { scaleX: 0 },
+    { scaleX: 1, duration: 0.9, ease: "power3.out", transformOrigin: "left center", stagger: 0.08 },
+    0.1
+  );
+  tl.fromTo(".chrome-lab", { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power2.out", stagger: 0.06 }, 0.35);
+  tl.fromTo("#prog-fill", { scaleX: 0 }, { scaleX: 1, duration: 22.2, ease: "none", transformOrigin: "left center" }, 0);
+  tl.fromTo("#ghost", { x: 70 }, { x: -150, duration: 22.2, ease: "none" }, 0);
+
+  /* ============================ scene 1 — the ticket (0.0 → 4.5) ============================ */
+  tl.set(
+    ["#s1-kicker", "#s1-h1", "#s1-h2", "#s1-ticket", "#s1-code-a", "#s1-code-b",
+     "#s1-swap", "#s1-city-a", "#s1-city-b", "#s1-perf", "#s1-notch-l", "#s1-notch-r"],
+    { opacity: 0 },
+    0
+  );
+
+  tl.fromTo("#s1-kicker", { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" }, 0.25);
+  tl.fromTo("#s1-h1", { y: 134, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power4.out" }, 0.55);
+  tl.fromTo("#s1-h2", { y: 134, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power4.out" }, 0.64);
+
+  // beat-locked: 1.60s (strongCue, intensity 1.00) — the boarding pass drops in
+  tl.fromTo(
+    "#s1-ticket",
+    { y: -470, rotation: -4, opacity: 0 },
+    { y: 0, rotation: 0, opacity: 1, duration: 0.66, ease: "back.out(1.25)" },
+    1.6
+  );
+  tl.fromTo(
+    ["#s1-code-a", "#s1-code-b"],
+    { y: 32, scaleY: 0.64, opacity: 0 },
+    { y: 0, scaleY: 1, opacity: 1, duration: 0.42, ease: "back.out(2)", stagger: 0.14 },
+    2.2
+  );
+  tl.fromTo("#s1-swap", { scale: 0, rotation: -90, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: "back.out(2.6)" }, 2.42);
+  tl.fromTo(["#s1-city-a", "#s1-city-b"], { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "power2.out", stagger: 0.1 }, 2.72);
+  tl.to("#s1-swap", { scale: 1.13, duration: 0.18, ease: "power2.out", yoyo: true, repeat: 1 }, 3.02);
+
+  // beat-grid: perforation draws on the 3.18s beat
+  tl.fromTo("#s1-perf", { scaleX: 0, opacity: 1 }, { scaleX: 1, opacity: 1, duration: 0.46, ease: "power2.inOut", transformOrigin: "left center" }, 3.18);
+  tl.fromTo(["#s1-notch-l", "#s1-notch-r"], { scale: 0, opacity: 1 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(2.4)", stagger: 0.08 }, 3.5);
+  tl.to("#s1-stub", { opacity: 1, duration: 0.36, ease: "power2.out" }, 3.52);
+
+  tl.to("#s1 .inner", { y: -80, opacity: 0, duration: 0.3, ease: "power2.in" }, 4.2);
+
+  /* ============================ scene 2 — the rides (4.2 → 8.5) ============================ */
+  tl.set(["#s2-route-wrap", "#s2-count", "#s2-c1", "#s2-c2", "#s2-c3"], { opacity: 0 }, 4.2);
+
+  tl.fromTo("#s2-route-wrap", { x: -64, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 4.4);
+  tl.fromTo("#s2-count", { x: 64, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 4.52);
+
+  // beat-grid: ride cards deal in on 5.28 / 5.80 / 6.34, then the full set holds to 8.2
+  tl.fromTo("#s2-c1", { x: 160, y: 28, opacity: 0 }, { x: 0, y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 5.28);
+  tl.fromTo("#s2-c2", { x: 160, y: 28, opacity: 0 }, { x: 0, y: 0, opacity: 1, duration: 0.52, ease: "back.out(1.15)" }, 5.8);
+  tl.fromTo("#s2-c3", { x: 160, y: 28, opacity: 0 }, { x: 0, y: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 6.34);
+
+  // hand off: the 07:30 card grows through into the ride detail
+  tl.to("#s2-head", { y: -34, opacity: 0, duration: 0.3, ease: "power2.in" }, 8.2);
+  tl.to("#s2-c1", { x: -130, opacity: 0, duration: 0.3, ease: "power2.in" }, 8.2);
+  tl.to("#s2-c3", { x: 130, opacity: 0, duration: 0.3, ease: "power2.in" }, 8.2);
+  tl.to("#s2-c2", { scale: 1.07, opacity: 0, duration: 0.3, ease: "power2.in" }, 8.2);
+
+  /* ============================ scene 3 — the seat lock (8.2 → 12.9) ============================ */
+  tl.set(["#s3-left", "#s3-drv", "#s3-tl-line", "#s3-lock", "#s3-pay", "#s3-prices", "#s3-btn", "#s3-cursor", "#s3-ring"], { opacity: 0 }, 8.2);
+
+  // beat-locked: 8.96s (strongCue, intensity 1.00) — the ride detail lands
+  tl.fromTo("#s3-left", { scale: 0.9, y: 44, opacity: 0 }, { scale: 1, y: 0, opacity: 1, duration: 0.52, ease: "power3.out" }, 8.96);
+  tl.fromTo("#s3-tl-line", { scaleY: 0, opacity: 1 }, { scaleY: 1, opacity: 1, duration: 0.42, ease: "power2.out", transformOrigin: "top center" }, 9.3);
+  tl.fromTo("#s3-drv", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 9.4);
+
+  // beat: 9.50s — the seat lock pill drops in and the counter starts running
+  tl.fromTo("#s3-lock", { y: -48, opacity: 0 }, { y: 0, opacity: 1, duration: 0.44, ease: "back.out(1.6)" }, 9.5);
+  tl.fromTo("#s3-pay", { x: 74, opacity: 0 }, { x: 0, opacity: 1, duration: 0.44, ease: "power3.out" }, 9.95);
+  tl.fromTo("#s3-prices", { x: 74, opacity: 0 }, { x: 0, opacity: 1, duration: 0.44, ease: "power3.out" }, 10.22);
+  tl.fromTo("#s3-btn", { y: 32, opacity: 0 }, { y: 0, opacity: 1, duration: 0.42, ease: "back.out(1.5)" }, 10.58);
+
+  // simulated cursor tap on "Book 1 seat · 28 TND"
+  tl.set("#s3-cursor", { x: 1610, y: 930 }, 11.32);
+  tl.fromTo("#s3-cursor", { opacity: 0 }, { opacity: 1, duration: 0.18, ease: "none" }, 11.32);
+  tl.to("#s3-cursor", { x: 1408, y: 756, duration: 0.52, ease: "power2.inOut" }, 11.42);
+  tl.to("#s3-cursor", { scale: 0.8, duration: 0.09, ease: "power2.out", yoyo: true, repeat: 1 }, 11.93);
+  tl.to("#s3-btn", { scale: 0.972, duration: 0.1, ease: "power2.out", yoyo: true, repeat: 1 }, 11.95);
+  tl.fromTo("#s3-ring", { scale: 0.35, opacity: 0.85 }, { scale: 2.1, opacity: 0, duration: 0.58, ease: "power2.out" }, 11.95);
+
+  tl.to("#s3 .inner", { scale: 0.96, opacity: 0, duration: 0.3, ease: "power2.in" }, 12.6);
+
+  /* ============================ scene 4 — booked (12.6 → 15.8) ============================ */
+  tl.set(["#s4-check", "#s4-ripple", "#s4-head", "#s4-ref", "#s4-stub", "#s4-dash", "#s4-paid"], { opacity: 0 }, 12.6);
+
+  // beat-locked: 12.65s (strongCue, intensity 1.00) — the confirmation ring
+  tl.fromTo("#s4-check", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2.2)" }, 12.65);
+  tl.fromTo("#s4-ripple", { scale: 0.88, opacity: 0.9 }, { scale: 2.0, opacity: 0, duration: 0.72, ease: "power2.out" }, 12.7);
+  tl.fromTo("#s4-head", { y: 48, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 13.0);
+  tl.fromTo("#s4-stub", { x: 150, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 13.18);
+  tl.fromTo("#s4-ref", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.6)" }, 13.4);
+  tl.fromTo("#s4-dash", { scaleX: 0, opacity: 1 }, { scaleX: 1, opacity: 1, duration: 0.45, ease: "power2.inOut", transformOrigin: "left center" }, 13.62);
+  tl.fromTo("#s4-paid", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2.2)" }, 14.0);
+
+  tl.to("#s4 .inner", { y: -72, opacity: 0, duration: 0.3, ease: "power2.in" }, 15.5);
+
+  /* ============================ scene 5 — parcels (15.5 → 19.6) ============================ */
+  tl.set(["#s5-kicker", "#s5-h1", "#s5-h2", "#s5-st1", "#s5-st2", "#s5-st3", "#s5-lk1", "#s5-lk2", "#s5-right", "#s5-live"], { opacity: 0 }, 15.5);
+
+  tl.fromTo("#s5-kicker", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 15.72);
+  tl.fromTo("#s5-h1", { y: 96, opacity: 0 }, { y: 0, opacity: 1, duration: 0.52, ease: "power4.out" }, 15.95);
+  tl.fromTo("#s5-h2", { y: 96, opacity: 0 }, { y: 0, opacity: 1, duration: 0.52, ease: "power4.out" }, 16.04);
+
+  // beat-grid: Drop / Ride / Collect on 16.34 / 16.86 / 17.39, full set holds to 19.3
+  tl.fromTo("#s5-st1", { y: 28, scale: 0.78, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 16.34);
+  tl.fromTo("#s5-lk1", { scaleX: 0, opacity: 1 }, { scaleX: 1, opacity: 1, duration: 0.4, ease: "power2.inOut", transformOrigin: "left center" }, 16.52);
+  tl.fromTo("#s5-st2", { y: 28, scale: 0.78, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 16.86);
+  tl.fromTo("#s5-lk2", { scaleX: 0, opacity: 1 }, { scaleX: 1, opacity: 1, duration: 0.4, ease: "power2.inOut", transformOrigin: "left center" }, 17.04);
+  tl.fromTo("#s5-st3", { y: 28, scale: 0.78, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 17.39);
+
+  tl.fromTo("#s5-right", { x: 96, opacity: 0 }, { x: 0, opacity: 1, duration: 0.52, ease: "power3.out" }, 16.6);
+  tl.fromTo("#s5-fill", { scaleX: 0.04 }, { scaleX: 0.72, duration: 2.3, ease: "none", transformOrigin: "left center" }, 17.0);
+  tl.fromTo("#s5-van", { x: 0 }, { x: 413, duration: 2.3, ease: "none" }, 17.0);
+
+  // beat: 17.91s — live tracking comes on
+  tl.fromTo("#s5-live", { scale: 0.72, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2.4)" }, 17.91);
+  tl.to("#s5-livedot", { opacity: 0.22, duration: 0.42, ease: "power1.inOut", yoyo: true, repeat: 2 }, 18.15);
+
+  tl.to("#s5 .inner", { y: -62, opacity: 0, duration: 0.3, ease: "power2.in" }, 19.3);
+
+  /* ============================ scene 6 — Louagi (19.3 → 22.4) ============================ */
+  tl.set(["#s6-logo", "#s6-name", "#s6-tag-en", ".lchip"], { opacity: 0 }, 19.3);
+
+  // the app's own Logo sits at rotate(3deg) — land it there
+  tl.fromTo("#s6-logo", { scale: 0.3, rotation: -15, opacity: 0 }, { scale: 1, rotation: 3, opacity: 1, duration: 0.62, ease: "back.out(1.8)" }, 19.4);
+  tl.fromTo("#s6-name", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 19.78);
+  tl.fromTo("#s6-tag-en", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.44, ease: "power3.out" }, 20.08);
+  tl.fromTo(".lchip", { y: 24, scale: 0.8, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.38, ease: "back.out(2)", stagger: 0.1 }, 20.72);
+
+  // the punchline: AR takes the line right-to-left
+  tl.to("#chip-ar", { backgroundColor: "#DC2626", borderColor: "#DC2626", color: "#ffffff", duration: 0.3, ease: "power2.out" }, 21.15);
+  tl.to("#s6-tag-en", { y: -22, opacity: 0, duration: 0.3, ease: "power2.in" }, 21.15);
+  tl.fromTo("#s6-tag-ar", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "power3.out" }, 21.27);
+
+  /* ============================ audio-reactive + deterministic UI state ============================ */
+  var A = window.AUDIO_DATA;
+  var glowA = document.getElementById("glow-a");
+  var glowB = document.getElementById("glow-b");
+  var tk1 = document.getElementById("s1-ticket");
+  var tk4 = document.getElementById("s4-stub");
+  var cntEl = document.getElementById("s3-count");
+  var btnEl = document.getElementById("s3-btn-label");
+
+  function uiState(t) {
+    // seat-lock counter — derived from time, so any seek lands on the right value
+    var c = t >= 11.6 ? "0:05" : t >= 11.07 ? "0:06" : t >= 10.54 ? "0:07" : t >= 10.01 ? "0:08" : "0:09";
+    if (cntEl.textContent !== c) cntEl.textContent = c;
+    var lab = t >= 12.1 ? "Processing payment…" : "Book 1 seat · 28 TND";
+    if (btnEl.textContent !== lab) btnEl.textContent = lab;
+  }
+
+  function makeTick(i) {
+    return function () {
+      var t = i / A.fps;
+      var rms = A.rms[i];
+      var bass = A.bass[i];
+      // subtle: the sand field's warmth breathes, the navy pass gains presence on bass
+      gsap.set(glowA, { scale: 1 + bass * 0.13, opacity: 0.58 + rms * 0.42 });
+      gsap.set(glowB, { scale: 1 + rms * 0.07 });
+      var sh =
+        "0 " + (46 + bass * 20).toFixed(1) + "px " +
+        (90 + bass * 28).toFixed(1) + "px rgba(3,22,52," + (0.3 + bass * 0.11).toFixed(3) + ")";
+      tk1.style.boxShadow = sh;
+      tk4.style.boxShadow = sh;
+      uiState(t);
+    };
+  }
+
+  if (A && A.totalFrames) {
+    var n = Math.min(A.totalFrames, Math.floor(D * A.fps) + 1);
+    for (var f = 0; f < n; f++) {
+      tl.call(makeTick(f), [], f / A.fps);
+    }
+  }
+
+  window.__timelines["louagi-brag"] = tl;
+})();
+    </script>
+  </body>
+</html>
