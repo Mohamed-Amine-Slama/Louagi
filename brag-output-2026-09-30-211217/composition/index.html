@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Louagi — How to book a louage</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* ---- Fonts the Louagi app ships (Plus Jakarta Sans) + a mono for ticket chrome ---- */
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_500Medium.ttf') format('truetype');    font-weight: 500; font-display: block; }
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_600SemiBold.ttf') format('truetype');  font-weight: 600; font-display: block; }
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_700Bold.ttf') format('truetype');      font-weight: 700; font-display: block; }
+      @font-face { font-family: 'PJS'; src: url('assets/fonts/PlusJakartaSans_800ExtraBold.ttf') format('truetype'); font-weight: 800; font-display: block; }
+      @font-face { font-family: 'LGMono'; src: url('assets/fonts/UbuntuSansMono.ttf') format('truetype'); font-weight: 400 700; font-display: block; }
+
+      /* ---- Palette: src/theme/colors.js + src/lib/tickets.js + FloatingTabBar ---- */
+      :root {
+        --sand: #F4EFE6; --sand-lo: #FAF6EE; --sand-c: #EFE9DD; --sand-hi: #EAE2D2;
+        --paper: #ffffff; --ink: #1b1b1e; --mut: #44474e; --line: #DED5C3; --edge: #E6DDCC;
+        --primary: #07214b; --pcont: #1a2b4a; --navy: #0A2247; --navy-deep: #031634; --drv: #0E2C57;
+        --red: #DC2626; --gold: #FFD27A; --tocode: #FF6470;
+        --ok: #157347; --ok-bg: #d1f1de; --warn: #8f6900;
+        --dock: #241A12; --tab-on: #FF5A6E; --tab-off: rgba(255,255,255,0.5);
+        --on-navy-mut: rgba(255,255,255,0.58);
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--sand); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden;
+              font-family: 'PJS', sans-serif; color: var(--ink); background: var(--sand); }
+      .ic { display: block; fill: currentColor; flex: 0 0 auto; }
+      .mono { font-family: 'LGMono', monospace; }
+
+      /* ================= background ================= */
+      #bg { position: absolute; inset: 0; overflow: hidden; }
+      #glow-a { position: absolute; width: 1150px; height: 1150px; top: -430px; right: -380px; border-radius: 50%;
+                background: radial-gradient(circle, rgba(220,38,38,0.22) 0%, rgba(220,38,38,0.08) 45%, rgba(220,38,38,0) 70%); }
+      #glow-b { position: absolute; width: 1200px; height: 1200px; bottom: -560px; left: -420px; border-radius: 50%;
+                background: radial-gradient(circle, rgba(10,34,71,0.20) 0%, rgba(10,34,71,0.07) 45%, rgba(10,34,71,0) 70%); }
+      #grain { position: absolute; inset: 0; opacity: 0.3; mix-blend-mode: multiply; }
+      .chrome-lab { position: absolute; top: 44px; font-family: 'LGMono', monospace; font-weight: 500; font-size: 22px;
+                    letter-spacing: 4px; color: var(--mut); }
+      #chrome-l { left: 64px; } #chrome-r { right: 64px; }
+
+      /* step tracker */
+      #trk { position: absolute; left: 64px; right: 64px; top: 100px; height: 8px; display: flex; gap: 14px; }
+      .seg { position: relative; flex: 1 1 0; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+      .seg-fill { position: absolute; inset: 0; background: var(--red); transform-origin: left center; }
+
+      /* captions */
+      #caps { position: absolute; left: 64px; right: 64px; top: 150px; height: 320px; }
+      .cap { position: absolute; inset: 0; }
+      .mask { display: block; overflow: hidden; }
+      .kick { position: absolute; left: 0; top: 26px; font-family: 'LGMono', monospace; font-weight: 700; font-size: 27px;
+              letter-spacing: 6px; color: var(--red); }
+      .head { position: absolute; left: 0; right: 0; top: 64px; font-weight: 800; font-size: 92px; line-height: 1.04;
+              letter-spacing: -2.8px; color: var(--navy); }
+      .head .l { display: block; }
+      #cap0 .head { font-size: 98px; }
+      .sub { position: absolute; left: 0; right: 0; top: 176px; font-weight: 500; font-size: 38px; line-height: 1.3; color: var(--mut); }
+
+      /* ================= phone ================= */
+      #cam { position: absolute; inset: 0; }
+      #phone { position: absolute; left: 170px; top: 500px; width: 740px; height: 1380px; border-radius: 104px;
+               background: #0F141F; box-shadow: 0 60px 120px rgba(36,26,18,0.30), inset 0 0 0 3px rgba(255,255,255,0.08); }
+      #screen { position: absolute; left: 16px; top: 16px; width: 708px; height: 1348px; border-radius: 88px;
+                overflow: hidden; background: var(--sand); }
+      #sb { position: absolute; left: 0; right: 0; top: 0; height: 76px; z-index: 30; background: var(--sand); }
+      #sb-time { position: absolute; left: 70px; top: 24px; font-weight: 700; font-size: 27px; color: var(--ink); }
+      #sb-island { position: absolute; left: 259px; top: 16px; width: 190px; height: 52px; border-radius: 26px; background: #000; }
+      #sb-icons { position: absolute; right: 60px; top: 28px; display: flex; gap: 10px; align-items: center; }
+
+      .scr { position: absolute; inset: 0; background: var(--sand); overflow: hidden; }
+      .dim { position: absolute; inset: 0; background: #1b140c; opacity: 0; z-index: 40; }
+      .blk { position: absolute; left: 36px; width: 636px; }
+      .card { background: var(--paper); border: 2px solid var(--edge); border-radius: 28px;
+              box-shadow: 0 14px 30px rgba(36,26,18,0.08); }
+      .lab { font-weight: 700; font-size: 20px; letter-spacing: 2.4px; color: var(--mut); }
+      .row { display: flex; align-items: center; }
+      .between { justify-content: space-between; }
+      .t-title { font-weight: 700; font-size: 26px; color: var(--ink); }
+      .muted { color: var(--mut); }
+      .circ-btn { width: 64px; height: 64px; border-radius: 50%; background: var(--sand-hi); color: var(--ink);
+                  display: flex; align-items: center; justify-content: center; }
+      .hdr { top: 92px; height: 72px; gap: 20px; }
+      .hdr .h-t { font-weight: 700; font-size: 36px; line-height: 1.1; }
+      .hdr .h-s { font-weight: 500; font-size: 22px; color: var(--mut); margin-top: 4px; }
+      .pill-btn { display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 9999px;
+                  font-weight: 700; color: #fff; }
+      .av { position: relative; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+      .av .vb { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; border-radius: 50%;
+                background: var(--ok); border: 3px solid #fff; color: #fff; display: flex; align-items: center; justify-content: center; }
+      .stepper { display: flex; align-items: center; gap: 8px; background: var(--sand-hi); border-radius: 20px; padding: 6px; }
+      .stepper .sb { width: 54px; height: 54px; border-radius: 14px; background: var(--paper); color: var(--primary);
+                     display: flex; align-items: center; justify-content: center; }
+      .stepper .sn { min-width: 40px; text-align: center; font-weight: 700; font-size: 28px; }
+
+      /* ---- A: Home (LandingScreen) ---- */
+      #a-hdr { top: 92px; height: 72px; }
+      #a-brand { gap: 16px; font-weight: 700; font-size: 36px; }
+      #a-logo { width: 64px; height: 64px; transform: rotate(3deg); }
+      #a-toggle { gap: 6px; background: var(--sand-hi); border-radius: 9999px; padding: 5px; }
+      .tg { width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--mut); }
+      .tg.on { background: var(--red); color: #fff; }
+      #a-kick { top: 192px; color: var(--red); }
+      #a-head { top: 224px; font-weight: 800; font-size: 70px; line-height: 1; letter-spacing: -2px; }
+      #a-ticket { top: 330px; overflow: hidden; }
+      .tk-top { padding: 30px 30px 26px; }
+      .tk-lbl { font-family: 'LGMono', monospace; font-size: 19px; letter-spacing: 2px; color: var(--mut); }
+      .tk-chip { font-family: 'LGMono', monospace; font-size: 19px; color: var(--ink); background: var(--sand-hi);
+                 border-radius: 10px; padding: 6px 14px; height: 36px; }
+      .tk-codes { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 26px; }
+      .tk-col { flex: 1 1 0; }
+      .tk-col.r { text-align: right; }
+      .flip { position: relative; display: block; height: 62px; overflow: hidden; }
+      .flip > span { position: absolute; top: 0; left: 0; right: 0; }
+      .tk-code { font-family: 'LGMono', monospace; font-weight: 700; font-size: 58px; line-height: 62px; letter-spacing: -1px; }
+      .flip.city { height: 34px; margin-top: 8px; }
+      .tk-city { font-weight: 700; font-size: 26px; line-height: 34px; color: var(--ink); }
+      #a-swap { width: 84px; height: 84px; border-radius: 50%; background: var(--primary); color: #fff; margin: 4px 12px 0;
+                display: flex; align-items: center; justify-content: center; }
+      .perf { position: relative; height: 40px; display: flex; align-items: center; }
+      .notch { position: absolute; top: 0; width: 40px; height: 40px; border-radius: 50%; background: var(--sand); }
+      .notch.l { left: -22px; } .notch.r { right: -22px; }
+      .dash { display: block; width: calc(100% - 60px); margin: 0 30px; height: 0; border-top: 3px dashed var(--line); transform-origin: left center; }
+      .tk-bot { display: flex; align-items: flex-end; gap: 24px; padding: 22px 30px 30px; }
+      #a-search { flex: 1 1 auto; height: 92px; background: var(--red); font-size: 28px; }
+      #a-pop { top: 782px; }
+      .route { height: 100px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; }
+      .route .rc { font-family: 'LGMono', monospace; font-weight: 700; font-size: 26px; color: var(--primary); }
+      .route .rn { font-weight: 500; font-size: 22px; color: var(--mut); margin-left: 16px; }
+      .route .rp { font-weight: 700; font-size: 24px; color: var(--red); }
+      #a-r1 { top: 822px; } #a-r2 { top: 938px; } #a-r3 { top: 1054px; }
+      #a-scrim { position: absolute; inset: 0; background: rgba(27,20,12,0.40); z-index: 20; opacity: 0; }
+      #a-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 800px; z-index: 21; background: var(--sand-lo);
+                 border-radius: 44px 44px 0 0; box-shadow: 0 -20px 50px rgba(27,20,12,0.18); }
+      #sh-handle { position: absolute; left: 314px; top: 14px; width: 80px; height: 8px; border-radius: 4px; background: var(--line); }
+      #sh-title { top: 44px; height: 64px; }
+      #sh-title .t { font-weight: 700; font-size: 36px; }
+      #sh-search { top: 128px; height: 84px; border-radius: 24px; background: var(--sand-c); padding: 0 26px; gap: 16px;
+                   font-weight: 500; font-size: 27px; color: #74777f; }
+      .city-row { position: absolute; left: 36px; width: 636px; height: 92px; border-radius: 24px; padding: 0 28px;
+                  display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 30px; color: var(--ink); }
+      .city-row.sel { background: rgba(7,33,75,0.12); color: var(--primary); }
+      #cr1 { top: 236px; } #cr2 { top: 332px; } #cr3 { top: 428px; } #cr4 { top: 524px; } #cr5 { top: 620px; }
+      #cr2-hl { position: absolute; inset: 0; border-radius: 24px; background: var(--sand-c); opacity: 0; }
+
+      /* ---- B: Search (SearchScreen + RideCard) ---- */
+      #b-route { top: 176px; padding: 12px 16px; }
+      .rrow { height: 76px; display: flex; align-items: center; gap: 20px; padding-left: 12px; font-weight: 500; font-size: 30px; }
+      .ring { width: 24px; height: 24px; border-radius: 50%; border: 5px solid var(--red); }
+      #b-divider { height: 2px; background: var(--line); margin-left: 60px; }
+      #b-swapv { position: absolute; right: 16px; top: 58px; }
+      #b-meta { padding: 12px 12px 6px; font-weight: 600; font-size: 22px; color: var(--mut); }
+      #b-meta .row { gap: 8px; }
+      #b-chips { position: absolute; left: 36px; top: 430px; display: flex; gap: 14px; }
+      .chip { height: 62px; padding: 0 26px; border-radius: 9999px; border: 2px solid var(--line); background: var(--sand-c);
+              display: flex; align-items: center; font-weight: 600; font-size: 24px; color: var(--mut); white-space: nowrap; }
+      .chip.on { background: var(--red); border-color: var(--red); color: #fff; }
+      #b-filter { top: 516px; height: 62px; }
+      #b-filt-btn { height: 62px; padding: 0 26px; gap: 10px; border-radius: 9999px; background: var(--sand-hi);
+                    font-weight: 600; font-size: 24px; }
+      .rcard { position: absolute; left: 36px; width: 636px; height: 280px; overflow: hidden; padding: 26px 28px 24px 38px; }
+      .rcard .acc { position: absolute; left: 0; top: 0; bottom: 0; width: 9px; background: var(--red); }
+      .rc-top { display: flex; justify-content: space-between; align-items: flex-start; height: 76px; }
+      .rc-time { font-weight: 800; font-size: 38px; line-height: 40px; }
+      .rc-dur { gap: 8px; margin-top: 8px; font-weight: 500; font-size: 22px; color: var(--mut); }
+      .rc-price { font-weight: 800; font-size: 42px; line-height: 44px; text-align: right; }
+      .rc-per { font-weight: 600; font-size: 20px; color: var(--mut); text-align: right; margin-top: 4px; }
+      .rc-route { height: 36px; margin-top: 16px; gap: 14px; font-weight: 500; font-size: 28px; }
+      .dot-o { width: 32px; height: 32px; border-radius: 50%; background: rgba(220,38,38,0.15); display: flex; align-items: center; justify-content: center; }
+      .dot-o i { width: 20px; height: 20px; border-radius: 50%; border: 4.5px solid var(--red); }
+      .dot-d { width: 32px; height: 32px; border-radius: 50%; background: rgba(7,33,75,0.12); display: flex; align-items: center; justify-content: center; }
+      .dot-d i { width: 20px; height: 20px; border-radius: 50%; background: var(--primary); }
+      .rc-bot { margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--line); gap: 18px; }
+      .rc-name { font-weight: 700; font-size: 25px; }
+      .rc-rate { gap: 6px; font-weight: 600; font-size: 21px; color: var(--mut); margin-top: 4px; }
+      .star { color: var(--warn); }
+      .seat-b { margin-left: auto; gap: 8px; height: 50px; padding: 0 18px; border-radius: 9999px; background: rgba(7,33,75,0.10);
+                color: var(--primary); font-weight: 700; font-size: 22px; }
+      .seat-b.low { background: rgba(143,105,0,0.15); color: #5c4300; }
+      #b-c1 { top: 604px; } #b-c2 { top: 904px; } #b-c3 { top: 1204px; }
+
+      /* ---- C: Ride detail (RideDetailScreen + PassengerActionButtons) ---- */
+      #c-scroll { position: absolute; inset: 0; }
+      #c-trip { top: 186px; padding: 28px 30px; }
+      .tl { display: flex; gap: 22px; margin-top: 20px; height: 180px; }
+      .tl-sp { width: 28px; display: flex; flex-direction: column; align-items: center; padding-top: 6px; }
+      .tl-sp .ring { width: 26px; height: 26px; }
+      .tl-line { flex: 1 1 auto; width: 0; border-left: 4px dashed var(--line); margin: 8px 0; }
+      .tl-sp .nd { width: 26px; height: 26px; border-radius: 50%; background: var(--primary); margin-bottom: 18px; }
+      .tl-body { display: flex; flex-direction: column; justify-content: space-between; }
+      .tl-stop { font-weight: 700; font-size: 28px; }
+      .tl-sub { font-weight: 500; font-size: 22px; color: var(--mut); margin-top: 4px; }
+      .pills { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+      .pill { height: 54px; padding: 0 22px; gap: 10px; border-radius: 9999px; background: var(--sand-c); font-weight: 600; font-size: 22px; }
+      .pill.ok { background: var(--ok-bg); color: var(--ok); }
+      #c-drv { top: 640px; padding: 28px 30px; }
+      .rate-b { gap: 6px; padding: 4px 12px; border-radius: 10px; background: rgba(143,105,0,0.12); font-weight: 700; font-size: 24px; }
+      #c-pay { top: 882px; padding: 28px 30px; }
+      #c-seats { margin-top: 16px; height: 88px; padding: 0 16px 0 24px; border-radius: 24px; background: var(--sand-c); }
+      #c-divider { height: 2px; background: var(--line); margin: 24px 0; }
+      #c-paybox { margin-top: 16px; height: 120px; padding: 0 24px; gap: 20px; border-radius: 24px; background: var(--pcont); }
+      #c-wallet { width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+      .ok-b { gap: 8px; height: 46px; padding: 0 16px; border-radius: 9999px; background: var(--ok-bg); color: var(--ok); font-weight: 700; font-size: 21px; margin-left: auto; }
+      #c-foot { position: absolute; left: 0; right: 0; bottom: 0; height: 248px; z-index: 10; background: var(--sand);
+                border-top: 2px solid var(--line); padding: 22px 36px 0; box-shadow: 0 -12px 30px rgba(36,26,18,0.08); }
+      #c-prices { height: 72px; }
+      .pi-l { font-weight: 500; font-size: 20px; color: var(--mut); }
+      .pi-v { font-weight: 700; font-size: 24px; margin-top: 4px; }
+      .op { font-weight: 500; font-size: 24px; color: var(--mut); }
+      #c-book { position: relative; margin-top: 18px; height: 96px; background: var(--primary); font-size: 30px; }
+      .lbl-stack { position: relative; width: 100%; height: 40px; }
+      .lbl-stack > span { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: center; align-items: center; gap: 14px; line-height: 40px; }
+      #c-spin { width: 32px; height: 32px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.3); border-top-color: #fff; }
+
+      /* ---- D: Booking confirmed ---- */
+      #d-status { top: 186px; padding: 36px 30px; display: flex; flex-direction: column; align-items: center; }
+      #d-ring { position: relative; width: 168px; height: 168px; border-radius: 50%; background: rgba(21,115,71,0.08);
+                display: flex; align-items: center; justify-content: center; }
+      #d-check { width: 126px; height: 126px; border-radius: 50%; background: var(--ok-bg); color: var(--ok); display: flex; align-items: center; justify-content: center; }
+      #d-ripple { position: absolute; inset: 0; border-radius: 50%; border: 5px solid var(--ok); opacity: 0; }
+      #d-title { font-weight: 800; font-size: 44px; margin-top: 22px; line-height: 50px; }
+      #d-ref { gap: 10px; margin-top: 18px; height: 50px; padding: 0 20px; border-radius: 9999px; background: rgba(7,33,75,0.10);
+               color: var(--primary); font-weight: 700; font-size: 23px; }
+      #d-tl { top: 588px; padding: 28px 30px; }
+      #d-tl .tl { margin-top: 0; height: 160px; }
+      #d-rcpt { top: 826px; padding: 22px 30px; }
+      .rc-line { height: 50px; font-size: 23px; }
+      .rc-line .k { font-weight: 600; font-size: 21px; color: var(--mut); }
+      #d-back { top: 1094px; height: 96px; background: var(--red); font-size: 28px; }
+      #d-more { top: 1206px; height: 96px; border: 3px solid var(--primary); color: var(--primary); font-size: 28px; }
+
+      /* ---- E: Bookings (DashboardScreen BoardingPass) ---- */
+      #e-greet { top: 90px; height: 90px; }
+      #e-hello { font-weight: 600; font-size: 22px; color: var(--mut); }
+      #e-name { font-weight: 800; font-size: 44px; line-height: 1.1; }
+      .icon-btn { position: relative; width: 76px; height: 76px; border-radius: 50%; background: var(--paper); color: var(--ink);
+                  display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(36,26,18,0.10); }
+      #e-bdot { position: absolute; top: 18px; right: 20px; width: 14px; height: 14px; border-radius: 50%; background: var(--red); }
+      #e-lab { top: 214px; }
+      #e-pass { top: 250px; border-radius: 40px; background: var(--navy); overflow: hidden; box-shadow: 0 26px 50px rgba(3,22,52,0.30); }
+      .bp-top { padding: 30px 30px 22px; }
+      .bp-lbl { font-family: 'LGMono', monospace; font-size: 19px; letter-spacing: 2px; color: var(--on-navy-mut); }
+      #e-dep { gap: 8px; height: 42px; padding: 0 16px; border-radius: 9999px; background: rgba(255,210,122,0.16);
+               color: var(--gold); font-weight: 700; font-size: 20px; }
+      .bp-codes { display: flex; align-items: flex-start; margin-top: 28px; }
+      .bp-col { flex: 1 1 0; }
+      .bp-code { display: block; font-family: 'LGMono', monospace; font-weight: 700; font-size: 56px; line-height: 58px; color: #fff; }
+      .bp-code.to { color: var(--tocode); }
+      .bp-city { display: block; font-weight: 600; font-size: 22px; color: var(--on-navy-mut); margin-top: 6px; }
+      .bp-mid { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; padding: 6px 8px 0; color: rgba(255,255,255,0.7); }
+      .bp-mid .ln { align-self: stretch; height: 0; border-top: 3px dashed rgba(255,255,255,0.24); margin-top: 10px; }
+      .bp-mid .tm { font-family: 'LGMono', monospace; font-size: 22px; color: #fff; margin-top: 8px; }
+      #e-pass .notch { background: var(--sand); }
+      #e-pass .dash { border-top-color: rgba(255,255,255,0.24); }
+      .bp-stub { padding: 20px 30px 30px; }
+      .bp-stats { display: flex; height: 64px; }
+      .bp-st { flex: 1 1 0; }
+      .bp-st .k { display: block; font-weight: 700; font-size: 17px; letter-spacing: 1.5px; color: var(--on-navy-mut); }
+      .bp-st .v { display: block; font-weight: 700; font-size: 26px; color: #fff; margin-top: 8px; }
+      .bp-drv { margin-top: 24px; height: 72px; }
+      .bp-av { width: 62px; height: 62px; border-radius: 50%; background: var(--drv); color: #fff; font-weight: 700; font-size: 22px;
+               display: flex; align-items: center; justify-content: center; }
+      .bp-chat { width: 72px; height: 72px; border-radius: 20px; background: rgba(255,255,255,0.12); color: #fff; display: flex; align-items: center; justify-content: center; }
+      #e-view { gap: 10px; height: 72px; padding: 0 26px; border-radius: 20px; background: var(--red); color: #fff; font-weight: 700; font-size: 23px; }
+      #e-seg { top: 740px; height: 76px; padding: 6px; border-radius: 9999px; background: var(--sand-hi); }
+      .sg { flex: 1 1 0; height: 64px; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 24px; color: var(--mut); }
+      .sg.on { background: var(--paper); color: var(--ink); box-shadow: 0 6px 14px rgba(36,26,18,0.10); }
+      #e-up { top: 842px; height: 140px; padding: 0 30px; }
+
+      /* ---- F: Delivery (DeliveryScreen) ---- */
+      #f-hdr { top: 90px; height: 60px; }
+      #f-title { font-weight: 800; font-size: 42px; }
+      #f-track { gap: 8px; height: 60px; padding: 0 22px; border-radius: 9999px; border: 3px solid var(--primary); color: var(--primary); font-weight: 700; font-size: 22px; }
+      #f-subt { top: 156px; font-weight: 500; font-size: 22px; color: var(--mut); }
+      #f-promo { top: 202px; height: 280px; border-radius: 36px; padding: 32px; overflow: hidden;
+                 background: linear-gradient(135deg, #031634 0%, #0A2247 55%, #5A132A 100%); }
+      #f-pk { font-family: 'LGMono', monospace; font-size: 19px; letter-spacing: 2.4px; color: var(--on-navy-mut); }
+      #f-pt { font-weight: 800; font-size: 34px; line-height: 42px; color: #fff; max-width: 480px; margin-top: 12px; }
+      #f-new { display: inline-flex; margin-top: 22px; height: 72px; padding: 0 30px; background: var(--red); font-size: 24px; }
+      #f-box { position: absolute; right: 30px; bottom: 24px; color: rgba(255,255,255,0.18); }
+      .how { position: absolute; top: 506px; width: 201px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .how .hi { width: 64px; height: 64px; border-radius: 20px; background: rgba(7,33,75,0.12); color: var(--primary);
+                 display: flex; align-items: center; justify-content: center; }
+      .how.ok .hi { background: rgba(21,115,71,0.12); color: var(--ok); }
+      .how .hl { font-weight: 700; font-size: 26px; margin-top: 14px; }
+      #f-h1 { left: 36px; } #f-h2 { left: 253px; } #f-h3 { left: 470px; }
+      #f-rh { top: 682px; height: 46px; }
+      #f-rh .t { font-weight: 800; font-size: 32px; }
+      .dcard { position: absolute; left: 36px; width: 636px; height: 214px; padding: 26px 28px; }
+      .d-ico { width: 76px; height: 76px; border-radius: 22px; background: var(--sand-hi); color: var(--primary);
+               display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+      .d-rt { font-weight: 700; font-size: 27px; }
+      .d-rs { font-family: 'LGMono', monospace; font-size: 19px; color: var(--mut); margin-top: 4px; }
+      .d-pr { font-weight: 700; font-size: 27px; color: var(--red); text-align: right; }
+      .d-from { font-weight: 600; font-size: 18px; color: var(--mut); text-align: right; }
+      .d-bar { height: 10px; border-radius: 9999px; background: var(--sand-hi); overflow: hidden; }
+      .d-bar i { display: block; height: 100%; background: var(--primary); border-radius: 9999px; }
+      .d-sl { font-weight: 600; font-size: 22px; color: var(--mut); margin-top: 10px; }
+      .d-res { height: 64px; padding: 0 30px; background: var(--primary); font-size: 22px; }
+      #f-d1 { top: 740px; } #f-d2 { top: 976px; }
+
+      /* ---- tab dock (FloatingTabBar) ---- */
+      #dock { position: absolute; left: 24px; right: 24px; bottom: 24px; height: 112px; z-index: 25; background: var(--dock);
+              border-radius: 40px; padding: 0 12px; display: flex; box-shadow: 0 18px 36px rgba(36,26,18,0.28); }
+      .ti { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+            color: var(--tab-off); font-weight: 600; font-size: 18px; }
+      .ti.on { color: var(--tab-on); }
+
+      /* ---- fingertip touch indicator ---- */
+      #finger, #frip { position: absolute; left: 0; top: 0; z-index: 60; width: 0; height: 0; }
+      #fdot { position: absolute; left: -44px; top: -44px; width: 88px; height: 88px; border-radius: 50%;
+              background: rgba(20,24,33,0.30); border: 4px solid rgba(255,255,255,0.95);
+              box-shadow: 0 10px 24px rgba(0,0,0,0.28); }
+      #fring { position: absolute; left: -44px; top: -44px; width: 88px; height: 88px; border-radius: 50%;
+               border: 4px solid rgba(7,33,75,0.55); opacity: 0; }
+
+      /* ---- outro ---- */
+      #s-out .inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 80px; }
+      #o-logo { width: 250px; height: 250px; }
+      #o-name { font-weight: 800; font-size: 132px; letter-spacing: -4px; color: var(--navy); margin-top: 44px; line-height: 1.05; }
+      #o-tag { font-weight: 500; font-size: 46px; color: var(--mut); margin-top: 18px; }
+    </style>
+  </head>
+  <body>
+    <!-- icon sprite (Material Icons glyphs used by the app) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></symbol>
+      <symbol id="i-event" viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></symbol>
+      <symbol id="i-ship" viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9 1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></symbol>
+      <symbol id="i-person" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
+      <symbol id="i-swap" viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></symbol>
+      <symbol id="i-swapv" viewBox="0 0 24 24"><path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3 5 6.99h3V14h2V6.99h3L9 3z"/></symbol>
+      <symbol id="i-fwd" viewBox="0 0 24 24"><path d="m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></symbol>
+      <symbol id="i-add" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></symbol>
+      <symbol id="i-remove" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+      <symbol id="i-seat" viewBox="0 0 24 24"><path d="M4 18v3h3v-3h10v3h3v-6H4zm15-8h3v3h-3zM2 10h3v3H2zm15 3H7V5c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2v8z"/></symbol>
+      <symbol id="i-place" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
+      <symbol id="i-tune" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></symbol>
+      <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 0 0-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+      <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-9 7.5h-2v-2h2v2zm0-4.5h-2v-2h2v2zm0-4.5h-2v-2h2v2z"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></symbol>
+      <symbol id="i-flight" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></symbol>
+      <symbol id="i-archive" viewBox="0 0 24 24"><path d="m20.54 5.23-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5 6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/></symbol>
+      <symbol id="i-okc" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></symbol>
+      <symbol id="i-box" viewBox="0 0 24 24"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4l16-.02V7z"/></symbol>
+      <symbol id="i-snow" viewBox="0 0 24 24"><path d="M22 11h-4.17l3.24-3.24-1.41-1.42L15 11h-2V9l4.66-4.66-1.42-1.41L13 6.17V2h-2v4.17L7.76 2.93 6.34 4.34 11 9v2H9L4.34 6.34 2.93 7.76 6.17 11H2v2h4.17l-3.24 3.24 1.41 1.42L9 13h2v2l-4.66 4.66 1.42 1.41L11 17.83V22h2v-4.17l3.24 3.24 1.42-1.41L13 15v-2h2l4.66 4.66 1.41-1.42L17.83 13H22z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M11 1h2v3h-2zM11 20h2v3h-2zM1 11h3v2H1zM20 11h3v2h-3zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4zM16.3 17.7l1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 6.3l2.1-2.1 1.4 1.4-2.1 2.1z"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12.3 2a10 10 0 1 0 9.7 12.3A8 8 0 0 1 12.3 2z"/></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11z"/></symbol>
+      <symbol id="i-logo" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="236" fill="#C8102E"/><rect x="221" y="284" width="583" height="536" rx="79" fill="#031634"/><rect x="284" y="347" width="457" height="173" rx="24" fill="#fbf8fc"/><rect x="221" y="567" width="583" height="47" fill="#fbf8fc"/><circle cx="315" cy="725" r="39" fill="#fbf8fc"/><circle cx="709" cy="725" r="39" fill="#fbf8fc"/></symbol>
+    </svg>
+
+    <div id="root" data-composition-id="louagi-howto" data-start="0" data-width="1080" data-height="1920" data-duration="25" data-fps="30">
+      <!-- ============ background + chrome ============ -->
+      <div id="bg">
+        <div id="glow-a" data-layout-allow-overflow></div>
+        <div id="glow-b" data-layout-allow-overflow></div>
+        <svg id="grain" width="1080" height="1920" aria-hidden="true">
+          <filter id="grainf"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="11" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+          <rect width="1080" height="1920" filter="url(#grainf)" opacity="0.14"/>
+        </svg>
+        <span id="chrome-l" class="chrome-lab">LOUAGI &middot; HOW-TO</span>
+        <span id="chrome-r" class="chrome-lab">PASSENGER APP</span>
+      </div>
+
+      <div id="trk">
+        <span class="seg"><span class="seg-fill" id="sf1"></span></span>
+        <span class="seg"><span class="seg-fill" id="sf2"></span></span>
+        <span class="seg"><span class="seg-fill" id="sf3"></span></span>
+        <span class="seg"><span class="seg-fill" id="sf4"></span></span>
+      </div>
+
+      <!-- ============ step captions ============ -->
+      <div id="caps">
+        <div class="cap" id="cap0">
+          <span class="kick" id="c0k">HOW TO &middot; LOUAGI</span>
+          <h1 class="head"><span class="mask"><span class="l" id="c0h1">Book a louage</span></span><span class="mask"><span class="l" id="c0h2">in 4 steps.</span></span></h1>
+        </div>
+        <div class="cap" id="cap1">
+          <span class="kick" id="c1k">STEP 1 OF 4</span>
+          <h2 class="head"><span class="mask"><span class="l" id="c1h">Pick your route</span></span></h2>
+          <p class="sub" id="c1s">Tap a city, then Search rides.</p>
+        </div>
+        <div class="cap" id="cap2">
+          <span class="kick" id="c2k">STEP 2 OF 4</span>
+          <h2 class="head"><span class="mask"><span class="l" id="c2h">Choose a ride</span></span></h2>
+          <p class="sub" id="c2s">Compare time, price, rating and seats.</p>
+        </div>
+        <div class="cap" id="cap3">
+          <span class="kick" id="c3k">STEP 3 OF 4</span>
+          <h2 class="head"><span class="mask"><span class="l" id="c3h">Book &amp; pay</span></span></h2>
+          <p class="sub" id="c3s">Your seat is held while you pay with Flouci.</p>
+        </div>
+        <div class="cap" id="cap4">
+          <span class="kick" id="c4k">STEP 4 OF 4</span>
+          <h2 class="head"><span class="mask"><span class="l" id="c4h">Show your pass</span></span></h2>
+          <p class="sub" id="c4s">It&rsquo;s saved in Bookings. See you at the station.</p>
+        </div>
+        <div class="cap" id="cap5">
+          <span class="kick" id="c5k">BONUS</span>
+          <h2 class="head"><span class="mask"><span class="l" id="c5h">Send a parcel</span></span></h2>
+          <p class="sub" id="c5s">Put a box on a louage already going your way.</p>
+        </div>
+      </div>
+
+      <!-- ============ the phone ============ -->
+      <div id="cam">
+        <div id="phone">
+          <div id="screen">
+
+            <!-- A · Home -->
+            <div class="scr" id="sA">
+              <div class="blk row between" id="a-hdr">
+                <div class="row" id="a-brand"><svg id="a-logo" viewBox="0 0 1024 1024"><use href="#i-logo"/></svg>Louagi</div>
+                <div class="row" id="a-toggle">
+                  <span class="tg on"><svg class="ic" width="28" height="28"><use href="#i-sun"/></svg></span>
+                  <span class="tg"><svg class="ic" width="26" height="26"><use href="#i-moon"/></svg></span>
+                </div>
+              </div>
+              <div class="blk lab" id="a-kick">YOUR NEXT LOUAGE</div>
+              <div class="blk" id="a-head">Where to today?</div>
+              <div class="blk card" id="a-ticket">
+                <div class="tk-top">
+                  <div class="row between"><span class="tk-lbl">LOUAGE TICKET</span><span class="tk-chip">TODAY</span></div>
+                  <div class="tk-codes">
+                    <div class="tk-col">
+                      <span class="flip"><span class="tk-code" style="color:var(--primary)">TUN</span></span>
+                      <span class="flip city"><span class="tk-city">Tunis</span></span>
+                    </div>
+                    <div id="a-swap"><svg class="ic" width="40" height="40"><use href="#i-swap"/></svg></div>
+                    <div class="tk-col r">
+                      <span class="flip"><span class="tk-code" id="a-sou" style="color:var(--red)">SOU</span><span class="tk-code" id="a-sfx" data-layout-allow-overlap style="color:var(--red)">SFX</span></span>
+                      <span class="flip city"><span class="tk-city" id="a-sousse">Sousse</span><span class="tk-city" id="a-sfax">Sfax</span></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="perf"><span class="notch l"></span><span class="dash"></span><span class="notch r"></span></div>
+                <div class="tk-bot">
+                  <div>
+                    <div class="lab" style="font-size:18px">SEATS</div>
+                    <div class="stepper" style="margin-top:10px">
+                      <span class="sb"><svg class="ic" width="28" height="28"><use href="#i-remove"/></svg></span>
+                      <span class="sn">1</span>
+                      <span class="sb"><svg class="ic" width="28" height="28"><use href="#i-add"/></svg></span>
+                    </div>
+                  </div>
+                  <div class="pill-btn" id="a-search">Search rides<svg class="ic" width="32" height="32"><use href="#i-fwd"/></svg></div>
+                </div>
+              </div>
+              <div class="blk lab" id="a-pop">POPULAR ROUTES</div>
+              <div class="blk card route" id="a-r1"><span class="row"><span class="rc">TUN &rarr; BIZ</span><span class="rn">Tunis &middot; Bizerte</span></span><span class="rp">from 6 TND</span></div>
+              <div class="blk card route" id="a-r2"><span class="row"><span class="rc">TUN &rarr; SOU</span><span class="rn">Tunis &middot; Sousse</span></span><span class="rp">from 12 TND</span></div>
+              <div class="blk card route" id="a-r3"><span class="row"><span class="rc">TUN &rarr; HAM</span><span class="rn">Tunis &middot; Hammamet</span></span><span class="rp">from 6 TND</span></div>
+
+              <div id="a-scrim" data-layout-allow-occlusion></div>
+              <div id="a-sheet" data-layout-allow-occlusion>
+                <span id="sh-handle"></span>
+                <div class="blk row between" id="sh-title"><span class="t" data-layout-allow-overlap>Choose city</span><span class="circ-btn"><svg class="ic" width="28" height="28"><use href="#i-close"/></svg></span></div>
+                <div class="blk row" id="sh-search" data-layout-allow-overlap><svg class="ic" width="34" height="34"><use href="#i-search"/></svg>Search a city</div>
+                <div class="city-row" id="cr1" data-layout-allow-overlap>Nabeul</div>
+                <div class="city-row" id="cr2" data-layout-allow-overlap><span id="cr2-hl"></span><span style="position:relative">Sfax</span></div>
+                <div class="city-row" id="cr3" data-layout-allow-overlap>Sidi Bouzid</div>
+                <div class="city-row sel" id="cr4" data-layout-allow-overlap>Sousse<svg class="ic" width="34" height="34"><use href="#i-check"/></svg></div>
+                <div class="city-row" id="cr5" data-layout-allow-overlap>Tunis</div>
+              </div>
+              <div class="dim" data-layout-allow-occlusion></div>
+            </div>
+
+            <!-- B · Search -->
+            <div class="scr" id="sB">
+              <div class="blk row hdr" id="b-hdr"><span class="circ-btn"><svg class="ic" width="32" height="32"><use href="#i-back"/></svg></span><span class="h-t">Find a ride</span></div>
+              <div class="blk card" id="b-route">
+                <div class="rrow"><span class="ring"></span>Tunis</div>
+                <div id="b-divider"></div>
+                <div class="rrow"><svg class="ic" width="30" height="30" style="color:var(--primary)"><use href="#i-place"/></svg>Sfax</div>
+                <span class="circ-btn" id="b-swapv" style="color:var(--primary)"><svg class="ic" width="32" height="32"><use href="#i-swapv"/></svg></span>
+                <div class="row between" id="b-meta">
+                  <span class="row"><svg class="ic" width="26" height="26"><use href="#i-cal"/></svg>Wed, 30 Sep</span>
+                  <span class="row"><svg class="ic" width="26" height="26"><use href="#i-person"/></svg>1 seat</span>
+                </div>
+              </div>
+              <div id="b-chips" data-layout-allow-overflow>
+                <span class="chip on">Wed 30</span><span class="chip">Thu 1</span><span class="chip">Fri 2</span><span class="chip">Sat 3</span><span class="chip">Sun 4</span>
+              </div>
+              <div class="blk row between" id="b-filter">
+                <span class="row" id="b-filt-btn"><svg class="ic" width="28" height="28"><use href="#i-tune"/></svg>Filters</span>
+                <span style="font-weight:600;font-size:22px" class="muted">3 results</span>
+              </div>
+              <div class="card rcard" id="b-c1"><span class="acc"></span>
+                <div class="rc-top"><div><div class="rc-time">06:30</div><div class="row rc-dur"><svg class="ic" width="22" height="22"><use href="#i-clock"/></svg>3h 15m</div></div>
+                  <div><div class="rc-price">22 TND</div><div class="rc-per">per seat</div></div></div>
+                <div class="row rc-route"><span class="dot-o"><i></i></span>Tunis<svg class="ic muted" width="28" height="28"><use href="#i-fwd"/></svg><span class="dot-d"><i></i></span>Sfax</div>
+                <div class="row rc-bot"><span class="av" style="width:64px;height:64px;font-size:23px">KB<span class="vb"><svg class="ic" width="14" height="14"><use href="#i-check"/></svg></span></span>
+                  <div><div class="rc-name">Karim Ben Ali</div><div class="row rc-rate"><svg class="ic star" width="22" height="22"><use href="#i-star"/></svg>4.8 &middot; Peugeot Boxer</div></div>
+                  <span class="row seat-b"><svg class="ic" width="24" height="24"><use href="#i-seat"/></svg>3 seats</span></div>
+              </div>
+              <div class="card rcard" id="b-c2"><span class="acc"></span>
+                <div class="rc-top"><div><div class="rc-time">07:30</div><div class="row rc-dur"><svg class="ic" width="22" height="22"><use href="#i-clock"/></svg>3h 15m</div></div>
+                  <div><div class="rc-price">22 TND</div><div class="rc-per">per seat</div></div></div>
+                <div class="row rc-route"><span class="dot-o"><i></i></span>Tunis<svg class="ic muted" width="28" height="28"><use href="#i-fwd"/></svg><span class="dot-d"><i></i></span>Sfax</div>
+                <div class="row rc-bot"><span class="av" style="width:64px;height:64px;font-size:23px">MT<span class="vb"><svg class="ic" width="14" height="14"><use href="#i-check"/></svg></span></span>
+                  <div><div class="rc-name">Mehdi Trabelsi</div><div class="row rc-rate"><svg class="ic star" width="22" height="22"><use href="#i-star"/></svg>4.9 &middot; Peugeot Boxer</div></div>
+                  <span class="row seat-b"><svg class="ic" width="24" height="24"><use href="#i-seat"/></svg>4 seats</span></div>
+              </div>
+              <div class="card rcard" id="b-c3" data-layout-ignore><span class="acc"></span>
+                <div class="rc-top"><div><div class="rc-time">09:15</div><div class="row rc-dur"><svg class="ic" width="22" height="22"><use href="#i-clock"/></svg>3h 15m</div></div>
+                  <div><div class="rc-price">20 TND</div><div class="rc-per">per seat</div></div></div>
+                <div class="row rc-route"><span class="dot-o"><i></i></span>Tunis<svg class="ic muted" width="28" height="28"><use href="#i-fwd"/></svg><span class="dot-d"><i></i></span>Sfax</div>
+                <div class="row rc-bot"><span class="av" style="width:64px;height:64px;font-size:23px">SA</span>
+                  <div><div class="rc-name">Sami Ayari</div><div class="row rc-rate"><svg class="ic star" width="22" height="22"><use href="#i-star"/></svg>4.7 &middot; Toyota Hiace</div></div>
+                  <span class="row seat-b low"><svg class="ic" width="24" height="24"><use href="#i-seat"/></svg>2 seats</span></div>
+              </div>
+              <div class="dim" data-layout-allow-occlusion></div>
+            </div>
+
+            <!-- C · Ride detail -->
+            <div class="scr" id="sC">
+              <div id="c-scroll">
+                <div class="blk row hdr"><span class="circ-btn"><svg class="ic" width="32" height="32"><use href="#i-back"/></svg></span>
+                  <div><div class="h-t">Tunis &rarr; Sfax</div><div class="h-s">Wed, 30 Sep</div></div></div>
+                <div class="blk card" id="c-trip">
+                  <div class="t-title">Trip</div>
+                  <div class="tl">
+                    <div class="tl-sp"><span class="ring"></span><span class="tl-line"></span><span class="nd"></span></div>
+                    <div class="tl-body">
+                      <div><div class="tl-stop">Tunis</div><div class="tl-sub">Departs 07:30</div></div>
+                      <div><div class="tl-stop">Sfax</div><div class="tl-sub">~195 min ride</div></div>
+                    </div>
+                  </div>
+                  <div class="pills">
+                    <span class="row pill"><svg class="ic" width="26" height="26"><use href="#i-seat"/></svg>4 seats left</span>
+                    <span class="row pill"><svg class="ic" width="26" height="26"><use href="#i-snow"/></svg>AC</span>
+                    <span class="row pill ok"><svg class="ic" width="26" height="26"><use href="#i-shield"/></svg>Verified Account</span>
+                  </div>
+                </div>
+                <div class="blk card" id="c-drv">
+                  <div class="t-title">Driver</div>
+                  <div class="row" style="gap:24px;margin-top:20px">
+                    <span class="av" style="width:104px;height:104px;font-size:34px">MT<span class="vb" style="width:32px;height:32px"><svg class="ic" width="18" height="18"><use href="#i-check"/></svg></span></span>
+                    <div>
+                      <div style="font-weight:700;font-size:34px">Mehdi Trabelsi</div>
+                      <div class="row" style="gap:12px;margin-top:6px"><span class="row rate-b"><svg class="ic star" width="24" height="24"><use href="#i-star"/></svg>4.9</span><span style="font-weight:600;font-size:24px" class="muted">&bull; 128 trips</span></div>
+                      <div style="font-weight:500;font-size:22px;margin-top:6px" class="muted">Peugeot Boxer</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="blk card" id="c-pay">
+                  <div class="t-title">Seats</div>
+                  <div class="row between" id="c-seats"><span style="font-weight:700;font-size:26px">How many seats?</span>
+                    <div class="stepper" style="background:transparent;padding:0"><span class="sb"><svg class="ic" width="28" height="28"><use href="#i-remove"/></svg></span><span class="sn">1</span><span class="sb"><svg class="ic" width="28" height="28"><use href="#i-add"/></svg></span></div></div>
+                  <div id="c-divider"></div>
+                  <div class="t-title">Payment</div>
+                  <div class="row" id="c-paybox">
+                    <span id="c-wallet"><svg class="ic" width="36" height="36"><use href="#i-wallet"/></svg></span>
+                    <div><div style="font-weight:700;font-size:27px;color:#d3dbee">Flouci</div><div style="font-weight:500;font-size:22px;color:#a9b6d3;margin-top:4px">Secure mobile payment</div></div>
+                    <span class="row ok-b"><svg class="ic" width="22" height="22"><use href="#i-lock"/></svg>Secure</span>
+                  </div>
+                </div>
+              </div>
+              <div id="c-foot" data-layout-allow-occlusion>
+                <div class="row between" id="c-prices">
+                  <div><div class="pi-l">1 &times; 22 TND</div><div class="pi-v">22 TND</div></div>
+                  <span class="op">+</span>
+                  <div><div class="pi-l">Booking fee</div><div class="pi-v" style="color:var(--warn)">3.000 TND</div></div>
+                  <span class="op">=</span>
+                  <div style="text-align:right"><div class="pi-l" style="font-weight:700">Total</div><div class="pi-v" style="font-size:36px;font-weight:800;color:var(--primary);margin-top:0">25 TND</div></div>
+                </div>
+                <div class="pill-btn" id="c-book">
+                  <div class="lbl-stack">
+                    <span id="c-lab1">Book 1 seat</span>
+                    <span id="c-lab2"><span id="c-spin"></span>Processing payment&hellip;</span>
+                  </div>
+                </div>
+              </div>
+              <div class="dim" data-layout-allow-occlusion></div>
+            </div>
+
+            <!-- D · Booking confirmed -->
+            <div class="scr" id="sD">
+              <div class="blk row hdr"><span class="circ-btn"><svg class="ic" width="32" height="32"><use href="#i-back"/></svg></span>
+                <div><div class="h-t">Booking confirmed</div><div class="h-s">See you at the station</div></div></div>
+              <div class="blk card" id="d-status">
+                <div id="d-ring"><span id="d-ripple"></span><span id="d-check"><svg class="ic" width="64" height="64"><use href="#i-check"/></svg></span></div>
+                <div id="d-title">You&rsquo;re booked!</div>
+                <span class="row" id="d-ref"><svg class="ic" width="26" height="26"><use href="#i-ticket"/></svg>Ref: 4F2A91C0</span>
+              </div>
+              <div class="blk card" id="d-tl">
+                <div class="tl">
+                  <div class="tl-sp"><span class="ring"></span><span class="tl-line"></span><span class="nd"></span></div>
+                  <div class="tl-body">
+                    <div><div class="tl-stop">Tunis</div><div class="tl-sub">Wed 30 Sep, 07:30</div></div>
+                    <div><div class="tl-stop">Sfax</div><div class="tl-sub">195 min ride</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="blk card" id="d-rcpt">
+                <div class="row between rc-line"><span class="k">Driver</span><span>Mehdi Trabelsi</span></div>
+                <div class="row between rc-line"><span class="k">Seats</span><span>1</span></div>
+                <div class="row between rc-line"><span class="k">Paid</span><span style="color:var(--ok);font-weight:700">25 TND</span></div>
+                <div class="row between rc-line"><span class="k">Reservation fee</span><span>3.000 TND</span></div>
+              </div>
+              <div class="blk pill-btn" id="d-back"><svg class="ic" width="30" height="30"><use href="#i-event"/></svg>Back to bookings</div>
+              <div class="blk pill-btn" id="d-more">Search more rides</div>
+              <div class="dim" data-layout-allow-occlusion></div>
+            </div>
+
+            <!-- E · Bookings -->
+            <div class="scr" id="sE">
+              <div class="blk row between" id="e-greet">
+                <div><div id="e-hello">Hello,</div><div id="e-name">Yasmine</div></div>
+                <div class="row" style="gap:16px">
+                  <span class="icon-btn"><svg class="ic" width="32" height="32"><use href="#i-chat"/></svg></span>
+                  <span class="icon-btn"><svg class="ic" width="32" height="32"><use href="#i-bell"/></svg><span id="e-bdot"></span></span>
+                </div>
+              </div>
+              <div class="blk lab" id="e-lab">YOUR NEXT TRIP</div>
+              <div class="blk" id="e-pass">
+                <div class="bp-top">
+                  <div class="row between"><span class="bp-lbl">BOARDING PASS &middot; LGI-4F2A</span>
+                    <span class="row" id="e-dep"><svg class="ic" width="22" height="22"><use href="#i-clock"/></svg>Departs in 2h 10m</span></div>
+                  <div class="bp-codes">
+                    <div class="bp-col"><span class="bp-code" id="e-c1">TUN</span><span class="bp-city">Tunis</span></div>
+                    <div class="bp-mid"><svg class="ic" width="36" height="36" style="transform:rotate(90deg)"><use href="#i-flight"/></svg><span class="ln"></span><span class="tm">07:30</span></div>
+                    <div class="bp-col" style="text-align:right"><span class="bp-code to" id="e-c2">SFX</span><span class="bp-city">Sfax</span></div>
+                  </div>
+                </div>
+                <div class="perf"><span class="notch l" id="e-n1"></span><span class="dash" id="e-dash"></span><span class="notch r" id="e-n2"></span></div>
+                <div class="bp-stub" id="e-stub">
+                  <div class="bp-stats">
+                    <div class="bp-st"><span class="k">DATE</span><span class="v">Wed 30 Sep</span></div>
+                    <div class="bp-st" style="text-align:center"><span class="k">SEATS</span><span class="v">1</span></div>
+                    <div class="bp-st" style="text-align:right"><span class="k">PAID</span><span class="v">25 TND</span></div>
+                  </div>
+                  <div class="row between bp-drv">
+                    <div class="row" style="gap:16px"><span class="bp-av">MT</span><div><div style="font-weight:600;font-size:20px;color:var(--on-navy-mut)">Driver</div><div style="font-weight:700;font-size:25px;color:#fff">Mehdi Trabelsi</div></div></div>
+                    <div class="row" style="gap:14px"><span class="bp-chat"><svg class="ic" width="30" height="30"><use href="#i-chat"/></svg></span>
+                      <span class="row" id="e-view"><svg class="ic" width="26" height="26"><use href="#i-ticket"/></svg>View ticket</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="blk row" id="e-seg"><span class="sg on">Upcoming</span><span class="sg">Past</span><span class="sg">Payments</span></div>
+              <div class="blk card row between" id="e-up">
+                <div><div class="mono" style="font-weight:700;font-size:26px;color:var(--primary)">TUN &rarr; SFX</div><div style="font-weight:500;font-size:22px;margin-top:6px" class="muted">Wed 30 Sep &middot; 07:30 &middot; 1 seat</div></div>
+                <span class="row ok-b" style="margin-left:0">Confirmed</span>
+              </div>
+              <div class="dim" data-layout-allow-occlusion></div>
+            </div>
+
+            <!-- F · Delivery -->
+            <div class="scr" id="sF">
+              <div class="blk row between" id="f-hdr"><span id="f-title">Boxes &amp; Parcels</span>
+                <span class="row" id="f-track"><svg class="ic" width="26" height="26"><use href="#i-search"/></svg>Track</span></div>
+              <div class="blk" id="f-subt">Send a parcel on a louage already going your way.</div>
+              <div class="blk" id="f-promo">
+                <div id="f-pk">LOUAGI DELIVERY</div>
+                <div id="f-pt">Send a box on a ride already going your way.</div>
+                <div class="pill-btn" id="f-new"><svg class="ic" width="30" height="30"><use href="#i-add"/></svg>New delivery</div>
+                <svg class="ic" id="f-box" width="100" height="100"><use href="#i-box"/></svg>
+              </div>
+              <div class="card how" id="f-h1"><span class="hi"><svg class="ic" width="34" height="34"><use href="#i-archive"/></svg></span><span class="hl">Drop</span></div>
+              <div class="card how" id="f-h2"><span class="hi"><svg class="ic" width="34" height="34"><use href="#i-ship"/></svg></span><span class="hl">Ride</span></div>
+              <div class="card how ok" id="f-h3"><span class="hi"><svg class="ic" width="34" height="34"><use href="#i-okc"/></svg></span><span class="hl">Collect</span></div>
+              <div class="blk row between" id="f-rh"><span class="t">Routes with space today</span><span style="font-weight:600;font-size:22px" class="muted">3 routes</span></div>
+              <div class="card dcard" id="f-d1">
+                <div class="row" style="gap:20px"><span class="d-ico"><svg class="ic" width="38" height="38"><use href="#i-box"/></svg></span>
+                  <div style="flex:1 1 auto"><div class="d-rt">Tunis &rarr; Sfax</div><div class="d-rs">TUN &rarr; SFX &middot; Wed 30 Sep, 07:30</div></div>
+                  <div><div class="d-pr">10 TND</div><div class="d-from">from</div></div></div>
+                <div class="row" style="gap:22px;margin-top:22px"><div style="flex:1 1 auto"><div class="d-bar"><i style="width:33%"></i></div><div class="d-sl">4 of 6 slots free</div></div>
+                  <span class="pill-btn d-res">Reserve</span></div>
+              </div>
+              <div class="card dcard" id="f-d2">
+                <div class="row" style="gap:20px"><span class="d-ico"><svg class="ic" width="38" height="38"><use href="#i-box"/></svg></span>
+                  <div style="flex:1 1 auto"><div class="d-rt">Sfax &rarr; Gab&egrave;s</div><div class="d-rs">SFX &rarr; GAB &middot; Wed 30 Sep, 09:00</div></div>
+                  <div><div class="d-pr">10 TND</div><div class="d-from">from</div></div></div>
+                <div class="row" style="gap:22px;margin-top:22px"><div style="flex:1 1 auto"><div class="d-bar"><i style="width:67%"></i></div><div class="d-sl">2 of 6 slots free</div></div>
+                  <span class="pill-btn d-res">Reserve</span></div>
+              </div>
+            </div>
+
+            <!-- persistent: tab dock, status bar, fingertip -->
+            <div id="dock" data-layout-allow-occlusion>
+              <span class="ti on" id="ti-home" data-layout-allow-overlap><svg class="ic" width="40" height="40"><use href="#i-home"/></svg>Home</span>
+              <span class="ti" id="ti-search" data-layout-allow-overlap><svg class="ic" width="40" height="40"><use href="#i-search"/></svg>Search</span>
+              <span class="ti" id="ti-book" data-layout-allow-overlap><svg class="ic" width="40" height="40"><use href="#i-event"/></svg>Bookings</span>
+              <span class="ti" id="ti-del" data-layout-allow-overlap><svg class="ic" width="40" height="40"><use href="#i-ship"/></svg>Delivery</span>
+              <span class="ti" id="ti-prof" data-layout-allow-overlap><svg class="ic" width="40" height="40"><use href="#i-person"/></svg>Profile</span>
+            </div>
+            <div id="sb" data-layout-allow-occlusion>
+              <span id="sb-time">9:41</span><span id="sb-island"></span>
+              <span id="sb-icons">
+                <svg width="34" height="22" viewBox="0 0 34 22"><rect x="0" y="14" width="6" height="8" rx="1.5" fill="#1b1b1e"/><rect x="9" y="9" width="6" height="13" rx="1.5" fill="#1b1b1e"/><rect x="18" y="4" width="6" height="18" rx="1.5" fill="#1b1b1e"/><rect x="27" y="0" width="6" height="22" rx="1.5" fill="#1b1b1e"/></svg>
+                <svg width="30" height="22" viewBox="0 0 24 18"><path d="M12 18l3.5-4.2a5.5 5.5 0 0 0-7 0zM4.4 9.4l2.1 2.5a8.6 8.6 0 0 1 11 0l2.1-2.5a11.9 11.9 0 0 0-15.2 0zM.5 4.7l2.1 2.5a14.7 14.7 0 0 1 18.8 0l2.1-2.5a18 18 0 0 0-23 0z" fill="#1b1b1e"/></svg>
+                <svg width="46" height="22" viewBox="0 0 46 22"><rect x="1" y="1" width="39" height="20" rx="6" fill="none" stroke="#1b1b1e" stroke-width="2" opacity="0.45"/><rect x="4" y="4" width="30" height="14" rx="3.5" fill="#1b1b1e"/><rect x="42" y="7" width="3" height="8" rx="1.5" fill="#1b1b1e" opacity="0.45"/></svg>
+              </span>
+            </div>
+            <div id="frip" data-layout-allow-occlusion><span id="fring"></span></div>
+            <div id="finger" data-layout-allow-occlusion><span id="fdot"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ outro ============ -->
+      <div id="s-out" style="position:absolute;inset:0">
+        <div class="inner">
+          <svg id="o-logo" viewBox="0 0 1024 1024"><use href="#i-logo"/></svg>
+          <span id="o-name">Louagi</span>
+          <span id="o-tag">No queues. No double-bookings.</span>
+        </div>
+      </div>
+
+      <!-- ============ audio ============ -->
+      <audio id="bgm" data-start="0" data-duration="25" data-track-index="10"
+             data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.6,"v":0.30},{"t":23.8,"v":0.30},{"t":25,"v":0}]}]}'
+             src="assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3"></audio>
+      <audio id="sfx-land"   data-start="1.55"  data-duration="0.18" data-track-index="11" data-volume="0.60" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx-cap1"   data-start="2.62"  data-duration="0.06" data-track-index="12" data-volume="0.30" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-tap1"   data-start="3.70"  data-duration="0.06" data-track-index="13" data-volume="0.72" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-sheet"  data-start="3.78"  data-duration="0.60" data-track-index="14" data-volume="0.34" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <audio id="sfx-tap2"   data-start="4.23"  data-duration="0.06" data-track-index="15" data-volume="0.72" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-tap3"   data-start="5.28"  data-duration="0.06" data-track-index="16" data-volume="0.72" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-push1"  data-start="5.78"  data-duration="0.60" data-track-index="17" data-volume="0.38" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <audio id="sfx-cap2"   data-start="6.32"  data-duration="0.06" data-track-index="18" data-volume="0.30" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-tap4"   data-start="8.44"  data-duration="0.06" data-track-index="19" data-volume="0.72" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-push2"  data-start="8.94"  data-duration="0.60" data-track-index="20" data-volume="0.38" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <audio id="sfx-cap3"   data-start="9.48"  data-duration="0.06" data-track-index="21" data-volume="0.30" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-tap5"   data-start="11.60" data-duration="0.06" data-track-index="22" data-volume="0.74" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-push3"  data-start="12.24" data-duration="0.60" data-track-index="23" data-volume="0.34" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <audio id="sfx-booked" data-start="12.65" data-duration="1.48" data-track-index="24" data-volume="0.62" src="assets/sfx/impact/impactBell_heavy_000.ogg"></audio>
+      <audio id="sfx-cap4"   data-start="13.68" data-duration="0.06" data-track-index="25" data-volume="0.30" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-tap6"   data-start="14.76" data-duration="0.06" data-track-index="26" data-volume="0.72" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-pass"   data-start="15.26" data-duration="0.15" data-track-index="27" data-volume="0.56" src="assets/sfx/impact/impactSoft_medium_004.ogg"></audio>
+      <audio id="sfx-perf"   data-start="15.81" data-duration="0.06" data-track-index="28" data-volume="0.34" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-tap7"   data-start="18.96" data-duration="0.06" data-track-index="29" data-volume="0.72" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-step1"  data-start="19.46" data-duration="0.11" data-track-index="30" data-volume="0.46" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sfx-step2"  data-start="20.00" data-duration="0.19" data-track-index="31" data-volume="0.46" src="assets/sfx/interface/drop_002.ogg"></audio>
+      <audio id="sfx-step3"  data-start="20.52" data-duration="0.19" data-track-index="32" data-volume="0.50" src="assets/sfx/interface/drop_003.ogg"></audio>
+      <audio id="sfx-logo"   data-start="22.62" data-duration="0.14" data-track-index="33" data-volume="0.62" src="assets/sfx/impact/impactSoft_medium_002.ogg"></audio>
+    </div>
+
+    <script src="assets/music/audio-data.js"></script>
+    <script>
+/* Louagi — /brag how-to demo (vertical).
+   One paused GSAP timeline registered on window.__timelines["louagi-howto"].
+   Music: happy-beats-business-moves-vol-9 (114.84 BPM, beat ≈0.52s).
+   Cue source: brag bundled preset assets/music/cues/happy-beats-business-moves-vol-9-by-ende-dot-app.music-cues.json
+   Tap coordinates are screen-local (phone screen is 708x1348); the fingertip lives inside
+   the screen so the camera punch-ins carry it along. */
+(function () {
+  var tl = gsap.timeline({ paused: true });
+  var W = 708;
+  var ON = "#FF5A6E", OFF = "rgba(255,255,255,0.5)";
+
+  /* ---------- helpers ---------- */
+  function capIn(n, t) {
+    tl.set("#cap" + n, { autoAlpha: 1 }, t);
+    var k = "#c" + n + "k", h = "#c" + n + "h", s = "#c" + n + "s";
+    tl.fromTo(k, { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: "power3.out", immediateRender: false }, t);
+    tl.fromTo(h, { yPercent: 105 }, { yPercent: 0, duration: 0.5, ease: "power4.out", immediateRender: false }, t + 0.06);
+    tl.fromTo(s, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.42, ease: "power2.out", immediateRender: false }, t + 0.16);
+  }
+  function capOut(n, t) {
+    tl.to("#cap" + n, { y: -46, autoAlpha: 0, duration: 0.24, ease: "power2.in" }, t);
+  }
+  function fingerIn(t, x, y) {
+    tl.set("#finger", { x: x + 70, y: y + 110 }, t);
+    tl.fromTo("#finger", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.18, ease: "none", immediateRender: false }, t);
+    tl.to("#finger", { x: x, y: y, duration: 0.34, ease: "power2.out" }, t);
+  }
+  function fingerMove(t, x, y, d) {
+    tl.to("#finger", { x: x, y: y, duration: d || 0.3, ease: "power2.inOut" }, t);
+  }
+  function fingerOut(t) {
+    tl.to("#finger", { autoAlpha: 0, duration: 0.2, ease: "none" }, t);
+  }
+  function press(t, x, y) {
+    tl.to("#fdot", { scale: 0.82, backgroundColor: "rgba(20,24,33,0.46)", duration: 0.08, ease: "power2.out", yoyo: true, repeat: 1 }, t);
+    tl.set("#frip", { x: x, y: y }, t);
+    tl.fromTo("#fring", { scale: 0.55, opacity: 0.85 }, { scale: 2.3, opacity: 0, duration: 0.5, ease: "power2.out", immediateRender: false }, t);
+  }
+  function push(fromSel, toSel, t) {
+    tl.set(toSel, { autoAlpha: 1 }, t);
+    tl.set(fromSel, { autoAlpha: 0 }, t + 0.52);
+    tl.fromTo(toSel, { x: W }, { x: 0, duration: 0.5, ease: "power3.inOut", immediateRender: false }, t);
+    tl.to(fromSel, { x: -W * 0.3, duration: 0.5, ease: "power3.inOut" }, t);
+    tl.to(fromSel + " .dim", { opacity: 0.22, duration: 0.5, ease: "power2.out" }, t);
+  }
+  function tabTo(fromId, toId, t) {
+    tl.to(fromId, { color: OFF, duration: 0.18, ease: "none" }, t);
+    tl.to(toId, { color: ON, duration: 0.18, ease: "none" }, t);
+  }
+  function rise(sel, t, dy) {
+    tl.fromTo(sel, { y: dy || 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.42, ease: "power3.out", immediateRender: false }, t);
+  }
+
+  /* ---------- initial state (explicit sets at t=0 so any seek is correct) ---------- */
+  gsap.set(["#c1k", "#c1s", "#c2k", "#c2s", "#c3k", "#c3s", "#c4k", "#c4s", "#c5k", "#c5s"], { opacity: 0 });
+  gsap.set(["#c1h", "#c2h", "#c3h", "#c4h", "#c5h"], { yPercent: 105 });
+  gsap.set(["#sB", "#sC", "#sD"], { x: W, autoAlpha: 0 });
+  gsap.set(["#cap1", "#cap2", "#cap3", "#cap4", "#cap5", "#a-sheet", "#a-scrim"], { autoAlpha: 0 });
+  gsap.set(["#sE", "#sF"], { autoAlpha: 0 });
+  gsap.set(["#a-sfx", "#a-sfax"], { yPercent: 100, autoAlpha: 0 });
+  gsap.set("#c-lab2", { autoAlpha: 0 });
+  gsap.set("#finger", { autoAlpha: 0 });
+  gsap.set(".seg-fill", { scaleX: 0 });
+  gsap.set(["#a-hdr", "#a-kick", "#a-head", "#a-ticket", "#a-pop", "#a-r1", "#a-r2", "#a-r3", "#dock",
+          "#b-c1", "#b-c2", "#b-c3", "#c-trip", "#c-drv", "#c-pay",
+          "#d-title", "#d-ref", "#d-tl", "#d-rcpt", "#d-back", "#d-more",
+          "#e-greet", "#e-lab", "#e-pass", "#e-c1", "#e-c2", "#e-stub", "#e-seg", "#e-up",
+          "#f-hdr", "#f-subt", "#f-promo", "#f-h1", "#f-h2", "#f-h3", "#f-rh", "#f-d1", "#f-d2"], { opacity: 0 });
+  gsap.set("#c-foot", { y: 260 });
+  gsap.set("#d-check", { scale: 0 });
+  gsap.set("#e-dash", { scaleX: 0 });
+  gsap.set(["#e-n1", "#e-n2"], { scale: 0 });
+
+  /* ======================= HOOK (0 → 2.65) ======================= */
+  tl.fromTo(".chrome-lab", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out", stagger: 0.08 }, 0.2);
+  tl.fromTo("#trk", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 1.3);
+  tl.fromTo("#c0k", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.2);
+  tl.fromTo("#c0h1", { yPercent: 105 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 0.32);
+  tl.fromTo("#c0h2", { yPercent: 105 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 0.44);
+
+  // beat-locked: 1.59s — the phone lands
+  tl.fromTo("#cam", { y: 1450 }, { y: 0, duration: 0.6, ease: "power3.out" }, 0.99);
+  rise("#a-hdr", 1.42); rise("#a-kick", 1.52); rise("#a-head", 1.58);
+  rise("#a-ticket", 1.7, 50); rise("#a-pop", 1.84); rise("#a-r1", 1.9); rise("#a-r2", 1.98); rise("#a-r3", 2.06);
+  rise("#dock", 1.95, 60);
+
+  capOut(0, 2.4);
+
+  /* ======================= STEP 1 — pick your route (2.65 → 6.34) ======================= */
+  capIn(1, 2.64);
+  tl.to("#sf1", { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 2.66);
+  // gentle punch-in on the search ticket
+  tl.to("#cam", { scale: 1.07, transformOrigin: "540px 1060px", duration: 0.6, ease: "power2.inOut" }, 2.9);
+
+  fingerIn(3.2, 588, 458);
+  // beat-locked: 3.70s (strongCue) — tap the destination code
+  press(3.7, 588, 458);
+  tl.set(["#a-sheet", "#a-scrim"], { autoAlpha: 1 }, 3.78);
+  // the city picker is a modal: it covers the tab dock while open
+  tl.set("#dock", { zIndex: 5 }, 3.78);
+  tl.set("#dock", { zIndex: 25 }, 4.76);
+  tl.fromTo("#a-scrim", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out", immediateRender: false }, 3.78);
+  tl.fromTo("#a-sheet", { y: 820 }, { y: 0, duration: 0.42, ease: "power3.out", immediateRender: false }, 3.78);
+  fingerMove(3.86, 220, 926, 0.28);
+  // beat: 4.23s — pick Sfax
+  press(4.23, 220, 926);
+  tl.to("#cr2-hl", { opacity: 1, duration: 0.1, ease: "none" }, 4.23);
+  tl.to("#a-sheet", { y: 820, duration: 0.34, ease: "power3.in" }, 4.4);
+  tl.to("#a-scrim", { autoAlpha: 0, duration: 0.3, ease: "power1.in" }, 4.44);
+  tl.set("#a-sheet", { autoAlpha: 0 }, 4.76);
+  // the ticket code flips SOU → SFX, Sousse → Sfax
+  tl.set(["#a-sfx", "#a-sfax"], { autoAlpha: 1 }, 4.66);
+  tl.set(["#a-sou", "#a-sousse"], { autoAlpha: 0 }, 5.0);
+  tl.to(["#a-sou", "#a-sousse"], { yPercent: -100, duration: 0.32, ease: "power3.inOut" }, 4.66);
+  tl.to(["#a-sfx", "#a-sfax"], { yPercent: 0, duration: 0.32, ease: "power3.inOut" }, 4.66);
+  fingerMove(4.8, 454, 668, 0.34);
+  // beat: 5.28s — tap Search rides
+  press(5.28, 454, 668);
+  tl.to("#a-search", { scale: 0.95, duration: 0.09, ease: "power2.out", yoyo: true, repeat: 1 }, 5.28);
+  fingerOut(5.55);
+  tl.to("#cam", { scale: 1, duration: 0.5, ease: "power2.inOut" }, 5.62);
+
+  // push Home → Find a ride; the dock moves to Search
+  push("#sA", "#sB", 5.8);
+  tabTo("#ti-home", "#ti-search", 5.86);
+  rise("#b-c1", 6.02, 60); rise("#b-c2", 6.2, 60); rise("#b-c3", 6.38, 60);
+
+  capOut(1, 6.1);
+
+  /* ======================= STEP 2 — choose a ride (6.34 → 9.50) ======================= */
+  capIn(2, 6.34);
+  tl.to("#sf2", { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 6.36);
+  fingerIn(7.9, 380, 1030);
+  // beat-locked: 8.44s (strongCue) — tap the 07:30 ride
+  press(8.44, 380, 1030);
+  tl.to("#b-c2", { scale: 0.975, duration: 0.1, ease: "power2.out", yoyo: true, repeat: 1 }, 8.44);
+  fingerOut(8.7);
+  // push → Ride detail; the dock slides away (stack screen)
+  tl.to("#dock", { y: 180, duration: 0.4, ease: "power2.in" }, 8.9);
+  push("#sB", "#sC", 8.96);
+  rise("#c-trip", 9.12, 40); rise("#c-drv", 9.24, 40); rise("#c-pay", 9.36, 40);
+  tl.to("#c-foot", { y: 0, duration: 0.5, ease: "power3.out" }, 9.2);
+
+  capOut(2, 9.26);
+
+  /* ======================= STEP 3 — book & pay (9.50 → 13.70) ======================= */
+  capIn(3, 9.5);
+  tl.to("#sf3", { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 9.52);
+  // scroll to the driver + Flouci payment rows
+  tl.to("#c-scroll", { y: -330, duration: 0.64, ease: "power2.inOut" }, 10.01);
+  // punch-in on the sticky booking footer
+  tl.to("#cam", { scale: 1.08, transformOrigin: "540px 1776px", duration: 0.55, ease: "power2.inOut" }, 10.62);
+  fingerIn(10.95, 354, 1260);
+  // beat: 11.60s — tap Book 1 seat
+  press(11.6, 354, 1260);
+  tl.to("#c-book", { scale: 0.97, duration: 0.1, ease: "power2.out", yoyo: true, repeat: 1 }, 11.6);
+  tl.to("#c-lab1", { autoAlpha: 0, y: -18, duration: 0.18, ease: "power2.in" }, 11.7);
+  tl.fromTo("#c-lab2", { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.22, ease: "power2.out", immediateRender: false }, 11.78);
+  tl.fromTo("#c-spin", { rotation: 0 }, { rotation: 540, duration: 0.9, ease: "none" }, 11.78);
+  fingerOut(11.9);
+  tl.to("#cam", { scale: 1, duration: 0.5, ease: "power2.inOut" }, 12.1);
+  // push → Booking confirmed
+  push("#sC", "#sD", 12.25);
+  // beat-locked: 12.65s (strongCue) — the confirmation check ring
+  tl.to("#d-check", { scale: 1, duration: 0.5, ease: "back.out(2.2)" }, 12.65);
+  tl.fromTo("#d-ripple", { scale: 0.85, opacity: 0.9 }, { scale: 1.9, opacity: 0, duration: 0.75, ease: "power2.out", immediateRender: false }, 12.7);
+  rise("#d-title", 12.84, 30); rise("#d-ref", 13.0, 24);
+  rise("#d-tl", 13.1); rise("#d-rcpt", 13.2); rise("#d-back", 13.3); rise("#d-more", 13.36);
+
+  capOut(3, 13.46);
+
+  /* ======================= STEP 4 — show your pass (13.70 → 18.96) ======================= */
+  capIn(4, 13.7);
+  tl.to("#sf4", { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 13.72);
+  fingerIn(14.3, 354, 1142);
+  // beat: 14.76s — tap Back to bookings
+  press(14.76, 354, 1142);
+  tl.to("#d-back", { scale: 0.96, duration: 0.09, ease: "power2.out", yoyo: true, repeat: 1 }, 14.76);
+  fingerOut(15.0);
+  // tab switch → Bookings (dock returns)
+  tl.to("#sD", { autoAlpha: 0, duration: 0.16, ease: "power1.in" }, 14.98);
+  tl.to("#sE", { autoAlpha: 1, duration: 0.22, ease: "power1.out" }, 15.12);
+  tl.to("#dock", { y: 0, duration: 0.45, ease: "power3.out" }, 14.96);
+  tabTo("#ti-search", "#ti-book", 15.02);
+  rise("#e-greet", 15.06, 26); rise("#e-lab", 15.14, 20);
+  // beat: 15.28s — the navy boarding pass lands
+  tl.fromTo("#e-pass", { y: -70, scale: 0.96, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.55, ease: "back.out(1.3)", immediateRender: false }, 15.28);
+  tl.fromTo(["#e-c1", "#e-c2"], { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(2)", stagger: 0.12, immediateRender: false }, 15.5);
+  // beat: 15.81s — perforation draws, notches punch in
+  tl.to("#e-dash", { scaleX: 1, duration: 0.42, ease: "power2.inOut" }, 15.81);
+  tl.to(["#e-n1", "#e-n2"], { scale: 1, duration: 0.3, ease: "back.out(2.4)", stagger: 0.08 }, 16.05);
+  tl.fromTo("#e-stub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out", immediateRender: false }, 16.1);
+  rise("#e-seg", 16.26); rise("#e-up", 16.36);
+
+  capOut(4, 18.72);
+
+  /* ======================= BONUS — send a parcel (18.96 → 22.12) ======================= */
+  fingerIn(18.4, 481, 1262);
+  // beat: 18.96s — tap the Delivery tab
+  press(18.96, 481, 1262);
+  capIn(5, 18.96);
+  tabTo("#ti-book", "#ti-del", 19.0);
+  tl.to("#sE", { autoAlpha: 0, duration: 0.16, ease: "power1.in" }, 19.0);
+  tl.to("#sF", { autoAlpha: 1, duration: 0.22, ease: "power1.out" }, 19.14);
+  fingerOut(19.2);
+  rise("#f-hdr", 19.08, 24); rise("#f-subt", 19.14, 20); rise("#f-promo", 19.2, 40);
+  // beat-grid: Drop 19.48 / Ride 20.02 / Collect 20.54 — the set holds to 22.12
+  tl.fromTo("#f-h1", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)", immediateRender: false }, 19.48);
+  tl.fromTo("#f-h2", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)", immediateRender: false }, 20.02);
+  tl.fromTo("#f-h3", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)", immediateRender: false }, 20.54);
+  rise("#f-rh", 19.6); rise("#f-d1", 19.7, 40); rise("#f-d2", 19.8, 40);
+
+  capOut(5, 21.98);
+
+  /* ======================= OUTRO (22.12 → 25.0) ======================= */
+  tl.to("#cam", { y: 1560, duration: 0.5, ease: "power3.in" }, 22.1);
+  tl.set("#cam", { autoAlpha: 0 }, 22.62);
+  tl.fromTo("#o-logo", { scale: 0.3, rotation: -15, opacity: 0 }, { scale: 1, rotation: 3, opacity: 1, duration: 0.62, ease: "back.out(1.8)" }, 22.64);
+  tl.fromTo("#o-name", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 22.9);
+  // beat-locked: 23.17s (strongCue) — the promise
+  tl.fromTo("#o-tag", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 23.17);
+
+  /* ---------- audio-reactive: the sand field's glows breathe with the bed ---------- */
+  var A = window.AUDIO_DATA;
+  var glowA = document.getElementById("glow-a");
+  var glowB = document.getElementById("glow-b");
+  function tick(i) {
+    return function () {
+      gsap.set(glowA, { scale: 1 + A.bass[i] * 0.14, opacity: 0.6 + A.rms[i] * 0.4 });
+      gsap.set(glowB, { scale: 1 + A.rms[i] * 0.08 });
+    };
+  }
+  if (A && A.totalFrames) {
+    var n = Math.min(A.totalFrames, 25 * A.fps + 1);
+    for (var f = 0; f < n; f++) tl.call(tick(f), [], f / A.fps);
+  }
+
+  window.__timelines["louagi-howto"] = tl;
+})();
+    </script>
+  </body>
+</html>
