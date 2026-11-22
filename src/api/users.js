@@ -5,6 +5,7 @@ import { validateEmail, validateName, validatePassword, sanitize } from '../vali
 import { useMocks } from '../config';
 import { DEFAULT_TIERS } from '../lib/tiers';
 import { gql, gqlList } from './graphql';
+import { setTokens } from '../security/tokenStore';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -269,7 +270,12 @@ export async function verifyCurrentPassword({ actor, password }) {
 }
 
 export async function changePasswordSecure({ actor, currentPassword, newPassword }) {
-  if (!useMocks) return gql('ChangePasswordSecure', { currentPassword, newPassword });
+  if (!useMocks) {
+    const res = await gql('ChangePasswordSecure', { currentPassword, newPassword });
+    // The server revoked every session; this pair keeps the current device signed in.
+    if (res?.accessToken) setTokens({ access: res.accessToken, refresh: res.refreshToken });
+    return res;
+  }
   await sleep(180);
   const u = findUserById(actor.id);
   if (!u) return { ok: false, error: 'Not found' };
