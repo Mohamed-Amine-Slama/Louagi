@@ -19,7 +19,7 @@
     { "id": "cqrs", "type": "backend", "label": "CQRS buses", "sublabel": "commands · queries · events", "tag": "envelope → auth → cache", "pos": [935, 360], "size": [160, 64] },
     { "id": "redis", "type": "database", "label": "Redis", "sublabel": "compose container", "pos": [1190, 360], "size": [110, 64] },
     { "id": "providers", "type": "external", "label": "Messaging providers", "sublabel": "Twilio · SMTP · Expo Push", "pos": [240, 360], "size": [150, 64] },
-    { "id": "postgres", "type": "database", "label": "Supabase Postgres", "sublabel": "pooler :6543 · RLS", "pos": [935, 520], "size": [160, 64] },
+    { "id": "postgres", "type": "database", "label": "Supabase Postgres", "sublabel": "session pooler :5432 · RLS", "pos": [935, 520], "size": [160, 64] },
     { "id": "migrations", "type": "database", "label": "Louagi-Database", "sublabel": "migrations · seed.sql", "pos": [660, 520], "size": [140, 64] }
   ],
   "boundaries": [

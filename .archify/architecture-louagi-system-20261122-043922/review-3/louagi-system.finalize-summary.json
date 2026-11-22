@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "C:\\Users\\moham\\OneDrive\\Desktop\\Projects\\app structure\\louagi-app\\.archify\\architecture-louagi-system-20261122-043922\\candidate.json",
+    "sha256": "b3b123db4046d560cef227cfc0704b890f4dab00337b1e8f1bab1873fbd847ee",
+    "bytes": 5994
+  },
+  "artifact": {
+    "path": "C:\\Users\\moham\\OneDrive\\Desktop\\Projects\\app structure\\louagi-app\\louagi-system.html",
+    "sha256": "74ba2c01fd4f8142aa1780271b18c00495dda09d5cf272ed6e48ad180fecd9e0",
+    "bytes": 840375
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\Users\\moham\\OneDrive\\Desktop\\Projects\\app structure\\louagi-app\\.archify\\architecture-louagi-system-20261122-043922\\review-3\\louagi-system.finalize.json",
+    "summaryReceipt": "C:\\Users\\moham\\OneDrive\\Desktop\\Projects\\app structure\\louagi-app\\.archify\\architecture-louagi-system-20261122-043922\\review-3\\louagi-system.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\moham\\OneDrive\\Desktop\\Projects\\app structure\\louagi-app\\.archify\\architecture-louagi-system-20261122-043922\\review-3\\louagi-system.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-22T03:40:16.777Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 5439,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}
