@@ -32,6 +32,6 @@ variable "admin_allowed_ips" {
 
 variable "managed_waf" {
   type        = bool
-  default     = true
-  description = "Deploy the Cloudflare Managed + OWASP Core rulesets. Needs a Pro plan or higher; set false on Free (Free already gets the Free Managed Ruleset)"
+  default     = false
+  description = "Deploy the Cloudflare Managed + OWASP Core rulesets. Needs a Pro plan or higher, so off by default for the Free plan (which already gets the Free Managed Ruleset)"
 }

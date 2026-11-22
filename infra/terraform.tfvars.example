@@ -13,5 +13,5 @@ gateway_secret = "..."
 # IPs don't need allowlisting.
 # admin_allowed_ips = ["203.0.113.0/24"]
 
-# Free plan: set false (Managed + OWASP rulesets need Pro or higher)
-# managed_waf = false
+# Pro plan or higher: turn on the Managed + OWASP rulesets (default false for Free)
+# managed_waf = true
