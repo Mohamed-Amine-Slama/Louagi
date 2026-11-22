@@ -7,11 +7,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#031634"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.louagi.app",
@@ -27,7 +22,6 @@
           "apiKey": "YOUR_ANDROID_GOOGLE_MAPS_API_KEY"
         }
       },
-      "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
@@ -54,6 +48,15 @@
           "locationWhenInUsePermission": "Louagi uses your location while you drive so passengers can track their parcels in real time.",
           "isAndroidForegroundServiceEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#031634",
+          "imageWidth": 200
         }
       ]
     ],
