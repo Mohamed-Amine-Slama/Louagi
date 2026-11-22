@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "bf597046-5624-43a9-ab98-6d6419b16bf8",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\moham\\OneDrive\\Desktop\\Projects\\app structure\\louagi-app\\.archify\\architecture-louagi-system-20261122-043922\\candidate.json",
+  "output": "C:\\Users\\moham\\OneDrive\\Desktop\\Projects\\app structure\\louagi-app\\louagi-system.html",
+  "specification": {
+    "sha256": "045808ffc5d865425bee709edee721abda56d763b15279b62b4081684275dd8b",
+    "bytes": 5986
+  },
+  "artifact": {
+    "sha256": "c157c21c1ba8f2ad471c9c2bef4701df24b14d3cd3e3e377e128dc7efb777207",
+    "bytes": 840343
+  }
+}

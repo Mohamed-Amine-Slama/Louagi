@@ -194,7 +194,8 @@ export default function LandingScreen() {
         </Section>
       </FadeSlideIn>
 
-      {/* Become a driver */}
+      {/* Become a driver — signed-out only: Register lives in the public stack, and an existing account can't switch role */}
+      {!user && (
       <FadeSlideIn index={7}>
         <Card
           onPress={() => nav.navigate('Register', { preset: 'driver' })}
@@ -226,6 +227,7 @@ export default function LandingScreen() {
           />
         </Card>
       </FadeSlideIn>
+      )}
 
       <CityPickerModal
         visible={editing === 'origin'}

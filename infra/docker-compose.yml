@@ -1,0 +1,27 @@
+# Production origin behind Cloudflare (replaces ECS Fargate + ElastiCache). Runs on any
+# Docker host. Nothing is published on the host: the only way in is the Cloudflare Tunnel,
+# so the NGFW rules and the admin API gateway can't be bypassed.
+#   cd infra && TUNNEL_TOKEN=$(terraform output -raw tunnel_token) docker compose up -d --build
+# (The repo-root docker-compose.yml is the local dev stack.)
+services:
+  api:
+    build: ../server
+    env_file: ../server/.env
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+    depends_on: [redis]
+    restart: unless-stopped
+
+  # Only reachable on this compose network
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN from terraform output -raw tunnel_token}
+    depends_on: [api]
+    restart: unless-stopped

@@ -74,6 +74,10 @@ the envelope in the body.
   mutations use the bearer token.
 - On `401`, the client tries the `Refresh` GraphQL operation exactly once, then retries the
   original request. Concurrent 401s share a single in-flight refresh.
+- Admin tokens: when the server has `GATEWAY_SECRET` set, an `admin`-role token is treated
+  as unauthenticated unless the request carries the admin API gateway's `x-louagi-gateway`
+  stamp. In production that means only requests to the admin API hostname. Clients never set
+  this header themselves.
 
 ### JWT claims (informational)
 The current mock signs these claims; the real backend can use the same set or

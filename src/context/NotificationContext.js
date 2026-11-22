@@ -19,13 +19,15 @@ export function NotificationProvider({ children, navigationRef }) {
   const prevChatsRef = useRef([]);
 
   useEffect(() => {
-    initNotifications().then(async (allowed) => {
-      setGranted(allowed);
-      if (allowed) {
-        const token = await registerForRemoteNotifications();
-        setPushToken(token);
-      }
-    });
+    initNotifications()
+      .then(async (allowed) => {
+        setGranted(allowed);
+        if (allowed) {
+          const token = await registerForRemoteNotifications();
+          setPushToken(token);
+        }
+      })
+      .catch((e) => console.warn('Notification setup failed', e));
 
     // Listen for notification taps
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {

@@ -64,6 +64,10 @@ The Louagi App follows several security best practices, including the use of par
 - **Description:** No rate limiting is implemented on the Express server.
 - **Impact:** Susceptible to brute-force attacks on OTP/passwords and Denial of Service (DoS) attacks.
 - **Recommendation:** Implement `express-rate-limit` on all routes, especially `/graphql`.
+- **Status (2026-11-22): Mitigated.**
+  - Express rate-limits every route except `/health`, using `rate-limiter-flexible` (Redis-backed, in-memory fallback) in `server/src/middleware/rateLimit.js`. Logins have a separate 5-attempts / 15-min lockout.
+  - In production, Cloudflare blocks more than 50 `/graphql` requests per 10 s per IP before traffic reaches the origin (`infra/modules/ngfw`).
+  - Per client IP, the overall budget (`RATE_LIMIT_MAX`, 600 per 15 min) and the `/graphql` budget (`GRAPHQL_RATE_LIMIT_MAX`, 120 per 15 min) are separate limiters. A shared-counter bug that cut `/graphql` to about 60 per 15 min was fixed on 2026-11-22 (test: `server/src/middleware/rateLimit.test.js`). 120 per 15 min can still be tight for many users behind one carrier-NAT IP; raise `GRAPHQL_RATE_LIMIT_MAX` if 429s show up in production.
 
 ---
 
@@ -99,6 +103,6 @@ The Louagi App follows several security best practices, including the use of par
 | 1.2 | Admin Impersonation Risk | High | Access Control |
 | 2.1 | Weak Sanitization | Medium | XSS |
 | 2.2 | Missing Sanitization in Messages | High | XSS |
-| 4.1 | No Rate Limiting | High | Availability |
+| 4.1 | No Rate Limiting (mitigated 2026-11-22; limiter double-counts) | High | Availability |
 | 5.1 | Verbose Health Errors | Low | Info Disclosure |
 | 5.2 | Misleading Encryption Claims (resolved 2026-11-22) | Medium | Data Protection |

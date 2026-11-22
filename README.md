@@ -142,7 +142,9 @@ src/
 | Password hash (bcrypt, server-side)                        | `server/src/cqrs/commands/auth.js` (`extensions.crypt(…, gen_salt('bf'))`); `security/crypto.js` is the offline-mock stand-in |
 | Rate limit: 5 login attempts / 15-min lockout              | `security/rateLimit.js` |
 | RBAC scopes (passenger / driver / admin)                   | `security/rbac.js`, gated routes in `RootNavigator` |
-| Admin IP allowlist                                         | `security/rbac.js` (`isAdminIpAllowed`) |
+| Admin IP allowlist                                         | `security/rbac.js` (`isAdminIpAllowed`, simulation); production: a Cloudflare WAF rule on the admin API hostname (`infra/modules/ngfw`, `admin_allowed_ips`) |
+| Edge firewall: WAF custom rules, rate limit, managed ruleset | `infra/modules/ngfw` |
+| Admin API gateway (admin tokens only honored via the gateway) | `infra/modules/api_gateway/worker.mjs` + `server/src/lib/gateway.js` (`GATEWAY_SECRET`) |
 | Field-level encryption at rest (AES-256-GCM: all PII + user text; HMAC blind indexes for phone/email) | `server/src/lib/fieldCrypto.js`, decrypted centrally in `server/src/db.js`; backfill `server/scripts/encrypt-pii.js` |
 | Seat lock (10-min TTL, atomic)                             | `security/seatLock.js` |
 | Idempotency keys on reservations                           | `api/reservations.js` |

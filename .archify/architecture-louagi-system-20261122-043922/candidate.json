@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Louagi System Architecture",
+    "output": "louagi-system.html",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "admins", "type": "external", "label": "Admins", "sublabel": "web browser", "pos": [40, 40], "size": [110, 60] },
+    { "id": "admin-web", "type": "frontend", "label": "Admin dashboard", "sublabel": "Next.js 16 · Vercel", "tag": "BFF refresh cookie", "pos": [240, 40], "size": [150, 64] },
+    { "id": "riders", "type": "external", "label": "Riders", "sublabel": "passengers · drivers", "pos": [40, 200], "size": [130, 64] },
+    { "id": "mobile-app", "type": "frontend", "label": "Louagi mobile app", "sublabel": "Expo 58 · React Native", "tag": "SecureStore tokens", "pos": [240, 200], "size": [150, 64] },
+    { "id": "ngfw", "type": "security", "label": "NGFW", "sublabel": "WAF rules · rate limit", "tag": "managed ruleset", "pos": [505, 200], "size": [130, 64] },
+    { "id": "edge", "type": "cloud", "label": "Cloudflare edge", "sublabel": "TLS · no cache", "pos": [710, 200], "size": [130, 64] },
+    { "id": "gateway", "type": "security", "label": "API gateway", "sublabel": "Worker · admin host", "tag": "x-louagi-gateway", "pos": [710, 40], "size": [130, 64] },
+    { "id": "api", "type": "backend", "label": "Express API", "sublabel": "helmet · CORS · rate limit", "tag": "POST /graphql", "pos": [935, 200], "size": [160, 64] },
+    { "id": "cqrs", "type": "backend", "label": "CQRS buses", "sublabel": "commands · queries · events", "tag": "envelope → auth → cache", "pos": [935, 360], "size": [160, 64] },
+    { "id": "redis", "type": "database", "label": "Redis", "sublabel": "compose container", "pos": [1190, 360], "size": [110, 64] },
+    { "id": "providers", "type": "external", "label": "Messaging providers", "sublabel": "Twilio · SMTP · Expo Push", "pos": [240, 360], "size": [150, 64] },
+    { "id": "postgres", "type": "database", "label": "Supabase Postgres", "sublabel": "pooler :6543 · RLS", "pos": [935, 520], "size": [160, 64] },
+    { "id": "migrations", "type": "database", "label": "Louagi-Database", "sublabel": "migrations · seed.sql", "pos": [660, 520], "size": [140, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Cloudflare · Terraform (infra/)", "wraps": ["ngfw", "edge", "gateway"] },
+    { "kind": "region", "label": "Origin host · infra/docker-compose.yml", "wraps": ["api", "cqrs", "redis"] },
+    { "kind": "security-group", "label": "api container · :3000", "wraps": ["api", "cqrs"], "pad": 12 }
+  ],
+  "connections": [
+    { "from": "admins", "to": "admin-web", "label": "TOTP login" },
+    { "from": "riders", "to": "mobile-app", "label": "uses" },
+    { "from": "mobile-app", "to": "ngfw", "label": "HTTPS /graphql", "variant": "emphasis" },
+    { "from": "admin-web", "to": "ngfw", "label": "GraphQL · Bearer", "variant": "security", "fromSide": "right", "toSide": "top" },
+    { "from": "ngfw", "to": "edge", "label": "allowed", "variant": "emphasis" },
+    { "from": "edge", "to": "api", "label": "Tunnel", "variant": "emphasis" },
+    { "from": "edge", "to": "gateway", "label": "admin host", "variant": "security" },
+    { "from": "gateway", "to": "api", "label": "Tunnel · stamped", "variant": "security", "fromSide": "right", "toSide": "top" },
+    { "from": "api", "to": "cqrs", "label": "dispatch(op)", "variant": "emphasis" },
+    { "from": "cqrs", "to": "postgres", "label": "SQL · postgres-js", "variant": "emphasis" },
+    { "from": "cqrs", "to": "redis", "label": "query cache" },
+    { "from": "cqrs", "to": "providers", "label": "OTP SMS · email · push", "variant": "dashed" },
+    { "from": "providers", "to": "mobile-app", "label": "push", "variant": "dashed" },
+    { "from": "migrations", "to": "postgres", "label": "schema migrations" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Clients", "items": [
+      "Mobile app: public, passenger and driver stacks; ar / en / fr i18n",
+      "Web export of the app is served from Vercel (vercel.json SPA fallback)",
+      "EXPO_PUBLIC_USE_MOCKS=true swaps the API for an in-memory mock",
+      "Admin dashboard: browser holds the access token in memory; /api/auth/* BFF keeps the refresh token in an httpOnly cookie; browser GraphQL calls use the admin API hostname"
+    ] },
+    { "dot": "violet", "title": "Edge (Cloudflare)", "items": [
+      "NGFW = WAF phases, which run before Workers: custom rules allow only POST/OPTIONS /graphql and GET/HEAD /health, an optional admin IP allowlist, a per-IP rate limit, and the Cloudflare Managed Ruleset",
+      "No CDN: a cache rule bypasses caching on both API hostnames",
+      "API gateway Worker serves only the admin hostname: it passes POST/OPTIONS /graphql and stamps x-louagi-gateway",
+      "The Tunnel is outbound-only, so the origin has no public IP or open port"
+    ] },
+    { "dot": "emerald", "title": "Backend", "items": [
+      "Single protocol: POST /graphql with operationName → command or query bus",
+      "Event bus feeds a cache-invalidation projection that drops stale Redis keys",
+      "Redis is optional: after 10 failed retries the API falls back to the DB",
+      "Every 5 min the API calls cleanup_expired_seat_locks()"
+    ] },
+    { "dot": "rose", "title": "Security", "items": [
+      "Self-issued JWT access + refresh tokens; OTP via SMS / email; admin TOTP",
+      "Bus auth middleware plus RBAC checks in handlers; driver PII field-encrypted",
+      "Admin tokens are honored only on gateway-stamped requests (GATEWAY_SECRET)",
+      "Production rejects plain HTTP and privileged Postgres users"
+    ] },
+    { "dot": "amber", "title": "Deploy & local", "items": [
+      "Terraform (Cloudflare provider): ngfw, edge, api_gateway modules",
+      "infra/docker-compose.yml runs api + redis + cloudflared in production",
+      "Repo-root docker-compose runs api + Expo app + redis for local dev"
+    ] }
+  ]
+}

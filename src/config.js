@@ -18,11 +18,7 @@ import { Platform } from 'react-native';
  *   3. localhost fallback (web or CI).
  */
 function resolveApiUrl() {
-  // 1. Explicit CDN override
-  const cdnUrl = process.env.EXPO_PUBLIC_CDN_URL;
-  if (cdnUrl) return cdnUrl;
-
-  // 2. Explicit API override
+  // 1. Explicit API override (production: the Cloudflare API hostname, e.g. https://api.louagi.com)
   const explicit = process.env.EXPO_PUBLIC_API_URL;
   if (explicit) return explicit;
 

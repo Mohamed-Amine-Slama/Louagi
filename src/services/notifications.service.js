@@ -13,12 +13,18 @@ Notifications.setNotificationHandler({
 
 export async function initNotifications() {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#C8102E',
-    });
+    // Expo Go's native channel manager can throw here (SDK 53+); a missing custom
+    // channel only means Android's fallback channel is used, so keep going.
+    try {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#C8102E',
+      });
+    } catch (e) {
+      console.warn('Notification channel setup failed:', e?.message ?? e);
+    }
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();

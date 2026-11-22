@@ -1,13 +1,17 @@
-aws_region = "eu-central-1"
-vpc_id     = "vpc-0123456789abcdef0"
-environment = "production"
+# Copy to terraform.tfvars (gitignored). Auth via: export CLOUDFLARE_API_TOKEN=...
+account_id         = "0123456789abcdef0123456789abcdef"
+zone_id            = "0123456789abcdef0123456789abcdef"
+api_hostname       = "api.louagi.com"
+admin_api_hostname = "admin-api.louagi.com"
 
-# If you have a custom domain:
-# custom_domain = "api.louagi.com"
-# certificate_arn = "arn:aws:acm:eu-central-1:123456789012:certificate/uuid"
-# cdn_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/uuid"
+# Same value as GATEWAY_SECRET in server/.env (openssl rand -hex 32)
+gateway_secret = "..."
 
-database_url = "postgresql://postgres.xxx:yyy@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
-supabase_url = "https://xxx.supabase.co"
-supabase_service_role_key = "sb_secret_..."
-app_jwt_secret = "..."
+# Recommended: lock the admin API to office/VPN IPs; without it the admin host is
+# as open as the mobile one. Point the dashboard's server-side API_URL at
+# api_hostname (its BFF calls carry no admin token) so Vercel's dynamic egress
+# IPs don't need allowlisting.
+# admin_allowed_ips = ["203.0.113.0/24"]
+
+# Free plan: set false (Managed + OWASP rulesets need Pro or higher)
+# managed_waf = false

@@ -1,11 +1,13 @@
-output "cloudfront_domain" {
-  value = module.cdn.cloudfront_domain
+output "api_url" {
+  value = "https://${var.api_hostname}"
 }
 
-output "alb_dns_name" {
-  value = module.alb.alb_dns_name
+output "admin_api_url" {
+  value = "https://${var.admin_api_hostname}"
 }
 
-output "redis_endpoint" {
-  value = module.redis.redis_endpoint
+# Feed to the origin stack: TUNNEL_TOKEN=$(terraform output -raw tunnel_token) docker compose up -d
+output "tunnel_token" {
+  value     = module.edge.tunnel_token
+  sensitive = true
 }

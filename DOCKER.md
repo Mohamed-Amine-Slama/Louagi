@@ -7,6 +7,10 @@ This setup runs the project as two containers:
 
 Supabase/Postgres stays external and is read from `server/.env`.
 
+This is the local dev stack. Production uses `infra/docker-compose.yml`
+instead (`api` + `redis` + `cloudflared`, no published ports, behind
+Cloudflare); see `PROJECT_DOCUMENTATION.md` §7.
+
 ## Run
 
 ```powershell

@@ -1,51 +1,37 @@
-variable "aws_region" {
-  type    = string
-  default = "eu-central-1"
-}
-
-variable "vpc_id" {
+variable "account_id" {
   type        = string
-  description = "Existing VPC ID to deploy resources into"
+  description = "Cloudflare account ID"
 }
 
-variable "environment" {
-  type    = string
-  default = "production"
-}
-
-variable "custom_domain" {
+variable "zone_id" {
   type        = string
-  description = "Custom domain for the CDN (e.g. api.louagi.com)"
-  default     = ""
+  description = "Cloudflare zone ID of the domain (e.g. louagi.com)"
 }
 
-variable "certificate_arn" {
+variable "api_hostname" {
   type        = string
-  description = "ACM Certificate ARN in the regional AWS region for ALB"
-  default     = ""
+  description = "Public API hostname used by the mobile app (e.g. api.louagi.com)"
 }
 
-variable "cdn_certificate_arn" {
+variable "admin_api_hostname" {
   type        = string
-  description = "ACM Certificate ARN in us-east-1 for CloudFront"
-  default     = ""
+  description = "API hostname used only by the admin dashboard; routed through the API gateway Worker (e.g. admin-api.louagi.com)"
 }
 
-variable "database_url" {
+variable "gateway_secret" {
   type        = string
   sensitive   = true
+  description = "Shared secret the gateway stamps on admin traffic. Set the same value as GATEWAY_SECRET in server/.env (openssl rand -hex 32)"
 }
 
-variable "supabase_url" {
-  type = string
+variable "admin_allowed_ips" {
+  type        = list(string)
+  default     = []
+  description = "IPs/CIDRs (admin office/VPN) allowed to reach the admin API hostname. Empty = no IP restriction, so the admin host is as open as the mobile one. Point the dashboard's server-side API_URL at api_hostname so its BFF calls don't need allowlisting"
 }
 
-variable "supabase_service_role_key" {
-  type      = string
-  sensitive = true
-}
-
-variable "app_jwt_secret" {
-  type      = string
-  sensitive = true
+variable "managed_waf" {
+  type        = bool
+  default     = true
+  description = "Deploy the Cloudflare Managed + OWASP Core rulesets. Needs a Pro plan or higher; set false on Free (Free already gets the Free Managed Ruleset)"
 }
