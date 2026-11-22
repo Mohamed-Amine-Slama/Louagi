@@ -52,7 +52,8 @@
   "devDependencies": {
     "@babel/core": "^7.29.13",
     "sharp": "^0.35.5",
-    "supabase": "^3.2.0"
+    "supabase": "^3.2.0",
+    "typescript": "~6.0.3"
   },
   "overrides": {
     "postcss": "^8.5.10",
