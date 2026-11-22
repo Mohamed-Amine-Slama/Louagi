@@ -10,14 +10,10 @@ import { gql, gqlList } from './graphql';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Payment gateway simulation. The real flow proxies a Konnect/Flouci tokenized
-// call; here we simulate latency + a deterministic success path with a small
-// failure rate to exercise the rollback path the docs spec out.
+// shortcut: no payment provider yet, so every booking is confirmed without a charge; call Konnect/Flouci here once one is live.
 async function callPaymentGateway({ amount, method }) {
   await sleep(450);
   if (method === 'cash') return { ok: true, reference: 'CASH-' + randomBytesHex(6) };
-  // Simulated decline (~5%)
-  if (Math.random() < 0.05) return { ok: false, code: 'DECLINED' };
   return { ok: true, reference: 'PAY-' + randomBytesHex(8).toUpperCase() };
 }
 
