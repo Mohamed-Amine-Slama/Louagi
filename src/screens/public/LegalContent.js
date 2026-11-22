@@ -51,7 +51,7 @@ export const LEGAL_CONTENT = {
         },
         {
           heading: "2. How We Secure & Store Data",
-          text: "Sensitive personal data such as phone numbers and driver documents is encrypted at the field level before storage. We never store card details — all payments are tokenized by the gateways (Flouci/Konnect) and only transaction references are kept. Face ID and fingerprint sign-in are processed locally in your device's secure enclave; Louagi never collects or transmits biometric data."
+          text: "Your personal information — name, phone number, email, payment and payout details, driver ID and licence numbers, messages, support requests, reviews, notifications, and the IP address and device details of your sessions — is encrypted with AES-256 before it is stored. Passwords are never stored: we keep only a one-way bcrypt hash. Uploaded driver documents are kept in encrypted storage. We never store card details — all payments are tokenized by the gateways (Flouci/Konnect) and only transaction references are kept. Face ID and fingerprint sign-in are processed locally in your device's secure enclave; Louagi never collects or transmits biometric data."
         },
         {
           heading: "3. Security & Admin Safeguards",
@@ -132,7 +132,7 @@ export const LEGAL_CONTENT = {
         },
         {
           heading: "2. Sécurité et stockage des données",
-          text: "Les données personnelles sensibles, comme les numéros de téléphone et les documents des chauffeurs, sont chiffrées au niveau du champ avant stockage. Nous ne stockons jamais de coordonnées bancaires — tous les paiements sont tokenisés par les passerelles (Flouci/Konnect) et seules les références de transaction sont conservées. Face ID et l'empreinte digitale sont traités localement dans l'enclave sécurisée de votre appareil ; Louagi ne collecte ni ne transmet jamais de données biométriques."
+          text: "Vos données personnelles — nom, numéro de téléphone, e-mail, coordonnées de paiement et de versement, numéros de pièce d'identité et de permis des chauffeurs, messages, demandes d'assistance, avis, notifications, ainsi que l'adresse IP et l'appareil de vos sessions — sont chiffrées en AES-256 avant d'être stockées. Les mots de passe ne sont jamais stockés : nous ne conservons qu'une empreinte bcrypt irréversible. Les documents des chauffeurs sont conservés dans un stockage chiffré. Nous ne stockons jamais de coordonnées bancaires — tous les paiements sont tokenisés par les passerelles (Flouci/Konnect) et seules les références de transaction sont conservées. Face ID et l'empreinte digitale sont traités localement dans l'enclave sécurisée de votre appareil ; Louagi ne collecte ni ne transmet jamais de données biométriques."
         },
         {
           heading: "3. Garanties de sécurité et d'administration",
@@ -213,7 +213,7 @@ export const LEGAL_CONTENT = {
         },
         {
           heading: "2. تأمين البيانات وتخزينها",
-          text: "تُشفَّر البيانات الشخصية الحساسة مثل أرقام الهواتف ومستندات السائقين على مستوى الحقل قبل تخزينها. لا نخزّن بيانات البطاقات أبداً — فكل المدفوعات مشفّرة عبر البوابات (Flouci/Konnect) ولا يُحفظ سوى مراجع المعاملات. تُعالج بصمة الوجه والإصبع محلياً داخل المعالج الآمن لجهازك، ولا تجمع لواج بياناتك الحيوية أو ترسلها أبداً."
+          text: "تُشفَّر بياناتك الشخصية — الاسم ورقم الهاتف والبريد الإلكتروني وبيانات الدفع والتحويل وأرقام بطاقة الهوية ورخصة القيادة للسائقين والرسائل وطلبات الدعم والتقييمات والإشعارات، وعنوان IP وبيانات الجهاز لجلساتك — بمعيار AES-256 قبل تخزينها. لا نخزّن كلمات المرور أبداً، بل نحتفظ فقط ببصمة bcrypt أحادية الاتجاه. تُحفظ مستندات السائقين في تخزين مشفّر. لا نخزّن بيانات البطاقات أبداً — فكل المدفوعات مشفّرة عبر البوابات (Flouci/Konnect) ولا يُحفظ سوى مراجع المعاملات. تُعالج بصمة الوجه والإصبع محلياً داخل المعالج الآمن لجهازك، ولا تجمع لواج بياناتك الحيوية أو ترسلها أبداً."
         },
         {
           heading: "3. ضمانات الأمان والإشراف",

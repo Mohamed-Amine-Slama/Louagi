@@ -80,6 +80,7 @@ The Louagi App follows several security best practices, including the use of par
 - **Description:** The schema claims fields like `phone_number`, `plate_number`, and `id_card_number` are "encrypted at rest". The backend code uses variable names like `phone_decrypted` and `plate_decrypted`, yet the data is read and written as plain text in SQL queries.
 - **Impact:** If developers assume these fields are application-level encrypted, they might accidentally leak them. If they *should* be encrypted, then the encryption logic is currently missing.
 - **Recommendation:** Clarify if "encrypted at rest" refers only to disk-level encryption. If application-level encryption is required, implement it in the backend using a secure KMS.
+- **Status (2026-11-22): Resolved.** The backend now AES-256-GCM-encrypts all PII and user-authored text before writing (`server/src/lib/fieldCrypto.js`) and decrypts centrally on read (`server/src/db.js`). Phone/email lookups use HMAC blind indexes (`users.phone_hash`/`email_hash`, migration `20261122000000_encrypt_pii_blind_index.sql`). `plate_number` stays plaintext on purpose (SQL uniqueness, publicly visible). The key is `PII_ENCRYPTION_KEY` in `server/.env`, not a KMS yet. The same migration also revoked `anon`/`authenticated` `EXECUTE` on the `SECURITY DEFINER` RPCs and made all views `security_invoker`, because `active_users` had exposed `password_hash` through the Data API.
 
 ---
 
@@ -100,4 +101,4 @@ The Louagi App follows several security best practices, including the use of par
 | 2.2 | Missing Sanitization in Messages | High | XSS |
 | 4.1 | No Rate Limiting | High | Availability |
 | 5.1 | Verbose Health Errors | Low | Info Disclosure |
-| 5.2 | Misleading Encryption Claims | Medium | Data Protection |
+| 5.2 | Misleading Encryption Claims (resolved 2026-11-22) | Medium | Data Protection |

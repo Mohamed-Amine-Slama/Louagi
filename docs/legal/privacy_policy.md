@@ -26,7 +26,9 @@ At **Louagi**, we respect your privacy and are committed to protecting your pers
 ## 2. How We Secure and Store Data
 
 ### 2.1 Field-Level Encryption
-- Sensitive personally identifiable information (PII), including phone numbers and uploaded driver documents, is encrypted at the field level before being persisted to our database. This ensures data remains protected even in the event of unauthorized database access.
+- Personal information — including your name, phone number, email address, payment and payout details, driver ID and licence numbers, in-app messages, support requests, reviews, notifications, and the IP address and device details of your sessions — is encrypted with AES-256 before it is saved to our database. This keeps it protected even in the event of unauthorized database access.
+- Passwords are never stored. We keep only a one-way bcrypt hash, so not even Louagi can read your password.
+- Uploaded driver documents are kept in encrypted storage.
 
 ### 2.2 Payment Tokenization
 - We do not store or process payment card details. All financial transactions are managed directly by tokenized payment gateways (Flouci/Konnect). Only the gateway-provided transaction references are stored.

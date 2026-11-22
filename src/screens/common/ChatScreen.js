@@ -156,7 +156,7 @@ export default function ChatScreen() {
       <View style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
         <Row gap={5} align="center" style={{ backgroundColor: withAlpha(colors.success, 0.12), borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 }}>
           <MaterialIcons name="lock" size={13} color={colors.success} />
-          <Text variant="labelSm" color={colors.success}>{t('driver:endToEndEncrypted', 'End-to-End Encrypted')}</Text>
+          <Text variant="labelSm" color={colors.success}>{t('driver:messagesEncrypted', 'Encrypted in storage')}</Text>
         </Row>
       </View>
 

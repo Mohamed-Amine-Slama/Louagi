@@ -277,16 +277,20 @@ keeps returning the envelope shapes in section 2. The mapping:
 | `refresh(token)` | `Refresh` |
 | `logout(refreshToken)` | `Logout` |
 
-The migration in `supabase/migrations/20260522000000_backend_graphql_auth.sql`
-lets `public.users` be backend-owned and adds password hashes/preferences for
-the GraphQL auth flow.
+`public.users` is backend-owned (defined in
+`supabase/migrations/20260609000000_init.sql`): bcrypt password hashes,
+preferences, and — since `20261122000000_encrypt_pii_blind_index.sql` —
+`phone_hash`/`email_hash` blind indexes. The server stores name, phone and email
+AES-256-GCM encrypted and looks users up by those hashes; wire payloads are
+unchanged (plaintext over TLS).
 
 ### Server (`server/`)
 
 The Node backend reads its config from `server/.env` (see
 `server/.env.example`). On every protected GraphQL operation it verifies the
 backend-issued JWT, loads the role from `public.users`, and runs the request with the
-service-role Postgres connection (which bypasses RLS). See
+`louagi_backend` Postgres role (a non-owner member of `service_role`, which
+bypasses RLS). See
 [`server/README.md`](../server/README.md) for the full setup flow.
 
 ---

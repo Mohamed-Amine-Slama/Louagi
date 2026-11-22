@@ -60,7 +60,6 @@
         }
       ]
     ],
-    "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": ""

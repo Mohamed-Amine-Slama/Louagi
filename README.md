@@ -1,13 +1,13 @@
 # Louagi (Expo)
 
-End-to-end React Native (Expo) implementation of the Louagi platform spec'd in
-`Louagi_Project_Documentation.docx`: interstate louage booking for Tunisia,
+End-to-end React Native (Expo) implementation of the Louagi platform:
+interstate louage booking for Tunisia,
 with three portals (passenger, driver, admin) and the security layer the
 documentation requires.
 
 ## Run it
 
-> Requires Node 18+ (Node 22 tested). Targets Expo SDK 54. From the project root:
+> Requires Node 22.13+ (or 24.3+). Targets Expo SDK 58 (React Native 0.88, React 19.3). From the project root:
 
 ```bash
 npm install
@@ -15,13 +15,39 @@ npx expo start --tunnel   # --tunnel helps when phone & laptop are on different 
 ```
 
 Press `w` for web, `a` for Android emulator, `i` for iOS simulator, or scan
-the QR code with the Expo Go app (SDK 54+) on a real device.
+the QR code with the Expo Go app (SDK 58) on a real device.
+
+<!-- AUTO-GENERATED from package.json scripts -->
+| Command | What it does |
+| --- | --- |
+| `npm start` | `expo start` — Metro dev server |
+| `npm run android` | `expo run:android` — native Android build + install |
+| `npm run ios` | `expo run:ios` — native iOS build (macOS only) |
+| `npm run web` | `expo start --web` |
+| `npm run build` / `npm run build:web` | `expo export -p web` — static web build in `dist/` |
+| `npm run build:assets` | `node scripts/generate-assets.js` — regenerate `assets/` icon, adaptive-icon and splash PNGs from the brand SVG |
+<!-- /AUTO-GENERATED -->
+
+### Native Android project
+
+`android/` is committed but generated from `app.json` (icon, splash via the
+`expo-splash-screen` plugin, permissions, `louagi://` scheme). After changing
+native config in `app.json` or bumping the Expo SDK, regenerate it and commit
+the result:
+
+```bash
+npx expo prebuild --platform android --clean --no-install
+```
+
+If it fails with `EBUSY` on `android/.gradle`, an IDE Gradle import (e.g. the
+VS Code Java extension) is holding the folder: run `gradle --stop` or close the
+IDE, then retry.
 
 ### Troubleshooting Expo Go
 
 - **"Something went wrong"** in Expo Go almost always means the project's
   Expo SDK is older than the Expo Go you have installed. This project is on
-  SDK 54. If your Expo Go is older, update it from the App Store / Play Store.
+  SDK 58. If your Expo Go is older, update it from the App Store / Play Store.
 - **Crash on first launch**: the app now wraps everything in an `ErrorBoundary`
   that surfaces the full stack inside the screen — share that back if anything
   blows up.
@@ -113,11 +139,11 @@ src/
 | JWT 15-min access tokens, refresh rotation                 | `security/jwt.js`, `context/AuthContext.js` |
 | Tokens persisted in OS-level secure storage (SecureStore)  | `security/secureStorage.js` |
 | Phone OTP on signup + login                                | `security/otp.js`, screens `Login`, `Register` |
-| Password hash (bcrypt-equivalent: salted + iterated SHA)   | `security/crypto.js` (`hashPassword`, `verifyPassword`) |
+| Password hash (bcrypt, server-side)                        | `server/src/cqrs/commands/auth.js` (`extensions.crypt(…, gen_salt('bf'))`); `security/crypto.js` is the offline-mock stand-in |
 | Rate limit: 5 login attempts / 15-min lockout              | `security/rateLimit.js` |
 | RBAC scopes (passenger / driver / admin)                   | `security/rbac.js`, gated routes in `RootNavigator` |
 | Admin IP allowlist                                         | `security/rbac.js` (`isAdminIpAllowed`) |
-| Field-level encryption for PII (phone, ID, license, plate) | `security/crypto.js` (`encryptField` / `decryptField`) |
+| Field-level encryption at rest (AES-256-GCM: all PII + user text; HMAC blind indexes for phone/email) | `server/src/lib/fieldCrypto.js`, decrypted centrally in `server/src/db.js`; backfill `server/scripts/encrypt-pii.js` |
 | Seat lock (10-min TTL, atomic)                             | `security/seatLock.js` |
 | Idempotency keys on reservations                           | `api/reservations.js` |
 | Tokenized payment refs (no card data stored)               | `api/reservations.js` (gateway stub) |
@@ -159,9 +185,13 @@ in `supabase/seed.sql`, not in the app bundle.
      use your LAN IP (e.g. `http://192.168.1.10:3000`).
 3. Keep `EXPO_PUBLIC_USE_MOCKS=false`.
 4. Stand up the backend per [`server/README.md`](./server/README.md):
-   `cp server/.env.example server/.env`, fill in `APP_JWT_SECRET` +
-   `DATABASE_URL`, then `cd server && npm install && npm run dev`.
-5. Apply the schema: `supabase login && supabase link --project-ref <ref> && supabase db push`.
+   `cp server/.env.example server/.env`, fill in `APP_JWT_SECRET`,
+   `DATABASE_URL` and `PII_ENCRYPTION_KEY` (`openssl rand -hex 32` — back it
+   up, encrypted data is unrecoverable without it), then
+   `cd server && npm install && npm run dev`.
+5. Apply the schema: `supabase login && supabase link --project-ref yhlsvmutepagghyfdjzw && supabase db push`.
+   After loading `supabase/seed.sql`, run `node server/scripts/encrypt-pii.js`
+   (encrypts the seeded PII and fills the phone/email login hashes).
 6. Restart Metro with `npx expo start -c` (env vars are inlined at build time).
 
 The wire contract is in [`docs/backend-contract.md`](./docs/backend-contract.md)
